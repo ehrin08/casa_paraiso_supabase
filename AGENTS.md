@@ -2,7 +2,7 @@
 
 ## Project Status
 
-Application code has not been scaffolded yet. Project planning documents exist for MVP scope, technology stack, database design, screen flow, and implementation roadmap.
+Application code has been scaffolded with Laravel 12, Laravel Breeze, Blade, Tailwind CSS, Vite, and MariaDB/MySQL configuration. Project planning documents exist for MVP scope, technology stack, database design, screen flow, and implementation roadmap.
 
 ## Planning Documents
 
@@ -72,15 +72,17 @@ Design and develop a centralized Spa Appointment and Management System for Casa 
 - Use Laravel migrations and seeders as the primary database workflow.
 - Document setup, build, migration, seed, and deployment commands as the application is scaffolded.
 - Keep usability, security, and effectiveness visible in design and implementation decisions to support the ISO/IEC 25010 quality target.
+- XAMPP CLI PHP has `zip` enabled for Composer package extraction.
+- Global Composer may still report version 2.9.7 because self-update is blocked by Windows permissions on `C:\ProgramData\ComposerSetup\bin\composer.phar`; Phase 1 scaffolding used a temporary Composer 2.10.2 PHAR instead.
 
 ## Verification
 
-Update this section once the project has runnable code.
+Current scaffold verification:
 
-- Laravel app: verify through the local XAMPP URL or Laravel development server, depending on the scaffolded setup.
-- Frontend assets: verify with `npm run build`.
-- Database: verify with Laravel migrations and seeders.
-- Tests: document and run the exact Laravel test command once tests exist.
+- Laravel app: verify through the local XAMPP URL or Laravel development server.
+- Frontend assets: `npm run build`
+- Database: `php artisan migrate:fresh`
+- Tests: `php artisan test`
 
 ## Notes For Future Agents
 
