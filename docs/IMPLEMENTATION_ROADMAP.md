@@ -1,0 +1,407 @@
+# Casa Paraiso Implementation Roadmap
+
+## Purpose
+
+Define the build sequence for the Casa Paraiso Spa Appointment and Management System after the MVP scope, tech stack, database design, and screen flow have been approved.
+
+This roadmap is the final pre-build planning document. After it is accepted, the next step is application scaffolding and implementation.
+
+## Guiding Sources
+
+Use these documents as implementation sources of truth:
+
+- `docs/MVP_SCOPE.md`
+- `docs/TECH_STACK.md`
+- `docs/DATABASE_DESIGN.md`
+- `docs/SCREEN_FLOW.md`
+
+## Phase 0: Pre-Scaffold Preparation
+
+Goal: confirm the local environment is ready before creating the Laravel application.
+
+Tasks:
+
+- Update Composer to the latest stable version because the current local Composer version was previously detected as outdated/vulnerable.
+- Confirm PHP is 8.2 or higher.
+- Confirm required PHP extensions are enabled.
+- Confirm Node and npm are available for Vite and Tailwind asset builds.
+- Confirm XAMPP MySQL/MariaDB is available locally.
+- Decide whether to initialize Git before scaffolding.
+- Create a local database for the app, such as `casa_paraiso`.
+
+Verification:
+
+```bash
+php -v
+composer --version
+composer diagnose
+node --version
+npm --version
+```
+
+Acceptance:
+
+- Composer no longer reports the known vulnerable/outdated installed version.
+- PHP, Composer, Node, npm, and MySQL/MariaDB are ready for Laravel scaffolding.
+
+## Phase 1: Laravel And Auth Scaffold
+
+Goal: create the Laravel application foundation.
+
+Tasks:
+
+- Scaffold Laravel 12 in the project root.
+- Install Laravel Breeze with Blade templates.
+- Install frontend dependencies.
+- Configure Tailwind CSS through Vite.
+- Configure `.env` for the local database.
+- Set `APP_TIMEZONE=Asia/Manila`.
+- Confirm `.env` is not committed.
+- Build frontend assets.
+- Run the default Laravel test suite.
+
+Verification:
+
+```bash
+composer install
+npm install
+npm run build
+php artisan test
+```
+
+Acceptance:
+
+- Laravel loads locally.
+- Breeze login and registration pages render.
+- Tailwind styles compile successfully.
+- Default tests pass.
+
+## Phase 2: Roles, Redirects, And Access Control
+
+Goal: make authentication match the approved admin, staff, and customer roles.
+
+Tasks:
+
+- Add `role`, `phone`, and `is_active` fields to the `users` table.
+- Define role constants or enums for `admin`, `staff`, and `customer`.
+- Implement post-login redirects:
+  - Admin to `/admin/dashboard`.
+  - Staff to `/staff/dashboard`.
+  - Customer to `/customer/appointments`.
+- Restrict public registration to customer accounts only.
+- Add middleware or policies for admin, staff, and customer access.
+- Seed one admin user and optional demo staff/customer users.
+
+Verification:
+
+```bash
+php artisan migrate:fresh --seed
+php artisan test
+```
+
+Acceptance:
+
+- Admin, staff, and customer users land on the correct pages after login.
+- Customer registration cannot create admin or staff accounts.
+- Users cannot access route groups outside their role.
+
+## Phase 3: Database Schema, Models, And Seeders
+
+Goal: implement the schema defined in `docs/DATABASE_DESIGN.md`.
+
+Tasks:
+
+- Create migrations in the documented migration order.
+- Create Eloquent models and relationships.
+- Add factories for core records where useful.
+- Add seeders for:
+  - Admin user.
+  - Demo staff users.
+  - Demo customer users.
+  - Default services.
+  - Staff-service assignments.
+  - Weekly staff schedules.
+  - Default RFM segments.
+  - Default promotion rules.
+- Add model-level constants or enums for all status values.
+
+Verification:
+
+```bash
+php artisan migrate:fresh --seed
+php artisan test
+```
+
+Acceptance:
+
+- All tables migrate successfully on a clean database.
+- Seeded users, services, staff schedules, and RFM rules exist.
+- Key relationships load correctly in tests.
+
+## Phase 4: Layouts And Role Dashboards
+
+Goal: implement the navigation structure from `docs/SCREEN_FLOW.md`.
+
+Tasks:
+
+- Create shared Blade layout foundations.
+- Create admin/staff sidebar module navigation.
+- Create customer appointment-first navigation.
+- Create dashboard pages:
+  - `/admin/dashboard`
+  - `/staff/dashboard`
+  - `/customer/appointments`
+- Add reusable Tailwind components for page headers, buttons, forms, tables, badges, alerts, and empty states.
+
+Verification:
+
+```bash
+npm run build
+php artisan test
+```
+
+Acceptance:
+
+- Each role sees only its own dashboard and navigation.
+- Admin and staff layouts support management workflows.
+- Customer layout prioritizes appointment status and request actions.
+
+## Phase 5: Services, Staff, Schedules, And Customers
+
+Goal: build the management foundations needed before appointments.
+
+Tasks:
+
+- Build admin service CRUD.
+- Build admin staff account/profile management.
+- Build staff-service assignment screens.
+- Build weekly staff schedule management.
+- Build schedule exception management.
+- Build admin customer list/detail screens.
+- Build staff customer lookup with limited operational access.
+- Build customer profile screen.
+
+Verification:
+
+```bash
+npm run build
+php artisan test
+```
+
+Acceptance:
+
+- Admin can manage services, staff, staff schedules, and customer records.
+- Staff can view only operational customer details.
+- Customer can update their own profile.
+
+## Phase 6: Appointment Workflow
+
+Goal: implement the core appointment request, confirmation, and completion workflow.
+
+Tasks:
+
+- Build customer appointment request form.
+- Build customer appointment list/detail views.
+- Build admin appointment list/detail/create screens.
+- Build staff pending and assigned appointment screens.
+- Implement status transitions:
+  - `pending`
+  - `confirmed`
+  - `completed`
+  - `cancelled`
+  - `no_show`
+- Generate unique appointment numbers.
+- Calculate scheduled end time from service duration.
+- Prevent overlapping confirmed appointments for the same staff member.
+- Record appointment status logs.
+
+Verification:
+
+```bash
+npm run build
+php artisan test
+```
+
+Acceptance:
+
+- Customer can request an appointment.
+- Staff/admin can confirm, reschedule, cancel, complete, or mark no-show.
+- The system blocks overlapping confirmed appointments for the same staff member.
+- Customer can view their own appointment status.
+
+## Phase 7: Manual Transactions
+
+Goal: build manual transaction recording and payment status management.
+
+Tasks:
+
+- Build admin transaction list/create/detail screens.
+- Build staff transaction entry from completed or confirmed appointments.
+- Generate unique transaction numbers.
+- Support payment statuses:
+  - `unpaid`
+  - `partial`
+  - `paid`
+  - `refunded`
+  - `void`
+- Support default payment methods:
+  - Cash
+  - GCash
+  - Bank transfer
+  - Other
+- Show transaction history on customer detail pages.
+
+Verification:
+
+```bash
+npm run build
+php artisan test
+```
+
+Acceptance:
+
+- Staff/admin can record manual payments.
+- Transactions link to customers and appointments where applicable.
+- Paid completed transactions are available for RFM calculations.
+
+## Phase 8: Feedback And Sentiment
+
+Goal: collect customer feedback and produce simple sentiment insights.
+
+Tasks:
+
+- Build customer feedback form for completed appointments.
+- Enforce one feedback record per appointment.
+- Store rating, comment, sentiment label, and optional sentiment score.
+- Implement simple sentiment classification:
+  - Ratings 4-5 default to `positive`.
+  - Rating 3 defaults to `neutral`.
+  - Ratings 1-2 default to `negative`.
+  - Optional keyword rules may refine the label.
+- Build admin feedback list/detail and sentiment summary.
+- Build staff feedback view for related operational feedback.
+
+Verification:
+
+```bash
+npm run build
+php artisan test
+```
+
+Acceptance:
+
+- Customer can submit feedback for completed appointments.
+- Sentiment label is stored without external AI services.
+- Admin can review feedback and sentiment summaries.
+
+## Phase 9: RFM Promotion Suggestions
+
+Goal: implement rule-based customer segmentation and stored promotion suggestions.
+
+Tasks:
+
+- Build RFM segment and promotion rule seeders.
+- Build admin screens for segments, rules, and suggestion review.
+- Implement RFM calculation from completed paid transactions:
+  - Recency from latest paid completed transaction.
+  - Frequency from completed paid transaction count.
+  - Monetary from completed paid transaction total.
+- Store promotion suggestion snapshots.
+- Support suggestion statuses:
+  - `suggested`
+  - `reviewed`
+  - `applied`
+  - `dismissed`
+- Ensure suggestions are admin-visible and not automatic discounts.
+
+Verification:
+
+```bash
+npm run build
+php artisan test
+```
+
+Acceptance:
+
+- Admin can generate or view stored promotion suggestions.
+- Suggestions include RFM values and suggested offer.
+- Admin/staff can review, apply, or dismiss suggestions according to permissions.
+
+## Phase 10: Reports, Exports, And Dashboard Summaries
+
+Goal: support management decisions without requiring database access.
+
+Tasks:
+
+- Build admin reports for:
+  - Appointments.
+  - Transactions/revenue.
+  - Customer activity.
+  - Promotion suggestions.
+  - Feedback sentiment.
+- Add filters for date range, status, service, staff, customer, payment status, promotion status, and sentiment where relevant.
+- Add CSV export for tabular reports.
+- Add dashboard summary cards using existing appointment, transaction, feedback, and promotion data.
+
+Verification:
+
+```bash
+npm run build
+php artisan test
+```
+
+Acceptance:
+
+- Admin can filter reports and export CSV files.
+- Dashboard summaries reflect current database records.
+- Reports do not require direct database or phpMyAdmin access.
+
+## Phase 11: Hardening, Deployment, And Handover
+
+Goal: prepare the MVP for capstone review and Hostinger-style deployment.
+
+Tasks:
+
+- Add a security hardening checklist.
+- Add validation coverage for all create/update forms.
+- Confirm role access restrictions.
+- Confirm production credentials stay outside committed files.
+- Write deployment notes for Hostinger shared/web hosting.
+- Write database export/import notes for phpMyAdmin handover.
+- Write a handover manual for non-technical business users.
+- Run full verification before delivery.
+
+Verification:
+
+```bash
+composer install
+npm install
+npm run build
+php artisan migrate:fresh --seed
+php artisan test
+```
+
+Acceptance:
+
+- App can be installed from a clean checkout.
+- Core workflows pass manual and automated checks.
+- Deployment and handover documentation are clear enough for non-technical maintenance with occasional developer support.
+
+## Build Order Rule
+
+Do not start a later feature phase until the earlier dependency phase is working locally. For example, appointments should not be built before services, staff, schedules, and customers exist.
+
+## MVP Completion Definition
+
+The MVP is complete when:
+
+- Admin, staff, and customer authentication works.
+- Admin can manage services, staff, schedules, customers, transactions, promotions, feedback, and reports.
+- Staff can handle daily appointment and transaction workflows.
+- Customers can request appointments, view status/history, update profile, and submit feedback.
+- RFM promotion suggestions are stored and reviewable.
+- Feedback sentiment is classified without external AI services.
+- CSV reports are available for admin.
+- The app builds successfully with Tailwind/Vite.
+- Laravel tests pass.
+- Hostinger deployment and handover notes exist.
