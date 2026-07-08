@@ -17,17 +17,43 @@ class AuthenticationTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function test_users_can_authenticate_using_the_login_screen(): void
+    public function test_admin_users_are_redirected_to_admin_dashboard_after_login(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->admin()->create();
 
         $response = $this->post('/login', [
             'email' => $user->email,
             'password' => 'password',
         ]);
 
-        $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $this->assertAuthenticatedAs($user);
+        $response->assertRedirect(route('admin.dashboard', absolute: false));
+    }
+
+    public function test_staff_users_are_redirected_to_staff_dashboard_after_login(): void
+    {
+        $user = User::factory()->staff()->create();
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticatedAs($user);
+        $response->assertRedirect(route('staff.dashboard', absolute: false));
+    }
+
+    public function test_customer_users_are_redirected_to_customer_appointments_after_login(): void
+    {
+        $user = User::factory()->customer()->create();
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticatedAs($user);
+        $response->assertRedirect(route('customer.appointments.index', absolute: false));
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void
@@ -40,6 +66,19 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertGuest();
+    }
+
+    public function test_inactive_users_can_not_authenticate(): void
+    {
+        $user = User::factory()->inactive()->create();
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertGuest();
+        $response->assertSessionHasErrors('email');
     }
 
     public function test_users_can_logout(): void
