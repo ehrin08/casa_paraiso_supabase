@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Customer;
 
+use App\Http\Controllers\Concerns\HandlesIndexSorting;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AppointmentRequest;
 use App\Models\Appointment;
@@ -17,10 +18,22 @@ use Illuminate\View\View;
 
 class AppointmentController extends Controller
 {
+    use HandlesIndexSorting;
+
     public function index(Request $request): View
     {
         $customerProfile = $request->user()->customerProfile;
         $customerProfileId = $customerProfile?->id ?? 0;
+        $status = (string) $request->query('status');
+        $search = trim((string) $request->query('q'));
+        $sorts = [
+            'number' => 'appointments.appointment_number',
+            'service' => 'appointment_services.name',
+            'schedule' => 'appointments.requested_start_at',
+            'status' => 'appointments.status',
+        ];
+        $sort = $this->indexSort($request, $sorts, 'schedule');
+        $direction = $this->indexDirection($request, 'desc');
 
         $summary = [
             'upcoming' => Appointment::query()
@@ -40,13 +53,26 @@ class AppointmentController extends Controller
 
         $appointments = Appointment::query()
             ->with(['service', 'staffProfile.user', 'feedback'])
+            ->leftJoin('services as appointment_services', 'appointment_services.id', '=', 'appointments.service_id')
+            ->select('appointments.*')
             ->where('customer_profile_id', $customerProfileId)
-            ->latest('requested_start_at')
-            ->paginate(10);
+            ->when(in_array($status, Appointment::STATUSES, true), fn ($query) => $query->where('appointments.status', $status))
+            ->when($search !== '', fn ($query) => $query->where(function ($query) use ($search): void {
+                $query->where('appointments.appointment_number', 'like', "%{$search}%")
+                    ->orWhere('appointment_services.name', 'like', "%{$search}%");
+            }))
+            ->orderBy($sorts[$sort], $direction)
+            ->orderByDesc('appointments.requested_start_at')
+            ->paginate(10)
+            ->withQueryString();
 
         return view('customer.appointments.index', [
             'summary' => $summary,
             'appointments' => $appointments,
+            'status' => $status,
+            'search' => $search,
+            'sort' => $sort,
+            'direction' => $direction,
         ]);
     }
 

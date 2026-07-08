@@ -9,21 +9,31 @@
         </div>
     </x-slot>
 
-    <div class="space-y-6">
-        <x-app-card padding="p-4 sm:p-8">
-            <div class="max-w-xl">
+    <div x-data="{ section: 'profile' }" class="grid gap-4 lg:grid-cols-[15rem_minmax(0,1fr)]">
+        <aside class="casa-card p-3">
+            <div class="grid gap-2">
+                <button type="button" class="casa-nav-control" :class="section === 'profile' ? 'casa-nav-control-active' : ''" @click="section = 'profile'">
+                    {{ __('Profile details') }}
+                </button>
+                <button type="button" class="casa-nav-control" :class="section === 'password' ? 'casa-nav-control-active' : ''" @click="section = 'password'">
+                    {{ __('Password') }}
+                </button>
+                <button type="button" class="casa-nav-control" :class="section === 'delete' ? 'casa-nav-control-active' : ''" @click="section = 'delete'">
+                    {{ __('Delete account') }}
+                </button>
+            </div>
+        </aside>
+
+        <x-app-card padding="p-4 sm:p-6">
+            <div class="max-w-2xl" x-show="section === 'profile'">
                 @include('profile.partials.update-profile-information-form')
             </div>
-        </x-app-card>
 
-        <x-app-card padding="p-4 sm:p-8">
-            <div class="max-w-xl">
+            <div class="max-w-2xl" x-show="section === 'password'" style="display: none;">
                 @include('profile.partials.update-password-form')
             </div>
-        </x-app-card>
 
-        <x-app-card padding="p-4 sm:p-8">
-            <div class="max-w-xl">
+            <div class="max-w-2xl" x-show="section === 'delete'" style="display: none;">
                 @include('profile.partials.delete-user-form')
             </div>
         </x-app-card>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\HandlesIndexSorting;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AppointmentRequest;
 use App\Models\Appointment;
@@ -17,22 +18,42 @@ use Illuminate\View\View;
 
 class AppointmentController extends Controller
 {
+    use HandlesIndexSorting;
+
     public function index(Request $request): View
     {
         $status = (string) $request->query('status');
         $search = trim((string) $request->query('q'));
+        $sorts = [
+            'number' => 'appointments.appointment_number',
+            'customer' => 'appointment_customers.name',
+            'service' => 'appointment_services.name',
+            'schedule' => 'appointments.requested_start_at',
+            'staff' => 'appointment_staff_users.name',
+            'status' => 'appointments.status',
+        ];
+        $sort = $this->indexSort($request, $sorts, 'schedule');
+        $direction = $this->indexDirection($request, 'desc');
 
         $appointments = Appointment::query()
             ->with(['customerProfile.user', 'service', 'staffProfile.user'])
-            ->when(in_array($status, Appointment::STATUSES, true), fn ($query) => $query->where('status', $status))
+            ->leftJoin('customer_profiles as appointment_customer_profiles', 'appointment_customer_profiles.id', '=', 'appointments.customer_profile_id')
+            ->leftJoin('users as appointment_customers', 'appointment_customers.id', '=', 'appointment_customer_profiles.user_id')
+            ->leftJoin('services as appointment_services', 'appointment_services.id', '=', 'appointments.service_id')
+            ->leftJoin('staff_profiles as appointment_staff_profiles', 'appointment_staff_profiles.id', '=', 'appointments.staff_profile_id')
+            ->leftJoin('users as appointment_staff_users', 'appointment_staff_users.id', '=', 'appointment_staff_profiles.user_id')
+            ->select('appointments.*')
+            ->when(in_array($status, Appointment::STATUSES, true), fn ($query) => $query->where('appointments.status', $status))
             ->when($search !== '', function ($query) use ($search): void {
                 $query->where(function ($query) use ($search): void {
-                    $query->where('appointment_number', 'like', "%{$search}%")
-                        ->orWhereHas('customerProfile.user', fn ($userQuery) => $userQuery->where('name', 'like', "%{$search}%"))
-                        ->orWhereHas('service', fn ($serviceQuery) => $serviceQuery->where('name', 'like', "%{$search}%"));
+                    $query->where('appointments.appointment_number', 'like', "%{$search}%")
+                        ->orWhere('appointment_customers.name', 'like', "%{$search}%")
+                        ->orWhere('appointment_services.name', 'like', "%{$search}%")
+                        ->orWhere('appointment_staff_users.name', 'like', "%{$search}%");
                 });
             })
-            ->latest('requested_start_at')
+            ->orderBy($sorts[$sort], $direction)
+            ->orderByDesc('appointments.requested_start_at')
             ->paginate(12)
             ->withQueryString();
 
@@ -40,6 +61,8 @@ class AppointmentController extends Controller
             'appointments' => $appointments,
             'status' => $status,
             'search' => $search,
+            'sort' => $sort,
+            'direction' => $direction,
             'summary' => [
                 'pending' => Appointment::query()->where('status', Appointment::STATUS_PENDING)->count(),
                 'confirmed' => Appointment::query()->where('status', Appointment::STATUS_CONFIRMED)->count(),

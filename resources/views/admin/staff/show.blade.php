@@ -20,12 +20,6 @@
             $formatTime = fn ($time) => $time ? substr((string) $time, 0, 5) : null;
         @endphp
 
-        @if (session('status'))
-            <div class="rounded-[18px] border border-casa-green/30 bg-casa-green/10 px-5 py-4 text-sm font-semibold text-casa-green">
-                {{ __('Staff records updated.') }}
-            </div>
-        @endif
-
         <section class="grid gap-4 md:grid-cols-4">
             <x-metric-card label="Services" :value="$staffProfile->services_count" meta="Assigned treatments" tone="green" />
             <x-metric-card label="Schedules" :value="$staffProfile->weekly_schedules_count" meta="Phase 5C entries" tone="gold" />
@@ -123,13 +117,15 @@
                                                 <a href="{{ route('admin.staff.weekly-schedules.edit', [$staffProfile, $weeklySchedule]) }}" class="font-bold text-casa-primary hover:text-casa-primary-dark">
                                                     {{ __('Edit') }}
                                                 </a>
-                                                <form method="POST" action="{{ route('admin.staff.weekly-schedules.destroy', [$staffProfile, $weeklySchedule]) }}">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="font-bold text-casa-muted hover:text-red-700">
-                                                        {{ __('Remove') }}
-                                                    </button>
-                                                </form>
+                                                <x-confirm-action
+                                                    :action="route('admin.staff.weekly-schedules.destroy', [$staffProfile, $weeklySchedule])"
+                                                    method="DELETE"
+                                                    label="{{ __('Remove') }}"
+                                                    confirm-title="{{ __('Remove weekly shift?') }}"
+                                                    confirm-message="{{ __('This recurring availability shift will no longer be used for future appointment availability.') }}"
+                                                    confirm-button="{{ __('Remove') }}"
+                                                    button-class="font-bold text-casa-muted hover:text-red-700"
+                                                />
                                             </div>
                                         </div>
                                     </div>
@@ -177,13 +173,15 @@
                                     <a href="{{ route('admin.staff.schedule-exceptions.edit', [$staffProfile, $scheduleException]) }}" class="font-bold text-casa-primary hover:text-casa-primary-dark">
                                         {{ __('Edit') }}
                                     </a>
-                                    <form method="POST" action="{{ route('admin.staff.schedule-exceptions.destroy', [$staffProfile, $scheduleException]) }}">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="font-bold text-casa-muted hover:text-red-700">
-                                            {{ __('Remove') }}
-                                        </button>
-                                    </form>
+                                    <x-confirm-action
+                                        :action="route('admin.staff.schedule-exceptions.destroy', [$staffProfile, $scheduleException])"
+                                        method="DELETE"
+                                        label="{{ __('Remove') }}"
+                                        confirm-title="{{ __('Remove schedule exception?') }}"
+                                        confirm-message="{{ __('This date-specific schedule override will no longer affect appointment availability.') }}"
+                                        confirm-button="{{ __('Remove') }}"
+                                        button-class="font-bold text-casa-muted hover:text-red-700"
+                                    />
                                 </div>
                             </div>
                         </div>

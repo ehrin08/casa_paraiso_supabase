@@ -124,53 +124,37 @@ class DatabaseSeeder extends Seeder
             ],
         );
 
-        $services = collect([
-            [
-                'name' => 'Signature Hilot Massage',
-                'slug' => 'signature-hilot-massage',
-                'description' => 'Traditional Filipino massage for relaxation and body relief.',
-                'duration_minutes' => 60,
-                'price' => 1200,
-            ],
-            [
-                'name' => 'Aromatherapy Massage',
-                'slug' => 'aromatherapy-massage',
-                'description' => 'Relaxing massage with calming aromatic oils.',
-                'duration_minutes' => 75,
-                'price' => 1500,
-            ],
-            [
-                'name' => 'Ventosa Therapy',
-                'slug' => 'ventosa-therapy',
-                'description' => 'Cupping therapy for muscle tension and circulation support.',
-                'duration_minutes' => 60,
-                'price' => 1400,
-            ],
-            [
-                'name' => 'Body Scrub',
-                'slug' => 'body-scrub',
-                'description' => 'Exfoliating spa treatment for smoother skin.',
-                'duration_minutes' => 75,
-                'price' => 1600,
-            ],
-            [
-                'name' => 'Foot Spa',
-                'slug' => 'foot-spa',
-                'description' => 'Foot soak, scrub, and relaxation service.',
-                'duration_minutes' => 45,
-                'price' => 800,
-            ],
-        ])->map(fn (array $service) => Service::updateOrCreate(
-            ['slug' => $service['slug']],
-            [...$service, 'is_active' => true],
-        ));
+        Service::query()
+            ->whereIn('slug', [
+                'signature-hilot-massage',
+                'aromatherapy-massage',
+                'ventosa-therapy',
+                'body-scrub',
+                'foot-spa',
+            ])
+            ->update(['is_active' => false]);
+
+        $services = collect(config('casa.service_packages'))->map(function (array $service): Service {
+            $serviceData = [
+                'name' => $service['name'],
+                'slug' => $service['slug'],
+                'description' => $service['description'],
+                'duration_minutes' => $service['duration_minutes'],
+                'price' => $service['price'],
+            ];
+
+            return Service::updateOrCreate(
+                ['slug' => $serviceData['slug']],
+                [...$serviceData, 'is_active' => true],
+            );
+        });
 
         $staffProfile->services()->syncWithoutDetaching(
-            $services->whereIn('slug', ['signature-hilot-massage', 'aromatherapy-massage', 'foot-spa'])->pluck('id')->all()
+            $services->whereIn('slug', ['gaia-touch', 'tethys-flow', 'hestia-warmth'])->pluck('id')->all()
         );
 
         $secondStaffProfile->services()->syncWithoutDetaching(
-            $services->whereIn('slug', ['ventosa-therapy', 'body-scrub', 'signature-hilot-massage'])->pluck('id')->all()
+            $services->whereIn('slug', ['tethys-flow', 'hestia-warmth', 'aurora-breeze'])->pluck('id')->all()
         );
 
         foreach ([$staffProfile, $secondStaffProfile] as $profile) {
@@ -267,14 +251,14 @@ class DatabaseSeeder extends Seeder
             );
         });
 
-        $signature = $services->firstWhere('slug', 'signature-hilot-massage');
-        $aromatherapy = $services->firstWhere('slug', 'aromatherapy-massage');
+        $gaiaTouch = $services->firstWhere('slug', 'gaia-touch');
+        $tethysFlow = $services->firstWhere('slug', 'tethys-flow');
 
         Appointment::updateOrCreate(
             ['appointment_number' => 'APT-DEMO-PENDING'],
             [
                 'customer_profile_id' => $customerProfile->id,
-                'service_id' => $signature->id,
+                'service_id' => $gaiaTouch->id,
                 'staff_profile_id' => null,
                 'requested_start_at' => now()->addDays(2)->setTime(14, 0),
                 'scheduled_start_at' => null,
@@ -290,11 +274,11 @@ class DatabaseSeeder extends Seeder
             ['appointment_number' => 'APT-DEMO-CONFIRMED'],
             [
                 'customer_profile_id' => $returningCustomerProfile->id,
-                'service_id' => $aromatherapy->id,
+                'service_id' => $tethysFlow->id,
                 'staff_profile_id' => $staffProfile->id,
                 'requested_start_at' => $confirmedStart,
                 'scheduled_start_at' => $confirmedStart,
-                'scheduled_end_at' => $confirmedStart->copy()->addMinutes($aromatherapy->duration_minutes),
+                'scheduled_end_at' => $confirmedStart->copy()->addMinutes($tethysFlow->duration_minutes),
                 'status' => Appointment::STATUS_CONFIRMED,
                 'confirmed_at' => now(),
                 'created_by' => $admin->id,
@@ -307,14 +291,14 @@ class DatabaseSeeder extends Seeder
             ['appointment_number' => 'APT-DEMO-COMPLETED'],
             [
                 'customer_profile_id' => $returningCustomerProfile->id,
-                'service_id' => $signature->id,
+                'service_id' => $gaiaTouch->id,
                 'staff_profile_id' => $staffProfile->id,
                 'requested_start_at' => $completedStart,
                 'scheduled_start_at' => $completedStart,
-                'scheduled_end_at' => $completedStart->copy()->addMinutes($signature->duration_minutes),
+                'scheduled_end_at' => $completedStart->copy()->addMinutes($gaiaTouch->duration_minutes),
                 'status' => Appointment::STATUS_COMPLETED,
                 'confirmed_at' => $completedStart->copy()->subDay(),
-                'completed_at' => $completedStart->copy()->addMinutes($signature->duration_minutes),
+                'completed_at' => $completedStart->copy()->addMinutes($gaiaTouch->duration_minutes),
                 'created_by' => $admin->id,
                 'updated_by' => $staff->id,
             ],
@@ -325,8 +309,8 @@ class DatabaseSeeder extends Seeder
             [
                 'customer_profile_id' => $returningCustomerProfile->id,
                 'appointment_id' => $completedAppointment->id,
-                'service_id' => $signature->id,
-                'amount' => $signature->price,
+                'service_id' => $gaiaTouch->id,
+                'amount' => $gaiaTouch->price,
                 'payment_status' => Transaction::PAYMENT_PAID,
                 'payment_method' => Transaction::METHOD_GCASH,
                 'paid_at' => $completedAppointment->completed_at,
@@ -339,7 +323,7 @@ class DatabaseSeeder extends Seeder
             ['appointment_id' => $completedAppointment->id],
             [
                 'customer_profile_id' => $returningCustomerProfile->id,
-                'service_id' => $signature->id,
+                'service_id' => $gaiaTouch->id,
                 'rating' => 5,
                 'comment' => 'Excellent and relaxing service.',
                 'sentiment_label' => Feedback::SENTIMENT_POSITIVE,
@@ -361,7 +345,7 @@ class DatabaseSeeder extends Seeder
                     'rfm_segment_id' => $loyalSegment->id,
                     'recency_days' => 10,
                     'frequency_count' => 1,
-                    'monetary_total' => $signature->price,
+                    'monetary_total' => $gaiaTouch->price,
                     'suggested_offer' => $loyalRule->suggested_offer,
                     'status' => PromotionSuggestion::STATUS_SUGGESTED,
                     'notes' => 'Demo suggestion for the promotion review queue.',

@@ -117,6 +117,15 @@ Relationships:
 
 Spa services offered by Casa Paraiso.
 
+Initial active services should mirror the current package menu:
+
+- GAIA TOUCH, 60 minutes, PHP 499.00.
+- TETHYS FLOW, 60 minutes, PHP 649.00.
+- HESTIA WARMTH, 90 minutes, PHP 749.00.
+- AURORA BREEZE, 120 minutes, PHP 849.00.
+
+Add-ons are not modeled as separate bookable records in the MVP. Ventosa, Hot Compress, Hot Stone, 30-Minute Back Massage, and VIP Room are displayed as static content until a later selectable add-on feature is approved.
+
 Key columns:
 
 - `id`
@@ -505,7 +514,8 @@ Initial seeders should create:
 - Admin user
 - Optional demo staff users
 - Optional demo customer users
-- Default services with duration and price
+- Default Casa Paraiso package services with duration and price
+- Static public content for add-on prices and business hours
 - Staff-service assignments
 - Weekly staff schedules
 - Default RFM segments

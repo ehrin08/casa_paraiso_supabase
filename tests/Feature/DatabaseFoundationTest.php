@@ -31,7 +31,21 @@ class DatabaseFoundationTest extends TestCase
             'email' => 'admin@casaparaiso.test',
             'role' => User::ROLE_ADMIN,
         ]);
-        $this->assertDatabaseCount('services', 5);
+        $this->assertDatabaseCount('services', 4);
+        $this->assertDatabaseHas('services', [
+            'name' => 'GAIA TOUCH',
+            'slug' => 'gaia-touch',
+            'duration_minutes' => 60,
+            'price' => 499.00,
+            'is_active' => true,
+        ]);
+        $this->assertDatabaseHas('services', [
+            'name' => 'AURORA BREEZE',
+            'slug' => 'aurora-breeze',
+            'duration_minutes' => 120,
+            'price' => 849.00,
+            'is_active' => true,
+        ]);
         $this->assertDatabaseCount('rfm_segments', 5);
         $this->assertDatabaseCount('promotion_rules', 5);
         $this->assertGreaterThanOrEqual(2, StaffProfile::query()->count());

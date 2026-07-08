@@ -8,19 +8,17 @@
             </p>
         </div>
 
-        <form method="POST" action="{{ route('admin.promotions.generate') }}">
-            @csrf
-            <button type="submit" class="casa-button-primary">{{ __('Generate suggestions') }}</button>
-        </form>
+        <x-confirm-action
+            :action="route('admin.promotions.generate')"
+            label="{{ __('Generate suggestions') }}"
+            confirm-title="{{ __('Generate promotion suggestions?') }}"
+            confirm-message="{{ __('The system will scan customer transaction history and create any new rule-based RFM suggestions that are not already in the review queue.') }}"
+            confirm-button="{{ __('Generate') }}"
+            button-class="casa-button-primary"
+        />
     </x-slot>
 
     <div class="space-y-6">
-        @if (session('status'))
-            <div class="rounded-[18px] border border-casa-green/30 bg-casa-green/10 px-5 py-4 text-sm font-semibold text-casa-green">
-                {{ session('status') === 'promotions-generated' ? trans_choice(':count promotion suggestion generated|:count promotion suggestions generated', session('generated_count', 0)) : __('Promotion suggestion updated.') }}
-            </div>
-        @endif
-
         <section class="grid gap-4 md:grid-cols-3">
             <x-metric-card label="Suggested" :value="$summary['suggested']" meta="Needs review" tone="gold" />
             <x-metric-card label="Applied" :value="$summary['applied']" meta="Marked used" tone="green" />
@@ -29,12 +27,11 @@
 
         <section class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_24rem]">
             <x-app-card>
-                <div class="flex flex-col gap-4 border-b border-casa-border pb-5 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                        <p class="casa-section-label">{{ __('Suggestions') }}</p>
-                        <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ __('Review queue') }}</h2>
-                    </div>
-                    <form method="GET" action="{{ route('admin.promotions.index') }}" class="flex flex-col gap-3 sm:flex-row">
+                <x-list-toolbar eyebrow="{{ __('Suggestions') }}" title="{{ __('Review queue') }}" :count="$suggestions->total()" :reset-url="route('admin.promotions.index')">
+                    <form method="GET" action="{{ route('admin.promotions.index') }}" class="casa-filter-grid sm:grid-cols-[minmax(12rem,1fr)_auto_auto] lg:min-w-[42rem]">
+                        <input type="hidden" name="sort" value="{{ $sort }}">
+                        <input type="hidden" name="direction" value="{{ $direction }}">
+                        <input type="search" name="q" value="{{ $search }}" class="casa-input" placeholder="{{ __('Search customer, segment, offer') }}" aria-label="{{ __('Search promotions') }}">
                         <select name="status" class="casa-input">
                             <option value="">{{ __('All statuses') }}</option>
                             @foreach (\App\Models\PromotionSuggestion::STATUSES as $option)
@@ -43,7 +40,7 @@
                         </select>
                         <button type="submit" class="casa-button-secondary">{{ __('Filter') }}</button>
                     </form>
-                </div>
+                </x-list-toolbar>
 
                 <div class="mt-5">
                     @if ($suggestions->isEmpty())
@@ -52,16 +49,16 @@
                         <x-table-shell>
                             <thead class="bg-casa-bg text-left text-xs font-black uppercase tracking-[0.1em] text-casa-muted">
                                 <tr>
-                                    <th class="px-4 py-3">{{ __('Customer') }}</th>
-                                    <th class="px-4 py-3">{{ __('Segment') }}</th>
-                                    <th class="px-4 py-3">{{ __('RFM') }}</th>
-                                    <th class="px-4 py-3">{{ __('Status') }}</th>
+                                    <x-sortable-th sort="customer">{{ __('Customer') }}</x-sortable-th>
+                                    <x-sortable-th sort="segment">{{ __('Segment') }}</x-sortable-th>
+                                    <x-sortable-th sort="monetary">{{ __('RFM') }}</x-sortable-th>
+                                    <x-sortable-th sort="status">{{ __('Status') }}</x-sortable-th>
                                     <th class="px-4 py-3">{{ __('Action') }}</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-casa-border text-sm">
                                 @foreach ($suggestions as $suggestion)
-                                    <tr>
+                                    <tr class="casa-table-row">
                                         <td class="px-4 py-4 font-semibold text-casa-text">{{ $suggestion->customerProfile?->user?->name }}</td>
                                         <td class="px-4 py-4 text-casa-muted">{{ $suggestion->rfmSegment?->name ?: __('Unsegmented') }}</td>
                                         <td class="px-4 py-4 text-casa-muted">R{{ $suggestion->recency_days ?? 'N/A' }} F{{ $suggestion->frequency_count ?? 0 }} M{{ number_format((float) $suggestion->monetary_total, 2) }}</td>

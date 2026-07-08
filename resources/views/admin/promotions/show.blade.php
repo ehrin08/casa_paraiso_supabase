@@ -11,12 +11,6 @@
 
     <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <section class="space-y-6">
-            @if (session('status'))
-                <div class="rounded-[18px] border border-casa-green/30 bg-casa-green/10 px-5 py-4 text-sm font-semibold text-casa-green">
-                    {{ __('Promotion suggestion updated.') }}
-                </div>
-            @endif
-
             <x-app-card>
                 <div class="grid gap-4 sm:grid-cols-3">
                     <x-metric-card label="Recency" value="{{ $suggestion->recency_days ?? 'N/A' }}" meta="Days since paid visit" tone="gold" />

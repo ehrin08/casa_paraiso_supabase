@@ -16,24 +16,29 @@
     </head>
     <body class="font-sans antialiased">
         @php
-            $usesSidebar = Auth::check() && (Auth::user()->isAdmin() || Auth::user()->isStaff());
+            $usesSidebar = Auth::check();
         @endphp
+
+        <x-page-loading />
 
         <div class="casa-page">
             @include('layouts.navigation')
+            <x-toast-stack />
 
-            <div @class(['min-h-screen', 'lg:ps-72' => $usesSidebar])>
+            <x-modal-host />
+
+            <div @class(['min-h-screen', 'lg:ps-64' => $usesSidebar])>
                 <!-- Page Heading -->
                 @isset($header)
-                    <header class="border-b border-casa-border/80 bg-casa-bg/95 backdrop-blur">
-                        <div class="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-6 sm:px-6 lg:flex-row lg:items-end lg:justify-between lg:px-8">
+                    <header data-page-header class="border-b border-casa-border/70 bg-white/92 backdrop-blur">
+                        <div class="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-4 sm:px-6 lg:flex-row lg:items-end lg:justify-between lg:px-8">
                             {{ $header }}
                         </div>
                     </header>
                 @endisset
 
                 <!-- Page Content -->
-                <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+                <main data-page-content class="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
                     {{ $slot }}
                 </main>
             </div>

@@ -25,6 +25,13 @@ The MVP should support appointment scheduling, customer records, manual transact
 ### Service And Staff Management
 
 - Admin can manage spa services, including service name, description, duration, and price.
+- The initial active service catalog should use the Casa Paraiso package menu:
+  - GAIA TOUCH: PHP 499.00, 1 hour.
+  - TETHYS FLOW: PHP 649.00, 1 hour.
+  - HESTIA WARMTH: PHP 749.00, 1 hour 30 minutes.
+  - AURORA BREEZE: PHP 849.00, 2 hours.
+- Add-ons such as Ventosa, Hot Compress, Hot Stone, 30-Minute Back Massage, and VIP Room are shown as customer-facing content only until selectable add-ons are added in a later phase.
+- Business hours are shown as open every day from 1:00 PM to 12:00 MN.
 - Admin can manage staff profiles and staff availability.
 - Staff availability should be simple enough for non-technical staff to maintain.
 

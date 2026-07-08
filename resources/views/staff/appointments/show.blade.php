@@ -11,11 +11,6 @@
 
     <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <section class="space-y-6">
-            @if (session('status'))
-                <div class="rounded-[18px] border border-casa-green/30 bg-casa-green/10 px-5 py-4 text-sm font-semibold text-casa-green">
-                    {{ __('Appointment updated.') }}
-                </div>
-            @endif
             <x-input-error :messages="$errors->all()" />
 
             <x-app-card>
@@ -57,7 +52,8 @@
                 <x-app-card>
                     <p class="casa-section-label">{{ __('Confirm') }}</p>
                     <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ __('Accept request') }}</h2>
-                    <form method="POST" action="{{ route('staff.appointments.update', $appointment) }}" class="mt-5 space-y-4">
+                    @php($confirmAppointmentFormId = 'confirm-appointment-'.$appointment->id)
+                    <form id="{{ $confirmAppointmentFormId }}" method="POST" action="{{ route('staff.appointments.update', $appointment) }}" class="mt-5 space-y-4">
                         @csrf
                         @method('PATCH')
                         <input type="hidden" name="service_id" value="{{ $appointment->service_id }}">
@@ -68,7 +64,14 @@
                             <x-text-input id="scheduled_start_at" name="scheduled_start_at" type="datetime-local" class="mt-2" :value="old('scheduled_start_at', $appointment->requested_start_at?->format('Y-m-d\\TH:i'))" required />
                         </div>
                         <textarea name="internal_notes" rows="4" class="casa-input" placeholder="{{ __('Internal notes') }}">{{ old('internal_notes', $appointment->internal_notes) }}</textarea>
-                        <button type="submit" class="casa-button-primary w-full">{{ __('Confirm appointment') }}</button>
+                        <x-confirm-submit
+                            :form="$confirmAppointmentFormId"
+                            label="{{ __('Confirm appointment') }}"
+                            confirm-title="{{ __('Confirm appointment request?') }}"
+                            confirm-message="{{ __('This assigns the appointment to you at the scheduled time and moves it into the confirmed queue.') }}"
+                            confirm-button="{{ __('Confirm appointment') }}"
+                            button-class="casa-button-primary w-full"
+                        />
                     </form>
                 </x-app-card>
             @elseif ($appointment->status === \App\Models\Appointment::STATUS_CONFIRMED)
@@ -77,14 +80,32 @@
                     <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ __('Update outcome') }}</h2>
                     <div class="mt-5 space-y-3">
                         @foreach ([\App\Models\Appointment::STATUS_COMPLETED => __('Mark completed'), \App\Models\Appointment::STATUS_NO_SHOW => __('Mark no-show'), \App\Models\Appointment::STATUS_CANCELLED => __('Cancel')] as $targetStatus => $label)
-                            <form method="POST" action="{{ route('staff.appointments.update', $appointment) }}">
-                                @csrf
-                                @method('PATCH')
+                            @php
+                                $confirmTitle = match ($targetStatus) {
+                                    \App\Models\Appointment::STATUS_COMPLETED => __('Mark appointment completed?'),
+                                    \App\Models\Appointment::STATUS_NO_SHOW => __('Mark appointment no-show?'),
+                                    default => __('Cancel appointment?'),
+                                };
+                                $confirmMessage = match ($targetStatus) {
+                                    \App\Models\Appointment::STATUS_COMPLETED => __('This records the visit as completed and keeps the appointment in the customer history.'),
+                                    \App\Models\Appointment::STATUS_NO_SHOW => __('This records that the customer did not attend the confirmed appointment.'),
+                                    default => __('This cancels the confirmed appointment and removes it from the active service queue.'),
+                                };
+                            @endphp
+
+                            <x-confirm-action
+                                :action="route('staff.appointments.update', $appointment)"
+                                method="PATCH"
+                                :label="$label"
+                                :confirm-title="$confirmTitle"
+                                :confirm-message="$confirmMessage"
+                                :confirm-button="$label"
+                                :button-class="$targetStatus === \App\Models\Appointment::STATUS_COMPLETED ? 'casa-button-primary w-full' : 'casa-button-secondary w-full'"
+                            >
                                 <input type="hidden" name="service_id" value="{{ $appointment->service_id }}">
                                 <input type="hidden" name="requested_start_at" value="{{ $appointment->requested_start_at?->format('Y-m-d H:i:s') }}">
                                 <input type="hidden" name="status" value="{{ $targetStatus }}">
-                                <button type="submit" class="{{ $targetStatus === \App\Models\Appointment::STATUS_COMPLETED ? 'casa-button-primary' : 'casa-button-secondary' }} w-full">{{ $label }}</button>
-                            </form>
+                            </x-confirm-action>
                         @endforeach
                     </div>
                 </x-app-card>

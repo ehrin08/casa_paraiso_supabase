@@ -13,11 +13,6 @@
 
     <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <section class="space-y-6">
-            @if (session('status'))
-                <div class="rounded-[18px] border border-casa-green/30 bg-casa-green/10 px-5 py-4 text-sm font-semibold text-casa-green">
-                    {{ __('Appointment updated.') }}
-                </div>
-            @endif
             <x-input-error :messages="$errors->all()" />
 
             <x-app-card>
@@ -59,11 +54,17 @@
                 <x-app-card>
                     <p class="casa-section-label">{{ __('Pending request') }}</p>
                     <p class="mt-3 text-sm leading-6 text-casa-muted">{{ __('You can cancel this request while staff has not confirmed it yet.') }}</p>
-                    <form method="POST" action="{{ route('customer.appointments.cancel', $appointment) }}" class="mt-5">
-                        @csrf
-                        @method('PATCH')
-                        <button type="submit" class="casa-danger-button w-full">{{ __('Cancel request') }}</button>
-                    </form>
+                    <div class="mt-5">
+                        <x-confirm-action
+                            :action="route('customer.appointments.cancel', $appointment)"
+                            method="PATCH"
+                            label="{{ __('Cancel request') }}"
+                            confirm-title="{{ __('Cancel appointment request?') }}"
+                            confirm-message="{{ __('This pending request will be marked cancelled and staff will no longer review it for confirmation.') }}"
+                            confirm-button="{{ __('Cancel request') }}"
+                            button-class="casa-danger-button w-full"
+                        />
+                    </div>
                 </x-app-card>
             @endif
 

@@ -2,30 +2,65 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\HandlesIndexSorting;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StaffRequest;
 use App\Models\Service;
 use App\Models\StaffProfile;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class StaffController extends Controller
 {
-    public function index(): View
+    use HandlesIndexSorting;
+
+    public function index(Request $request): View
     {
+        $search = trim((string) $request->query('q'));
+        $status = (string) $request->query('status');
+        $bookable = (string) $request->query('bookable');
+        $sorts = [
+            'name' => 'users.name',
+            'position' => 'staff_profiles.position',
+            'services' => 'services_count',
+            'appointments' => 'appointments_count',
+            'status' => 'users.is_active',
+            'bookable' => 'staff_profiles.is_bookable',
+        ];
+        $sort = $this->indexSort($request, $sorts, 'status');
+        $direction = $this->indexDirection($request, $sort === 'status' ? 'desc' : 'asc');
+
         $staffProfiles = StaffProfile::query()
             ->with(['user', 'services'])
             ->withCount(['services', 'appointments'])
             ->join('users', 'users.id', '=', 'staff_profiles.user_id')
             ->select('staff_profiles.*')
-            ->orderByDesc('users.is_active')
+            ->when($search !== '', fn ($query) => $query->where(function ($query) use ($search): void {
+                $query->where('users.name', 'like', "%{$search}%")
+                    ->orWhere('users.email', 'like', "%{$search}%")
+                    ->orWhere('users.phone', 'like', "%{$search}%")
+                    ->orWhere('staff_profiles.position', 'like', "%{$search}%")
+                    ->orWhere('staff_profiles.specialization', 'like', "%{$search}%");
+            }))
+            ->when($status === 'active', fn ($query) => $query->where('users.is_active', true))
+            ->when($status === 'inactive', fn ($query) => $query->where('users.is_active', false))
+            ->when($bookable === 'yes', fn ($query) => $query->where('staff_profiles.is_bookable', true))
+            ->when($bookable === 'no', fn ($query) => $query->where('staff_profiles.is_bookable', false))
+            ->orderBy($sorts[$sort], $direction)
             ->orderBy('users.name')
-            ->paginate(10);
+            ->paginate(10)
+            ->withQueryString();
 
         return view('admin.staff.index', [
             'staffProfiles' => $staffProfiles,
+            'search' => $search,
+            'status' => $status,
+            'bookable' => $bookable,
+            'sort' => $sort,
+            'direction' => $direction,
             'activeAccountCount' => User::query()->where('role', User::ROLE_STAFF)->where('is_active', true)->count(),
             'inactiveAccountCount' => User::query()->where('role', User::ROLE_STAFF)->where('is_active', false)->count(),
             'bookableCount' => StaffProfile::query()->where('is_bookable', true)->count(),

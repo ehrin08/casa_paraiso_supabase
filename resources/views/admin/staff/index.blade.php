@@ -12,12 +12,6 @@
     </x-slot>
 
     <div class="space-y-6">
-        @if (session('status'))
-            <div class="rounded-[18px] border border-casa-green/30 bg-casa-green/10 px-5 py-4 text-sm font-semibold text-casa-green">
-                {{ __('Staff records updated.') }}
-            </div>
-        @endif
-
         <section class="grid gap-4 md:grid-cols-3">
             <x-metric-card label="Active accounts" :value="$activeAccountCount" meta="Can sign in" tone="green" />
             <x-metric-card label="Inactive accounts" :value="$inactiveAccountCount" meta="Access disabled" tone="gold" />
@@ -25,13 +19,24 @@
         </section>
 
         <x-app-card>
-            <div class="flex flex-col gap-3 border-b border-casa-border pb-5 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <p class="casa-section-label">{{ __('Team') }}</p>
-                    <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ __('Staff profiles') }}</h2>
-                </div>
-                <x-status-badge>{{ trans_choice(':count profile|:count profiles', $staffProfiles->total()) }}</x-status-badge>
-            </div>
+            <x-list-toolbar eyebrow="{{ __('Team') }}" title="{{ __('Staff profiles') }}" :count="$staffProfiles->total()" :reset-url="route('admin.staff.index')">
+                <form method="GET" action="{{ route('admin.staff.index') }}" class="casa-filter-grid sm:grid-cols-[minmax(12rem,1fr)_auto_auto_auto] lg:min-w-[48rem]">
+                    <input type="hidden" name="sort" value="{{ $sort }}">
+                    <input type="hidden" name="direction" value="{{ $direction }}">
+                    <input type="search" name="q" value="{{ $search }}" class="casa-input" placeholder="{{ __('Search staff') }}" aria-label="{{ __('Search staff') }}">
+                    <select name="status" class="casa-input">
+                        <option value="">{{ __('All accounts') }}</option>
+                        <option value="active" @selected($status === 'active')>{{ __('Active') }}</option>
+                        <option value="inactive" @selected($status === 'inactive')>{{ __('Inactive') }}</option>
+                    </select>
+                    <select name="bookable" class="casa-input">
+                        <option value="">{{ __('Any bookable') }}</option>
+                        <option value="yes" @selected($bookable === 'yes')>{{ __('Bookable') }}</option>
+                        <option value="no" @selected($bookable === 'no')>{{ __('Not bookable') }}</option>
+                    </select>
+                    <button type="submit" class="casa-button-secondary">{{ __('Filter') }}</button>
+                </form>
+            </x-list-toolbar>
 
             <div class="mt-5">
                 @if ($staffProfiles->isEmpty())
@@ -47,17 +52,17 @@
                     <x-table-shell>
                         <thead class="bg-casa-bg text-left text-xs font-black uppercase tracking-[0.1em] text-casa-muted">
                             <tr>
-                                <th class="px-4 py-3">{{ __('Staff') }}</th>
-                                <th class="px-4 py-3">{{ __('Role') }}</th>
-                                <th class="px-4 py-3">{{ __('Services') }}</th>
-                                <th class="px-4 py-3">{{ __('Appointments') }}</th>
-                                <th class="px-4 py-3">{{ __('Status') }}</th>
+                                <x-sortable-th sort="name">{{ __('Staff') }}</x-sortable-th>
+                                <x-sortable-th sort="position">{{ __('Role') }}</x-sortable-th>
+                                <x-sortable-th sort="services">{{ __('Services') }}</x-sortable-th>
+                                <x-sortable-th sort="appointments">{{ __('Appointments') }}</x-sortable-th>
+                                <x-sortable-th sort="status">{{ __('Status') }}</x-sortable-th>
                                 <th class="px-4 py-3">{{ __('Actions') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-casa-border text-sm">
                             @foreach ($staffProfiles as $staffProfile)
-                                <tr>
+                                <tr class="casa-table-row">
                                     <td class="px-4 py-4">
                                         <a href="{{ route('admin.staff.show', $staffProfile) }}" class="font-bold text-casa-text hover:text-casa-primary">
                                             {{ $staffProfile->user->name }}

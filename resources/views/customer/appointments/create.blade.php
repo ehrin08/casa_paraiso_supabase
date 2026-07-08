@@ -89,7 +89,7 @@
                         <template x-for="day in calendarDays" x-bind:key="day.key">
                             <button
                                 type="button"
-                                class="min-h-12 rounded-2xl border px-2 py-3 text-sm font-bold transition"
+                                class="min-h-20 rounded-2xl border px-2 py-3 text-left text-sm font-bold transition sm:min-h-24"
                                 x-bind:class="day.date === selectedDate
                                     ? 'border-casa-primary bg-casa-primary text-white'
                                     : day.available
@@ -98,7 +98,26 @@
                                 x-bind:disabled="!day.available"
                                 x-on:click="selectDate(day.date)"
                             >
-                                <span x-text="day.label"></span>
+                                <span class="block" x-text="day.label"></span>
+                                <span class="mt-2 flex flex-col gap-1" x-show="day.available">
+                                    <template x-for="slot in day.previewSlots" x-bind:key="slot.starts_at">
+                                        <span
+                                            class="block w-full truncate rounded-full px-1.5 py-1 text-center text-[0.62rem] font-black uppercase leading-none"
+                                            x-bind:class="day.date === selectedDate
+                                                ? 'bg-white/18 text-white'
+                                                : 'bg-casa-gold/15 text-casa-primary'"
+                                        >
+                                            <span class="sm:hidden" x-text="slot.time"></span>
+                                            <span class="hidden sm:inline" x-text="slot.label"></span>
+                                        </span>
+                                    </template>
+                                    <span
+                                        class="block truncate text-center text-[0.62rem] font-black uppercase leading-none"
+                                        x-bind:class="day.date === selectedDate ? 'text-white/80' : 'text-casa-muted'"
+                                        x-show="day.moreSlots"
+                                        x-text="moreSlotsLabel(day)"
+                                    ></span>
+                                </span>
                             </button>
                         </template>
                     </div>
@@ -189,6 +208,7 @@
                 loading: false,
                 error: '',
                 weekDays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+                slotPreviewLimit: 2,
 
                 init() {
                     if (this.selectedSlot) {
@@ -212,16 +232,20 @@
                     const days = [];
 
                     for (let index = 0; index < firstDay.getDay(); index++) {
-                        days.push({ key: `blank-${index}`, label: '', date: null, available: false });
+                        days.push({ key: `blank-${index}`, label: '', date: null, available: false, previewSlots: [], moreSlots: 0 });
                     }
 
                     for (let day = 1; day <= daysInMonth; day++) {
                         const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        const slots = this.slotsByDate[date] || [];
+
                         days.push({
                             key: date,
                             label: day,
                             date,
-                            available: Boolean(this.slotsByDate[date]?.length),
+                            available: slots.length > 0,
+                            previewSlots: slots.slice(0, this.slotPreviewLimit),
+                            moreSlots: Math.max(0, slots.length - this.slotPreviewLimit),
                         });
                     }
 
@@ -294,6 +318,10 @@
 
                 chooseSlot(slot) {
                     this.selectedSlot = slot.starts_at;
+                },
+
+                moreSlotsLabel(day) {
+                    return day.moreSlots ? `+${day.moreSlots} more` : '';
                 },
 
                 fetchAvailability() {

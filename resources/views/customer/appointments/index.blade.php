@@ -48,23 +48,30 @@
                 </x-empty-state>
             @else
                 <x-app-card>
-                    <div class="flex flex-col gap-3 border-b border-casa-border pb-5 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                            <p class="casa-section-label">{{ __('Appointment history') }}</p>
-                            <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ __('Recent requests') }}</h2>
-                        </div>
-                        <x-status-badge>{{ trans_choice(':count record|:count records', $appointments->count()) }}</x-status-badge>
-                    </div>
+                    <x-list-toolbar eyebrow="{{ __('Appointment history') }}" title="{{ __('Recent requests') }}" :count="$appointments->total()" :reset-url="route('customer.appointments.index')">
+                        <form method="GET" action="{{ route('customer.appointments.index') }}" class="casa-filter-grid sm:grid-cols-[minmax(10rem,1fr)_auto_auto]">
+                            <input type="hidden" name="sort" value="{{ $sort }}">
+                            <input type="hidden" name="direction" value="{{ $direction }}">
+                            <input type="search" name="q" value="{{ $search }}" class="casa-input" placeholder="{{ __('Search service or number') }}" aria-label="{{ __('Search appointments') }}">
+                            <select name="status" class="casa-input">
+                                <option value="">{{ __('All statuses') }}</option>
+                                @foreach (\App\Models\Appointment::STATUSES as $option)
+                                    <option value="{{ $option }}" @selected($status === $option)>{{ ucfirst(str_replace('_', ' ', $option)) }}</option>
+                                @endforeach
+                            </select>
+                            <button type="submit" class="casa-button-secondary">{{ __('Filter') }}</button>
+                        </form>
+                    </x-list-toolbar>
 
                     <div class="mt-5">
                         <x-table-shell>
                             <thead class="bg-casa-bg text-left text-xs font-black uppercase tracking-[0.1em] text-casa-muted">
                                 <tr>
-                                    <th class="px-4 py-3">{{ __('No.') }}</th>
-                                    <th class="px-4 py-3">{{ __('Service') }}</th>
-                                    <th class="px-4 py-3">{{ __('Schedule') }}</th>
+                                    <x-sortable-th sort="number">{{ __('No.') }}</x-sortable-th>
+                                    <x-sortable-th sort="service">{{ __('Service') }}</x-sortable-th>
+                                    <x-sortable-th sort="schedule">{{ __('Schedule') }}</x-sortable-th>
                                     <th class="px-4 py-3">{{ __('Staff') }}</th>
-                                    <th class="px-4 py-3">{{ __('Status') }}</th>
+                                    <x-sortable-th sort="status">{{ __('Status') }}</x-sortable-th>
                                     <th class="px-4 py-3">{{ __('Action') }}</th>
                                 </tr>
                             </thead>
@@ -79,7 +86,7 @@
                                             default => 'warning',
                                         };
                                     @endphp
-                                    <tr>
+                                    <tr class="casa-table-row">
                                         <td class="px-4 py-4 font-semibold text-casa-text">{{ $appointment->appointment_number }}</td>
                                         <td class="px-4 py-4 text-casa-muted">{{ $appointment->service?->name ?? __('Service') }}</td>
                                         <td class="px-4 py-4 text-casa-muted">{{ ($appointment->scheduled_start_at ?? $appointment->requested_start_at)?->format('M d, Y g:i A') }}</td>

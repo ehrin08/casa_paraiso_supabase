@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Customer;
 
+use App\Http\Controllers\Concerns\HandlesIndexSorting;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\FeedbackRequest;
 use App\Models\Appointment;
@@ -14,9 +15,21 @@ use Illuminate\View\View;
 
 class FeedbackController extends Controller
 {
+    use HandlesIndexSorting;
+
     public function index(Request $request): View
     {
         $customerProfile = $request->user()->customerProfile;
+        $sentiment = (string) $request->query('sentiment_label');
+        $search = trim((string) $request->query('q'));
+        $sorts = [
+            'service' => 'feedback_services.name',
+            'rating' => 'feedback.rating',
+            'sentiment' => 'feedback.sentiment_label',
+            'submitted' => 'feedback.submitted_at',
+        ];
+        $sort = $this->indexSort($request, $sorts, 'submitted');
+        $direction = $this->indexDirection($request, 'desc');
 
         $completedAppointments = Appointment::query()
             ->with(['service', 'feedback'])
@@ -27,13 +40,26 @@ class FeedbackController extends Controller
 
         $feedback = Feedback::query()
             ->with(['service', 'appointment'])
+            ->leftJoin('services as feedback_services', 'feedback_services.id', '=', 'feedback.service_id')
+            ->select('feedback.*')
             ->where('customer_profile_id', $customerProfile?->id ?? 0)
-            ->latest('submitted_at')
-            ->paginate(10);
+            ->when(in_array($sentiment, Feedback::SENTIMENT_LABELS, true), fn ($query) => $query->where('feedback.sentiment_label', $sentiment))
+            ->when($search !== '', fn ($query) => $query->where(function ($query) use ($search): void {
+                $query->where('feedback_services.name', 'like', "%{$search}%")
+                    ->orWhere('feedback.comment', 'like', "%{$search}%");
+            }))
+            ->orderBy($sorts[$sort], $direction)
+            ->orderByDesc('feedback.submitted_at')
+            ->paginate(10)
+            ->withQueryString();
 
         return view('customer.feedback.index', [
             'completedAppointments' => $completedAppointments,
             'feedback' => $feedback,
+            'sentiment' => $sentiment,
+            'search' => $search,
+            'sort' => $sort,
+            'direction' => $direction,
         ]);
     }
 

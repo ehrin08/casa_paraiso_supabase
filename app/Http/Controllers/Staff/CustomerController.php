@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Staff;
 
+use App\Http\Controllers\Concerns\HandlesIndexSorting;
 use App\Http\Controllers\Controller;
 use App\Models\CustomerProfile;
 use Illuminate\Http\Request;
@@ -9,9 +10,20 @@ use Illuminate\View\View;
 
 class CustomerController extends Controller
 {
+    use HandlesIndexSorting;
+
     public function index(Request $request): View
     {
         $search = trim((string) $request->query('q'));
+        $sorts = [
+            'name' => 'users.name',
+            'code' => 'customer_profiles.customer_code',
+            'appointments' => 'appointments_count',
+            'feedback' => 'feedback_count',
+            'preference' => 'customer_profiles.contact_preference',
+        ];
+        $sort = $this->indexSort($request, $sorts, 'name');
+        $direction = $this->indexDirection($request);
 
         $customers = CustomerProfile::query()
             ->with('user')
@@ -27,6 +39,7 @@ class CustomerController extends Controller
             })
             ->join('users', 'users.id', '=', 'customer_profiles.user_id')
             ->select('customer_profiles.*')
+            ->orderBy($sorts[$sort], $direction)
             ->orderBy('users.name')
             ->paginate(10)
             ->withQueryString();
@@ -34,6 +47,8 @@ class CustomerController extends Controller
         return view('staff.customers.index', [
             'customers' => $customers,
             'search' => $search,
+            'sort' => $sort,
+            'direction' => $direction,
         ]);
     }
 

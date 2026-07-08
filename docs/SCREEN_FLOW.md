@@ -4,7 +4,7 @@
 
 Define the MVP pages, role-based navigation, and main user journeys before Laravel routes, controllers, and Blade layouts are scaffolded.
 
-The interface should use separate dashboards for admin, staff, and customer. Admin and staff use sidebar module navigation. Customers land on appointment-focused pages after login.
+The interface should use separate dashboards for admin, staff, and customer. All authenticated roles use responsive sidebar navigation. Customers land on appointment-focused pages after login.
 
 ## Route Groups
 
@@ -26,9 +26,9 @@ Planned route prefixes:
 ## Shared Layout Rules
 
 - Use Laravel Blade server-rendered pages with Tailwind CSS.
-- Use separate layout shells for admin/staff and customer-facing authenticated pages.
-- Admin and staff layouts should use a persistent sidebar, top bar, page title, search/filter area where needed, and clear primary action buttons.
-- Customer layout should be simpler and appointment-first, with navigation focused on appointments, feedback, and profile.
+- Use a shared authenticated layout shell with role-specific sidebar navigation.
+- Admin and staff pages should use the persistent sidebar with module navigation, page title, search/filter area where needed, and clear primary action buttons.
+- Customer pages should stay simpler and appointment-first, with sidebar navigation focused on appointments, feedback, and profile.
 - All role dashboards should show only actions the current role is allowed to perform.
 - Avoid SPA-only navigation patterns; pages should work as standard Laravel routes.
 
@@ -41,7 +41,8 @@ Access: guest and authenticated users.
 Purpose:
 
 - Introduce Casa Paraiso - Body and Wellness Spa.
-- Show featured services, business contact details, and call to action.
+- Show the four massage packages, add-on price list, business hours, and call to action.
+- Use the marketing line: "Reserve your spot. You deserve this."
 
 Primary actions:
 
@@ -52,6 +53,8 @@ Primary actions:
 Main data:
 
 - Active services.
+- Add-ons as static customer-facing content only.
+- Business hours: Open every day, 1:00 PM to 12:00 MN.
 - Basic business information.
 
 ### Service Listing
@@ -70,6 +73,7 @@ Primary actions:
 Main data:
 
 - Active service name, description, duration, and price.
+- Initial active service names should be GAIA TOUCH, TETHYS FLOW, HESTIA WARMTH, and AURORA BREEZE.
 
 ## Auth Screens
 

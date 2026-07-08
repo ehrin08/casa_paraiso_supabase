@@ -15,12 +15,6 @@
     </x-slot>
 
     <div class="space-y-6">
-        @if (session('status'))
-            <div class="rounded-[18px] border border-casa-green/30 bg-casa-green/10 px-5 py-4 text-sm font-semibold text-casa-green">
-                {{ __('Customer record updated.') }}
-            </div>
-        @endif
-
         <section class="grid gap-4 md:grid-cols-4">
             <x-metric-card label="Appointments" :value="$customer->appointments_count" meta="Booking records" tone="brown" />
             <x-metric-card label="Transactions" :value="$customer->transactions_count" meta="Payment records" tone="green" />

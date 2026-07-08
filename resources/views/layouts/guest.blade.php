@@ -15,10 +15,13 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="font-sans text-casa-text antialiased">
+        <x-page-loading />
+        <x-toast-stack />
+
         <div class="grid min-h-screen bg-casa-bg lg:grid-cols-[minmax(0,1fr)_minmax(420px,520px)]">
             <section class="casa-dark-panel relative hidden overflow-hidden px-10 py-12 lg:flex lg:flex-col lg:justify-between">
                 <div class="relative z-10">
-                    <a href="/" class="inline-flex rounded-2xl bg-white/95 p-3 shadow-casa-lift">
+                    <a href="/" class="inline-flex rounded-2xl bg-white/95 p-3 shadow-casa-lift" data-prefetch>
                         <img src="{{ asset('images/casa_paraiso_logo.jpg') }}" alt="Casa Paraiso Body and Wellness Spa" class="h-20 w-auto rounded-xl object-contain">
                     </a>
                 </div>
@@ -43,7 +46,7 @@
             <main class="flex min-h-screen items-center justify-center px-4 py-10 sm:px-6 lg:px-10">
                 <div class="w-full max-w-md">
                     <div class="mb-8 flex justify-center lg:hidden">
-                        <a href="/" class="inline-flex rounded-2xl bg-white p-3 shadow-casa-card">
+                        <a href="/" class="inline-flex rounded-2xl bg-white p-3 shadow-casa-card" data-prefetch>
                             <img src="{{ asset('images/casa_paraiso_logo.jpg') }}" alt="Casa Paraiso Body and Wellness Spa" class="h-16 w-auto rounded-xl object-contain">
                         </a>
                     </div>

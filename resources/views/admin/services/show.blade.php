@@ -15,12 +15,6 @@
     </x-slot>
 
     <div class="space-y-6">
-        @if (session('status'))
-            <div class="rounded-[18px] border border-casa-green/30 bg-casa-green/10 px-5 py-4 text-sm font-semibold text-casa-green">
-                {{ __('Service catalog updated.') }}
-            </div>
-        @endif
-
         <section class="grid gap-4 md:grid-cols-4">
             <x-metric-card label="Duration" :value="$service->duration_minutes.' min'" meta="Booking length" tone="brown" />
             <x-metric-card label="Price" :value="'PHP '.number_format((float) $service->price, 2)" meta="Published rate" tone="green" />

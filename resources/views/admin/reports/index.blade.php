@@ -19,13 +19,22 @@
             <x-metric-card label="Feedback" :value="$summary['feedback']" meta="Submitted reviews" tone="charcoal" />
         </section>
 
-        <x-app-card>
-            <div class="border-b border-casa-border pb-5">
-                <p class="casa-section-label">{{ __('Filters') }}</p>
-                <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ __('Report controls') }}</h2>
+        <x-app-card x-data="{ open: @js(request()->query() !== []) }">
+            <div class="flex flex-col gap-3 border-b border-casa-border pb-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <p class="casa-section-label">{{ __('Filters') }}</p>
+                    <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ __('Report controls') }}</h2>
+                </div>
+                <button type="button" class="casa-button-secondary" @click="open = ! open">
+                    <span x-text="open ? '{{ __('Hide filters') }}' : '{{ __('Show filters') }}'">
+                        {{ request()->query() !== [] ? __('Hide filters') : __('Show filters') }}
+                    </span>
+                </button>
             </div>
 
-            <form method="GET" action="{{ route('admin.reports.index') }}" class="mt-5 grid gap-4 lg:grid-cols-6">
+            <form method="GET" action="{{ route('admin.reports.index') }}" class="mt-5 grid gap-4 lg:grid-cols-6" x-show="open">
+                <input type="hidden" name="sort" value="{{ $filters['sort'] ?? '' }}">
+                <input type="hidden" name="direction" value="{{ $filters['direction'] ?? '' }}">
                 <div>
                     <x-input-label for="type" :value="__('Report')" />
                     <select id="type" name="type" class="casa-input mt-2">
@@ -33,6 +42,10 @@
                             <option value="{{ $option }}" @selected($type === $option)>{{ ucfirst($option) }}</option>
                         @endforeach
                     </select>
+                </div>
+                <div class="lg:col-span-2">
+                    <x-input-label for="q" :value="__('Search')" />
+                    <x-text-input id="q" name="q" type="search" class="mt-2" :value="$filters['q'] ?? null" placeholder="{{ __('Customer, number, service, offer') }}" />
                 </div>
                 <div>
                     <x-input-label for="date_from" :value="__('From')" />
@@ -76,22 +89,53 @@
         </x-app-card>
 
         <x-app-card>
-            <div class="flex flex-col gap-3 border-b border-casa-border pb-5 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <p class="casa-section-label">{{ __('Results') }}</p>
-                    <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ ucfirst($type) }}</h2>
-                </div>
-                <x-status-badge>{{ trans_choice(':count row|:count rows', $records->total()) }}</x-status-badge>
-            </div>
+            <x-list-toolbar eyebrow="{{ __('Results') }}" title="{{ ucfirst($type) }}" :count="$records->total()" :reset-url="route('admin.reports.index', ['type' => $type])">
+                <a href="{{ route('admin.reports.export', request()->query()) }}" class="casa-button-secondary">{{ __('Export filtered CSV') }}</a>
+            </x-list-toolbar>
 
             <div class="mt-5">
                 @if ($records->isEmpty())
                     <x-empty-state title="{{ __('No report rows') }}" description="{{ __('Try adjusting the date range or status filters.') }}" />
                 @else
                     <x-table-shell>
+                        <thead class="bg-casa-bg text-left text-xs font-black uppercase tracking-[0.1em] text-casa-muted">
+                            <tr>
+                                @if ($type === 'transactions')
+                                    <x-sortable-th sort="number">{{ __('No.') }}</x-sortable-th>
+                                    <x-sortable-th sort="customer">{{ __('Customer') }}</x-sortable-th>
+                                    <x-sortable-th sort="service">{{ __('Service') }}</x-sortable-th>
+                                    <x-sortable-th sort="amount">{{ __('Amount') }}</x-sortable-th>
+                                    <x-sortable-th sort="status">{{ __('Status') }}</x-sortable-th>
+                                @elseif ($type === 'customers')
+                                    <x-sortable-th sort="code">{{ __('Code') }}</x-sortable-th>
+                                    <x-sortable-th sort="name">{{ __('Customer') }}</x-sortable-th>
+                                    <th class="px-4 py-3">{{ __('Email') }}</th>
+                                    <x-sortable-th sort="appointments">{{ __('Appointments') }}</x-sortable-th>
+                                    <x-sortable-th sort="feedback">{{ __('Feedback') }}</x-sortable-th>
+                                @elseif ($type === 'promotions')
+                                    <x-sortable-th sort="customer">{{ __('Customer') }}</x-sortable-th>
+                                    <x-sortable-th sort="segment">{{ __('Segment') }}</x-sortable-th>
+                                    <th class="px-4 py-3">{{ __('Offer') }}</th>
+                                    <x-sortable-th sort="monetary">{{ __('RFM') }}</x-sortable-th>
+                                    <x-sortable-th sort="status">{{ __('Status') }}</x-sortable-th>
+                                @elseif ($type === 'feedback')
+                                    <x-sortable-th sort="customer">{{ __('Customer') }}</x-sortable-th>
+                                    <x-sortable-th sort="service">{{ __('Service') }}</x-sortable-th>
+                                    <x-sortable-th sort="rating">{{ __('Rating') }}</x-sortable-th>
+                                    <x-sortable-th sort="sentiment">{{ __('Sentiment') }}</x-sortable-th>
+                                    <x-sortable-th sort="submitted">{{ __('Submitted') }}</x-sortable-th>
+                                @else
+                                    <x-sortable-th sort="number">{{ __('No.') }}</x-sortable-th>
+                                    <x-sortable-th sort="customer">{{ __('Customer') }}</x-sortable-th>
+                                    <x-sortable-th sort="service">{{ __('Service') }}</x-sortable-th>
+                                    <x-sortable-th sort="schedule">{{ __('Schedule') }}</x-sortable-th>
+                                    <x-sortable-th sort="status">{{ __('Status') }}</x-sortable-th>
+                                @endif
+                            </tr>
+                        </thead>
                         <tbody class="divide-y divide-casa-border text-sm">
                             @foreach ($records as $record)
-                                <tr>
+                                <tr class="casa-table-row">
                                     @if ($type === 'transactions')
                                         <td class="px-4 py-4 font-semibold text-casa-text">{{ $record->transaction_number }}</td>
                                         <td class="px-4 py-4 text-casa-muted">{{ $record->customerProfile?->user?->name }}</td>

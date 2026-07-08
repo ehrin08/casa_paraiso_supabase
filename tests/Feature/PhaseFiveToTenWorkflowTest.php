@@ -51,6 +51,20 @@ class PhaseFiveToTenWorkflowTest extends TestCase
         $this->assertFalse($slots->contains('time', '12:00'));
     }
 
+    public function test_customer_request_calendar_includes_time_preview_hooks(): void
+    {
+        $customer = User::factory()->customer()->create();
+
+        $this->actingAs($customer)
+            ->get(route('customer.appointments.create', absolute: false))
+            ->assertOk()
+            ->assertSee('slotPreviewLimit: 2', false)
+            ->assertSee('previewSlots', false)
+            ->assertSee('moreSlotsLabel(day)', false)
+            ->assertSee('slot.time', false)
+            ->assertSee('slot.label', false);
+    }
+
     public function test_customer_availability_excludes_confirmed_overlap_and_honors_preferred_staff(): void
     {
         $customer = User::factory()->customer()->create();

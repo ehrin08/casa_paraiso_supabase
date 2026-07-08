@@ -81,6 +81,45 @@ class RoleWorkspaceTest extends TestCase
             ->assertRedirect(route('profile.edit', absolute: false));
     }
 
+    public function test_customer_workspace_uses_sidebar_navigation(): void
+    {
+        $customer = User::factory()->customer()->create();
+
+        $this->actingAs($customer)
+            ->get('/customer/appointments')
+            ->assertOk()
+            ->assertSee('data-page-loading', false)
+            ->assertSee('data-prefetch', false)
+            ->assertSee('lg:ps-64', false)
+            ->assertSee('casa-wood-panel fixed', false)
+            ->assertSee('Customer lounge')
+            ->assertSeeInOrder(['Appointments', 'Request', 'Feedback', 'Profile'])
+            ->assertSee(route('customer.appointments.index'), false)
+            ->assertSee(route('customer.appointments.create'), false)
+            ->assertSee(route('customer.feedback.index'), false)
+            ->assertSee(route('profile.edit'), false)
+            ->assertSee(route('logout'), false);
+    }
+
+    public function test_authenticated_landing_page_links_directly_to_role_home(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $staff = User::factory()->staff()->create();
+        $customer = User::factory()->customer()->create();
+
+        foreach ([
+            [$admin, route('admin.dashboard')],
+            [$staff, route('staff.dashboard')],
+            [$customer, route('customer.appointments.index')],
+        ] as [$user, $homeUrl]) {
+            $this->actingAs($user)
+                ->get('/')
+                ->assertOk()
+                ->assertSee('href="'.$homeUrl.'"', false)
+                ->assertDontSee('href="'.url('/dashboard').'"', false);
+        }
+    }
+
     public function test_admin_dashboard_shows_operational_counts(): void
     {
         $admin = User::factory()->admin()->create();

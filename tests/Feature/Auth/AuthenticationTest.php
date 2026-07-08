@@ -14,7 +14,10 @@ class AuthenticationTest extends TestCase
     {
         $response = $this->get('/login');
 
-        $response->assertStatus(200);
+        $response
+            ->assertStatus(200)
+            ->assertSee('data-page-loading', false)
+            ->assertSee('data-prefetch', false);
     }
 
     public function test_admin_users_are_redirected_to_admin_dashboard_after_login(): void

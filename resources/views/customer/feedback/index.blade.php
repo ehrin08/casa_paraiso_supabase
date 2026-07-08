@@ -10,25 +10,37 @@
 
     <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <section class="space-y-6">
-            @if (session('status'))
-                <div class="rounded-[18px] border border-casa-green/30 bg-casa-green/10 px-5 py-4 text-sm font-semibold text-casa-green">
-                    {{ __('Feedback submitted.') }}
-                </div>
-            @endif
-
             <x-app-card>
-                <div class="border-b border-casa-border pb-5">
-                    <p class="casa-section-label">{{ __('My reviews') }}</p>
-                    <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ __('Feedback history') }}</h2>
-                </div>
+                <x-list-toolbar eyebrow="{{ __('My reviews') }}" title="{{ __('Feedback history') }}" :count="$feedback->total()" :reset-url="route('customer.feedback.index')">
+                    <form method="GET" action="{{ route('customer.feedback.index') }}" class="casa-filter-grid sm:grid-cols-[minmax(10rem,1fr)_auto_auto]">
+                        <input type="hidden" name="sort" value="{{ $sort }}">
+                        <input type="hidden" name="direction" value="{{ $direction }}">
+                        <input type="search" name="q" value="{{ $search }}" class="casa-input" placeholder="{{ __('Search service or comment') }}" aria-label="{{ __('Search feedback') }}">
+                        <select name="sentiment_label" class="casa-input">
+                            <option value="">{{ __('All sentiment') }}</option>
+                            @foreach (\App\Models\Feedback::SENTIMENT_LABELS as $option)
+                                <option value="{{ $option }}" @selected($sentiment === $option)>{{ ucfirst($option) }}</option>
+                            @endforeach
+                        </select>
+                        <button type="submit" class="casa-button-secondary">{{ __('Filter') }}</button>
+                    </form>
+                </x-list-toolbar>
                 <div class="mt-5">
                     @if ($feedback->isEmpty())
                         <x-empty-state title="{{ __('No feedback yet') }}" description="{{ __('Completed appointments without feedback can be reviewed from this page.') }}" />
                     @else
                         <x-table-shell>
+                            <thead class="bg-casa-bg text-left text-xs font-black uppercase tracking-[0.1em] text-casa-muted">
+                                <tr>
+                                    <x-sortable-th sort="service">{{ __('Service') }}</x-sortable-th>
+                                    <x-sortable-th sort="rating">{{ __('Rating') }}</x-sortable-th>
+                                    <x-sortable-th sort="sentiment">{{ __('Sentiment') }}</x-sortable-th>
+                                    <x-sortable-th sort="submitted">{{ __('Submitted') }}</x-sortable-th>
+                                </tr>
+                            </thead>
                             <tbody class="divide-y divide-casa-border text-sm">
                                 @foreach ($feedback as $item)
-                                    <tr>
+                                    <tr class="casa-table-row">
                                         <td class="px-4 py-4 font-semibold text-casa-text">{{ $item->service?->name }}</td>
                                         <td class="px-4 py-4 text-casa-muted">{{ $item->rating }}/5</td>
                                         <td class="px-4 py-4"><x-status-badge>{{ ucfirst($item->sentiment_label) }}</x-status-badge></td>

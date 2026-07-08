@@ -122,7 +122,8 @@ Tasks:
   - Admin user.
   - Demo staff users.
   - Demo customer users.
-  - Default services.
+  - Default Casa Paraiso package services: GAIA TOUCH, TETHYS FLOW, HESTIA WARMTH, and AURORA BREEZE.
+  - Static public content for add-on prices, business hours, and the reservation tagline.
   - Staff-service assignments.
   - Weekly staff schedules.
   - Default RFM segments.
@@ -139,7 +140,7 @@ docker compose exec -T laravel.test php artisan test
 Acceptance:
 
 - All tables migrate successfully on a clean database.
-- Seeded users, services, staff schedules, and RFM rules exist.
+- Seeded users, real package services, staff schedules, and RFM rules exist.
 - Key relationships load correctly in tests.
 
 ## Phase 4: Layouts And Role Dashboards
@@ -149,8 +150,8 @@ Goal: implement the navigation structure from `docs/SCREEN_FLOW.md`.
 Tasks:
 
 - Create shared Blade layout foundations.
-- Create admin/staff sidebar module navigation.
-- Create customer appointment-first navigation.
+- Create shared responsive sidebar navigation for all authenticated roles.
+- Keep customer navigation appointment-first within the shared sidebar.
 - Create dashboard pages:
   - `/admin/dashboard`
   - `/staff/dashboard`
@@ -167,8 +168,8 @@ docker compose exec -T laravel.test php artisan test
 Acceptance:
 
 - Each role sees only its own dashboard and navigation.
-- Admin and staff layouts support management workflows.
-- Customer layout prioritizes appointment status and request actions.
+- Admin and staff sidebar layouts support management workflows.
+- Customer sidebar layout prioritizes appointment status and request actions.
 
 ## Phase 5: Services, Staff, Schedules, And Customers
 
