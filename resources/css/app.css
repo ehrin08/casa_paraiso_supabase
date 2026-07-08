@@ -8,5 +8,267 @@
 @source "../js/**/*.js";
 
 @theme {
-    --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    --font-display: "Montserrat", "Poppins", ui-sans-serif, system-ui, sans-serif;
+
+    --color-casa-bg: #F7F3EC;
+    --color-casa-surface: #FFFFFF;
+    --color-casa-surface-dark: #1F2223;
+    --color-casa-primary: #8A3B06;
+    --color-casa-primary-dark: #5C2603;
+    --color-casa-gold: #C89B4A;
+    --color-casa-green: #4F7A5A;
+    --color-casa-text: #242424;
+    --color-casa-muted: #6F6862;
+    --color-casa-border: #D8CEC4;
+    --color-casa-charcoal: #2B2E30;
+    --color-casa-taupe: #B7A89A;
+    --color-casa-wood: #3A2B22;
+
+    --shadow-casa-card: 0 12px 30px rgba(58, 43, 34, 0.08);
+    --shadow-casa-lift: 0 18px 44px rgba(58, 43, 34, 0.14);
+}
+
+@layer base {
+    html {
+        background: var(--color-casa-bg);
+    }
+
+    body {
+        color: var(--color-casa-text);
+        background: var(--color-casa-bg);
+        text-rendering: optimizeLegibility;
+    }
+
+    h1,
+    h2,
+    h3 {
+        font-family: var(--font-display);
+        letter-spacing: -0.02em;
+    }
+
+    ::selection {
+        color: #fff;
+        background: var(--color-casa-primary);
+    }
+
+    :focus-visible {
+        outline: 3px solid color-mix(in srgb, var(--color-casa-gold) 72%, white);
+        outline-offset: 3px;
+    }
+}
+
+@layer components {
+    .casa-page {
+        min-height: 100vh;
+        background:
+            linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(247, 243, 236, 0.92)),
+            var(--color-casa-bg);
+    }
+
+    .casa-card {
+        background: var(--color-casa-surface);
+        border: 1px solid var(--color-casa-border);
+        border-radius: 20px;
+        box-shadow: var(--shadow-casa-card);
+    }
+
+    .casa-card-compact {
+        background: var(--color-casa-surface);
+        border: 1px solid var(--color-casa-border);
+        border-radius: 14px;
+        box-shadow: 0 8px 22px rgba(58, 43, 34, 0.06);
+    }
+
+    .casa-dark-panel {
+        color: #F7F3EC;
+        background:
+            linear-gradient(135deg, rgba(31, 34, 35, 0.96), rgba(58, 43, 34, 0.95)),
+            repeating-linear-gradient(90deg, rgba(200, 155, 74, 0.08) 0 1px, transparent 1px 24px);
+    }
+
+    .casa-wood-panel {
+        color: #F7F3EC;
+        background:
+            linear-gradient(135deg, rgba(58, 43, 34, 0.98), rgba(31, 34, 35, 0.94)),
+            repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 18px);
+    }
+
+    .casa-section-label {
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--color-casa-primary);
+    }
+
+    .casa-button-primary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2.75rem;
+        gap: 0.5rem;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        background: var(--color-casa-primary);
+        color: #fff;
+        padding: 0.75rem 1.25rem;
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        box-shadow: 0 12px 22px rgba(138, 59, 6, 0.18);
+        transition: background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+    }
+
+    .casa-button-primary:hover {
+        background: var(--color-casa-primary-dark);
+        box-shadow: 0 16px 28px rgba(92, 38, 3, 0.2);
+        transform: translateY(-1px);
+    }
+
+    .casa-button-secondary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2.75rem;
+        gap: 0.5rem;
+        border-radius: 999px;
+        border: 1px solid var(--color-casa-border);
+        background: #EFE7DC;
+        color: var(--color-casa-primary);
+        padding: 0.75rem 1.25rem;
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
+    }
+
+    .casa-button-secondary:hover {
+        border-color: color-mix(in srgb, var(--color-casa-primary) 38%, var(--color-casa-border));
+        background: #F6EFE6;
+        color: var(--color-casa-primary-dark);
+    }
+
+    .casa-danger-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2.75rem;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        background: #B42318;
+        color: #fff;
+        padding: 0.75rem 1.25rem;
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        transition: background-color 160ms ease, transform 160ms ease;
+    }
+
+    .casa-danger-button:hover {
+        background: #912018;
+        transform: translateY(-1px);
+    }
+
+    .casa-input {
+        width: 100%;
+        border-radius: 14px;
+        border: 1px solid var(--color-casa-border);
+        background: #FFFCF8;
+        color: var(--color-casa-text);
+        box-shadow: 0 1px 0 rgba(58, 43, 34, 0.04);
+    }
+
+    .casa-input:focus {
+        border-color: var(--color-casa-primary);
+        box-shadow: 0 0 0 4px rgba(200, 155, 74, 0.22);
+        outline: none;
+    }
+
+    .casa-label {
+        display: block;
+        color: var(--color-casa-text);
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+
+    .casa-error {
+        color: #B42318;
+        font-size: 0.86rem;
+        line-height: 1.45;
+    }
+
+    .casa-nav-link {
+        display: inline-flex;
+        align-items: center;
+        min-height: 2.75rem;
+        border-radius: 999px;
+        padding: 0.65rem 1rem;
+        color: rgba(247, 243, 236, 0.82);
+        font-size: 0.9rem;
+        font-weight: 700;
+        transition: background-color 160ms ease, color 160ms ease;
+    }
+
+    .casa-nav-link:hover,
+    .casa-nav-link-active {
+        color: #fff;
+        background: rgba(200, 155, 74, 0.18);
+    }
+
+    .casa-top-link {
+        display: inline-flex;
+        align-items: center;
+        min-height: 2.5rem;
+        border-bottom: 2px solid transparent;
+        color: var(--color-casa-muted);
+        font-size: 0.9rem;
+        font-weight: 700;
+        transition: border-color 160ms ease, color 160ms ease;
+    }
+
+    .casa-top-link:hover,
+    .casa-top-link-active {
+        color: var(--color-casa-primary);
+        border-color: var(--color-casa-gold);
+    }
+
+    .casa-badge {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        padding: 0.32rem 0.7rem;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .casa-table-wrap {
+        overflow-x: auto;
+        border-radius: 16px;
+        border: 1px solid var(--color-casa-border);
+        background: var(--color-casa-surface);
+    }
+
+    .casa-divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(200, 155, 74, 0.58), transparent);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+    }
 }

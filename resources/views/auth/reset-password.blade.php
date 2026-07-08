@@ -1,4 +1,7 @@
 <x-guest-layout>
+    <x-slot name="title">{{ __('Choose a new password') }}</x-slot>
+    <x-slot name="subtitle">{{ __('Create a new password for your Casa Paraiso account.') }}</x-slot>
+
     <form method="POST" action="{{ route('password.store') }}">
         @csrf
 

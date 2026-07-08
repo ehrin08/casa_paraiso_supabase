@@ -1,29 +1,31 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Profile') }}
-        </h2>
+        <div>
+            <p class="casa-section-label">{{ __('Account') }}</p>
+            <h1 class="mt-2 font-display text-3xl font-black text-casa-text">{{ __('Profile') }}</h1>
+            <p class="mt-2 max-w-2xl text-sm leading-6 text-casa-muted">
+                {{ __('Keep your contact details and password current for Casa Paraiso workflows.') }}
+            </p>
+        </div>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
-                    @include('profile.partials.update-profile-information-form')
-                </div>
+    <div class="space-y-6">
+        <x-app-card padding="p-4 sm:p-8">
+            <div class="max-w-xl">
+                @include('profile.partials.update-profile-information-form')
             </div>
+        </x-app-card>
 
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
-                    @include('profile.partials.update-password-form')
-                </div>
+        <x-app-card padding="p-4 sm:p-8">
+            <div class="max-w-xl">
+                @include('profile.partials.update-password-form')
             </div>
+        </x-app-card>
 
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
-                    @include('profile.partials.delete-user-form')
-                </div>
+        <x-app-card padding="p-4 sm:p-8">
+            <div class="max-w-xl">
+                @include('profile.partials.delete-user-form')
             </div>
-        </div>
+        </x-app-card>
     </div>
 </x-app-layout>

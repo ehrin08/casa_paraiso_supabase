@@ -1,5 +1,8 @@
 <x-guest-layout>
-    <div class="mb-4 text-sm text-gray-600">
+    <x-slot name="title">{{ __('Reset your password') }}</x-slot>
+    <x-slot name="subtitle">{{ __('Enter your email and we will send a secure password reset link.') }}</x-slot>
+
+    <div class="mb-4 text-sm leading-6 text-casa-muted">
         {{ __('Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.') }}
     </div>
 

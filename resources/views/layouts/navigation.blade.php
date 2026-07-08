@@ -1,100 +1,182 @@
-<nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
-    <!-- Primary Navigation Menu -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-            <div class="flex">
-                <!-- Logo -->
-                <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}">
-                        <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
-                    </a>
-                </div>
+@php
+    $user = Auth::user();
+    $dashboardRoute = $user->homeRouteName();
+    $usesSidebar = $user->isAdmin() || $user->isStaff();
 
-                <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        {{ __('Dashboard') }}
-                    </x-nav-link>
-                </div>
-            </div>
+    $roleLabel = match (true) {
+        $user->isAdmin() => 'Admin workspace',
+        $user->isStaff() => 'Staff workspace',
+        default => 'Customer lounge',
+    };
 
-            <!-- Settings Dropdown -->
-            <div class="hidden sm:flex sm:items-center sm:ms-6">
-                <x-dropdown align="right" width="48">
-                    <x-slot name="trigger">
-                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                            <div>{{ Auth::user()->name }}</div>
+    $navItems = match (true) {
+        $user->isAdmin() => [
+            ['label' => 'Dashboard', 'route' => 'admin.dashboard', 'active' => 'admin.dashboard'],
+            ['label' => 'Profile', 'route' => 'profile.edit', 'active' => 'profile.*'],
+        ],
+        $user->isStaff() => [
+            ['label' => 'Dashboard', 'route' => 'staff.dashboard', 'active' => 'staff.dashboard'],
+            ['label' => 'Profile', 'route' => 'profile.edit', 'active' => 'profile.*'],
+        ],
+        default => [
+            ['label' => 'Appointments', 'route' => 'customer.appointments.index', 'active' => 'customer.appointments.*'],
+            ['label' => 'Profile', 'route' => 'profile.edit', 'active' => 'profile.*'],
+        ],
+    };
+@endphp
 
-                            <div class="ms-1">
-                                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                        </button>
-                    </x-slot>
+@if ($usesSidebar)
+    <nav x-data="{ open: false }">
+        <div class="sticky top-0 z-40 border-b border-casa-border bg-casa-bg/95 px-4 py-3 backdrop-blur lg:hidden">
+            <div class="flex items-center justify-between gap-4">
+                <a href="{{ route($dashboardRoute) }}" class="min-w-0">
+                    <x-application-logo class="scale-90 origin-left" />
+                </a>
 
-                    <x-slot name="content">
-                        <x-dropdown-link :href="route('profile.edit')">
-                            {{ __('Profile') }}
-                        </x-dropdown-link>
-
-                        <!-- Authentication -->
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-
-                            <x-dropdown-link :href="route('logout')"
-                                    onclick="event.preventDefault();
-                                                this.closest('form').submit();">
-                                {{ __('Log Out') }}
-                            </x-dropdown-link>
-                        </form>
-                    </x-slot>
-                </x-dropdown>
-            </div>
-
-            <!-- Hamburger -->
-            <div class="-me-2 flex items-center sm:hidden">
-                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out">
-                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                        <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                <button type="button" class="grid size-11 place-items-center rounded-full border border-casa-border bg-white text-casa-primary shadow-sm" aria-label="Open navigation" @click="open = true">
+                    <svg class="size-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                     </svg>
                 </button>
             </div>
         </div>
-    </div>
 
-    <!-- Responsive Navigation Menu -->
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
-        <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                {{ __('Dashboard') }}
-            </x-responsive-nav-link>
-        </div>
+        <aside class="casa-wood-panel fixed inset-y-0 start-0 z-30 hidden w-72 flex-col border-e border-white/10 p-5 lg:flex">
+            <a href="{{ route($dashboardRoute) }}" class="rounded-[22px] bg-white/95 p-4 shadow-casa-lift">
+                <x-application-logo />
+            </a>
 
-        <!-- Responsive Settings Options -->
-        <div class="pt-4 pb-1 border-t border-gray-200">
-            <div class="px-4">
-                <div class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</div>
-                <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div>
+            <div class="mt-8">
+                <p class="text-xs font-black uppercase tracking-[0.18em] text-casa-gold">{{ $roleLabel }}</p>
+                <p class="mt-2 text-sm leading-6 text-casa-bg/75">{{ $user->name }}</p>
             </div>
 
-            <div class="mt-3 space-y-1">
-                <x-responsive-nav-link :href="route('profile.edit')">
-                    {{ __('Profile') }}
-                </x-responsive-nav-link>
+            <div class="mt-8 space-y-2">
+                @foreach ($navItems as $item)
+                    <a href="{{ route($item['route']) }}" @class([
+                        'casa-nav-link w-full',
+                        'casa-nav-link-active' => request()->routeIs($item['active']),
+                    ])>
+                        {{ $item['label'] }}
+                    </a>
+                @endforeach
+            </div>
 
-                <!-- Authentication -->
-                <form method="POST" action="{{ route('logout') }}">
+            <div class="mt-auto rounded-[20px] border border-white/10 bg-white/[0.08] p-4">
+                <p class="text-xs font-black uppercase tracking-[0.16em] text-casa-gold">Signed in</p>
+                <p class="mt-2 truncate text-sm font-semibold text-white">{{ $user->email }}</p>
+
+                <form method="POST" action="{{ route('logout') }}" class="mt-4">
                     @csrf
+                    <button type="submit" class="casa-button-secondary w-full border-white/15 bg-white/10 text-white hover:bg-white/15 hover:text-white">
+                        Log out
+                    </button>
+                </form>
+            </div>
+        </aside>
 
-                    <x-responsive-nav-link :href="route('logout')"
-                            onclick="event.preventDefault();
-                                        this.closest('form').submit();">
-                        {{ __('Log Out') }}
+        <div x-show="open" class="fixed inset-0 z-50 lg:hidden" style="display: none;">
+            <div class="absolute inset-0 bg-casa-charcoal/70" @click="open = false"></div>
+            <aside class="casa-wood-panel absolute inset-y-0 start-0 flex w-[min(22rem,88vw)] flex-col p-5 shadow-casa-lift">
+                <div class="flex items-center justify-between gap-4">
+                    <a href="{{ route($dashboardRoute) }}" class="rounded-2xl bg-white/95 p-3">
+                        <x-application-logo class="scale-90 origin-left" />
+                    </a>
+                    <button type="button" class="grid size-10 place-items-center rounded-full border border-white/15 text-white" aria-label="Close navigation" @click="open = false">
+                        <svg class="size-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="mt-8 space-y-2">
+                    @foreach ($navItems as $item)
+                        <a href="{{ route($item['route']) }}" @class([
+                            'casa-nav-link w-full',
+                            'casa-nav-link-active' => request()->routeIs($item['active']),
+                        ]) @click="open = false">
+                            {{ $item['label'] }}
+                        </a>
+                    @endforeach
+                </div>
+
+                <form method="POST" action="{{ route('logout') }}" class="mt-auto">
+                    @csrf
+                    <button type="submit" class="casa-button-secondary w-full border-white/15 bg-white/10 text-white hover:bg-white/15 hover:text-white">
+                        Log out
+                    </button>
+                </form>
+            </aside>
+        </div>
+    </nav>
+@else
+    <nav x-data="{ open: false }" class="sticky top-0 z-40 border-b border-casa-border bg-casa-bg/95 backdrop-blur">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div class="flex h-20 items-center justify-between gap-6">
+                <a href="{{ route($dashboardRoute) }}" class="min-w-0">
+                    <x-application-logo />
+                </a>
+
+                <div class="hidden items-center gap-7 md:flex">
+                    @foreach ($navItems as $item)
+                        <x-nav-link :href="route($item['route'])" :active="request()->routeIs($item['active'])">
+                            {{ $item['label'] }}
+                        </x-nav-link>
+                    @endforeach
+                </div>
+
+                <div class="hidden md:block">
+                    <x-dropdown align="right" width="48">
+                        <x-slot name="trigger">
+                            <button class="inline-flex items-center gap-3 rounded-full border border-casa-border bg-white px-3 py-2 text-sm font-bold text-casa-text shadow-sm transition hover:border-casa-gold">
+                                <span class="grid size-8 place-items-center rounded-full bg-casa-green/15 text-xs uppercase text-casa-green">{{ strtoupper(substr($user->name, 0, 1)) }}</span>
+                                <span>{{ $user->name }}</span>
+                            </button>
+                        </x-slot>
+
+                        <x-slot name="content">
+                            <x-dropdown-link :href="route('profile.edit')">
+                                {{ __('Profile') }}
+                            </x-dropdown-link>
+
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <x-dropdown-link :href="route('logout')" onclick="event.preventDefault(); this.closest('form').submit();">
+                                    {{ __('Log Out') }}
+                                </x-dropdown-link>
+                            </form>
+                        </x-slot>
+                    </x-dropdown>
+                </div>
+
+                <button type="button" class="grid size-11 place-items-center rounded-full border border-casa-border bg-white text-casa-primary shadow-sm md:hidden" aria-label="Open navigation" @click="open = ! open">
+                    <svg class="size-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div x-show="open" class="border-t border-casa-border bg-casa-bg px-4 py-4 md:hidden" style="display: none;">
+            <div class="space-y-2">
+                @foreach ($navItems as $item)
+                    <x-responsive-nav-link :href="route($item['route'])" :active="request()->routeIs($item['active'])">
+                        {{ $item['label'] }}
                     </x-responsive-nav-link>
+                @endforeach
+            </div>
+
+            <div class="mt-4 border-t border-casa-border pt-4">
+                <p class="text-sm font-bold text-casa-text">{{ $user->name }}</p>
+                <p class="mt-1 text-sm text-casa-muted">{{ $user->email }}</p>
+
+                <form method="POST" action="{{ route('logout') }}" class="mt-3">
+                    @csrf
+                    <button type="submit" class="casa-button-secondary w-full">
+                        Log out
+                    </button>
                 </form>
             </div>
         </div>
-    </div>
-</nav>
+    </nav>
+@endif
