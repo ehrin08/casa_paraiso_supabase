@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
+use App\Http\Controllers\Admin\StaffController as AdminStaffController;
 use App\Http\Controllers\Customer\AppointmentIndexController as CustomerAppointmentIndexController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Staff\DashboardController as StaffDashboardController;
@@ -53,19 +54,7 @@ Route::middleware(['auth', 'active', 'verified', 'role:admin'])
                 ['label' => 'Care notes', 'value' => 'Operational context'],
             ],
         ])->name('customers.index');
-        Route::view('/staff', 'modules.placeholder', [
-            'eyebrow' => 'Admin module',
-            'title' => 'Staff',
-            'description' => 'Manage staff accounts, bookable profiles, service assignments, and availability.',
-            'status' => 'Phase 5',
-            'actionLabel' => 'Back to dashboard',
-            'actionRoute' => 'admin.dashboard',
-            'cards' => [
-                ['label' => 'Team', 'value' => 'Staff profiles'],
-                ['label' => 'Services', 'value' => 'Eligibility'],
-                ['label' => 'Schedules', 'value' => 'Weekly availability'],
-            ],
-        ])->name('staff.index');
+        Route::resource('staff', AdminStaffController::class)->except('destroy');
         Route::patch('/services/{service}/toggle', [AdminServiceController::class, 'toggle'])->name('services.toggle');
         Route::resource('services', AdminServiceController::class)->except('destroy');
         Route::view('/transactions', 'modules.placeholder', [
