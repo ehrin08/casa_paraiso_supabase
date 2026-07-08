@@ -217,6 +217,6 @@ class AdminStaffManagementTest extends TestCase
             ->assertSee('Rendered Staff')
             ->assertSee('Ventosa therapy')
             ->assertSee('Ventosa Therapy')
-            ->assertSee('Ready for schedules');
+            ->assertSee('Recurring availability');
     }
 }

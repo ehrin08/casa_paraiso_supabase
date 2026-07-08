@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
+use App\Http\Controllers\Admin\StaffScheduleExceptionController as AdminStaffScheduleExceptionController;
 use App\Http\Controllers\Admin\StaffController as AdminStaffController;
+use App\Http\Controllers\Admin\StaffWeeklyScheduleController as AdminStaffWeeklyScheduleController;
 use App\Http\Controllers\Customer\AppointmentIndexController as CustomerAppointmentIndexController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Staff\DashboardController as StaffDashboardController;
@@ -54,6 +56,16 @@ Route::middleware(['auth', 'active', 'verified', 'role:admin'])
                 ['label' => 'Care notes', 'value' => 'Operational context'],
             ],
         ])->name('customers.index');
+        Route::get('/staff/{staff}/weekly-schedules/create', [AdminStaffWeeklyScheduleController::class, 'create'])->name('staff.weekly-schedules.create');
+        Route::post('/staff/{staff}/weekly-schedules', [AdminStaffWeeklyScheduleController::class, 'store'])->name('staff.weekly-schedules.store');
+        Route::get('/staff/{staff}/weekly-schedules/{weeklySchedule}/edit', [AdminStaffWeeklyScheduleController::class, 'edit'])->name('staff.weekly-schedules.edit');
+        Route::patch('/staff/{staff}/weekly-schedules/{weeklySchedule}', [AdminStaffWeeklyScheduleController::class, 'update'])->name('staff.weekly-schedules.update');
+        Route::delete('/staff/{staff}/weekly-schedules/{weeklySchedule}', [AdminStaffWeeklyScheduleController::class, 'destroy'])->name('staff.weekly-schedules.destroy');
+        Route::get('/staff/{staff}/schedule-exceptions/create', [AdminStaffScheduleExceptionController::class, 'create'])->name('staff.schedule-exceptions.create');
+        Route::post('/staff/{staff}/schedule-exceptions', [AdminStaffScheduleExceptionController::class, 'store'])->name('staff.schedule-exceptions.store');
+        Route::get('/staff/{staff}/schedule-exceptions/{scheduleException}/edit', [AdminStaffScheduleExceptionController::class, 'edit'])->name('staff.schedule-exceptions.edit');
+        Route::patch('/staff/{staff}/schedule-exceptions/{scheduleException}', [AdminStaffScheduleExceptionController::class, 'update'])->name('staff.schedule-exceptions.update');
+        Route::delete('/staff/{staff}/schedule-exceptions/{scheduleException}', [AdminStaffScheduleExceptionController::class, 'destroy'])->name('staff.schedule-exceptions.destroy');
         Route::resource('staff', AdminStaffController::class)->except('destroy');
         Route::patch('/services/{service}/toggle', [AdminServiceController::class, 'toggle'])->name('services.toggle');
         Route::resource('services', AdminServiceController::class)->except('destroy');

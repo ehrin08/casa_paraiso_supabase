@@ -76,7 +76,16 @@ class StaffController extends Controller
 
     public function show(StaffProfile $staff): View
     {
-        $staff->load(['user', 'services' => fn ($query) => $query->orderBy('name')])
+        $staff->load([
+            'user',
+            'services' => fn ($query) => $query->orderBy('name'),
+            'weeklySchedules' => fn ($query) => $query->orderBy('day_of_week')->orderBy('start_time'),
+            'scheduleExceptions' => fn ($query) => $query
+                ->with('creator')
+                ->where('exception_date', '>=', today())
+                ->orderBy('exception_date')
+                ->orderBy('start_time'),
+        ])
             ->loadCount(['services', 'appointments', 'weeklySchedules', 'scheduleExceptions']);
 
         return view('admin.staff.show', [

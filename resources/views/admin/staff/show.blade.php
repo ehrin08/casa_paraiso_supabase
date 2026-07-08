@@ -15,6 +15,11 @@
     </x-slot>
 
     <div class="space-y-6">
+        @php
+            $weeklySchedulesByDay = $staffProfile->weeklySchedules->groupBy('day_of_week');
+            $formatTime = fn ($time) => $time ? substr((string) $time, 0, 5) : null;
+        @endphp
+
         @if (session('status'))
             <div class="rounded-[18px] border border-casa-green/30 bg-casa-green/10 px-5 py-4 text-sm font-semibold text-casa-green">
                 {{ __('Staff records updated.') }}
@@ -81,15 +86,115 @@
                         @endforelse
                     </div>
                 </x-app-card>
-
-                <aside class="casa-dark-panel rounded-[24px] p-6 shadow-casa-card">
-                    <p class="text-xs font-black uppercase tracking-[0.18em] text-casa-gold">{{ __('Next workflow') }}</p>
-                    <h2 class="mt-4 font-display text-2xl font-black text-white">{{ __('Ready for schedules.') }}</h2>
-                    <p class="mt-4 text-sm leading-7 text-casa-bg/80">
-                        {{ __('Phase 5C will add weekly availability and exceptions for bookable staff profiles.') }}
-                    </p>
-                </aside>
             </aside>
+        </section>
+
+        <section class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.8fr)]">
+            <x-app-card>
+                <div class="flex flex-col gap-3 border-b border-casa-border pb-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <p class="casa-section-label">{{ __('Weekly schedule') }}</p>
+                        <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ __('Recurring availability') }}</h2>
+                    </div>
+                    <a href="{{ route('admin.staff.weekly-schedules.create', $staffProfile) }}" class="casa-button-primary">{{ __('Add shift') }}</a>
+                </div>
+
+                <div class="mt-5 grid gap-4 md:grid-cols-2">
+                    @foreach (\App\Models\StaffWeeklySchedule::DAYS as $dayValue => $dayLabel)
+                        <div class="rounded-2xl border border-casa-border bg-casa-bg p-4">
+                            <div class="flex items-center justify-between gap-3">
+                                <h3 class="font-display text-lg font-black text-casa-text">{{ $dayLabel }}</h3>
+                                <x-status-badge>{{ trans_choice(':count shift|:count shifts', ($weeklySchedulesByDay[$dayValue] ?? collect())->count()) }}</x-status-badge>
+                            </div>
+
+                            <div class="mt-4 space-y-3">
+                                @forelse ($weeklySchedulesByDay[$dayValue] ?? [] as $weeklySchedule)
+                                    <div class="rounded-2xl bg-white p-4 shadow-sm">
+                                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                            <div>
+                                                <p class="font-bold text-casa-text">
+                                                    {{ $formatTime($weeklySchedule->start_time) }} - {{ $formatTime($weeklySchedule->end_time) }}
+                                                </p>
+                                                <x-status-badge class="mt-2" :tone="$weeklySchedule->is_available ? 'success' : 'dark'">
+                                                    {{ $weeklySchedule->is_available ? __('Available') : __('Unavailable') }}
+                                                </x-status-badge>
+                                            </div>
+                                            <div class="flex gap-3 text-sm">
+                                                <a href="{{ route('admin.staff.weekly-schedules.edit', [$staffProfile, $weeklySchedule]) }}" class="font-bold text-casa-primary hover:text-casa-primary-dark">
+                                                    {{ __('Edit') }}
+                                                </a>
+                                                <form method="POST" action="{{ route('admin.staff.weekly-schedules.destroy', [$staffProfile, $weeklySchedule]) }}">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="font-bold text-casa-muted hover:text-red-700">
+                                                        {{ __('Remove') }}
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <p class="text-sm leading-6 text-casa-muted">{{ __('No recurring shift set.') }}</p>
+                                @endforelse
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </x-app-card>
+
+            <x-app-card>
+                <div class="flex flex-col gap-3 border-b border-casa-border pb-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <p class="casa-section-label">{{ __('Exceptions') }}</p>
+                        <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ __('Upcoming overrides') }}</h2>
+                    </div>
+                    <a href="{{ route('admin.staff.schedule-exceptions.create', $staffProfile) }}" class="casa-button-secondary">{{ __('Add exception') }}</a>
+                </div>
+
+                <div class="mt-5 space-y-4">
+                    @forelse ($staffProfile->scheduleExceptions as $scheduleException)
+                        <div class="rounded-2xl border border-casa-border bg-casa-bg p-4">
+                            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                <div>
+                                    <p class="font-display text-lg font-black text-casa-text">{{ $scheduleException->exception_date->format('M d, Y') }}</p>
+                                    <div class="mt-2 flex flex-wrap gap-2">
+                                        <x-status-badge :tone="$scheduleException->exception_type === \App\Models\StaffScheduleException::TYPE_AVAILABLE ? 'success' : 'warning'">
+                                            {{ ucfirst($scheduleException->exception_type) }}
+                                        </x-status-badge>
+                                        <x-status-badge>
+                                            @if ($scheduleException->start_time && $scheduleException->end_time)
+                                                {{ $formatTime($scheduleException->start_time) }} - {{ $formatTime($scheduleException->end_time) }}
+                                            @else
+                                                {{ __('Full day') }}
+                                            @endif
+                                        </x-status-badge>
+                                    </div>
+                                    @if ($scheduleException->reason)
+                                        <p class="mt-3 text-sm leading-6 text-casa-muted">{{ $scheduleException->reason }}</p>
+                                    @endif
+                                </div>
+                                <div class="flex gap-3 text-sm">
+                                    <a href="{{ route('admin.staff.schedule-exceptions.edit', [$staffProfile, $scheduleException]) }}" class="font-bold text-casa-primary hover:text-casa-primary-dark">
+                                        {{ __('Edit') }}
+                                    </a>
+                                    <form method="POST" action="{{ route('admin.staff.schedule-exceptions.destroy', [$staffProfile, $scheduleException]) }}">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="font-bold text-casa-muted hover:text-red-700">
+                                            {{ __('Remove') }}
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <x-empty-state
+                            title="{{ __('No upcoming exceptions') }}"
+                            description="{{ __('Add date-specific availability changes for leaves, special openings, or partial-day blocks.') }}"
+                        />
+                    @endforelse
+                </div>
+            </x-app-card>
         </section>
     </div>
 </x-app-layout>

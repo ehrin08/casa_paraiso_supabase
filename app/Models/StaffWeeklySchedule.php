@@ -25,6 +25,16 @@ class StaffWeeklySchedule extends Model
 
     public const SATURDAY = 6;
 
+    public const DAYS = [
+        self::SUNDAY => 'Sunday',
+        self::MONDAY => 'Monday',
+        self::TUESDAY => 'Tuesday',
+        self::WEDNESDAY => 'Wednesday',
+        self::THURSDAY => 'Thursday',
+        self::FRIDAY => 'Friday',
+        self::SATURDAY => 'Saturday',
+    ];
+
     protected $fillable = [
         'staff_profile_id',
         'day_of_week',
@@ -44,5 +54,10 @@ class StaffWeeklySchedule extends Model
     public function staffProfile()
     {
         return $this->belongsTo(StaffProfile::class);
+    }
+
+    public function dayName(): string
+    {
+        return self::DAYS[$this->day_of_week] ?? 'Unknown';
     }
 }
