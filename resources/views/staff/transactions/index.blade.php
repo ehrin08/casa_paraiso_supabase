@@ -1,4 +1,8 @@
 <x-app-layout>
+    @php
+        $createTransactionModal = 'staff-transaction-create';
+    @endphp
+
     <x-slot name="header">
         <div>
             <p class="casa-section-label">{{ __('Staff module') }}</p>
@@ -6,8 +10,12 @@
             <p class="mt-2 max-w-2xl text-sm leading-6 text-casa-muted">{{ __('Record payments from your confirmed or completed appointments.') }}</p>
         </div>
 
-        <a href="{{ route('staff.transactions.create') }}" class="casa-button-primary">{{ __('Record payment') }}</a>
+        <button type="button" class="casa-button-primary" x-data="" x-on:click="$dispatch('open-modal', '{{ $createTransactionModal }}')">{{ __('Record payment') }}</button>
     </x-slot>
+
+    @php
+        $createTransaction = $transaction;
+    @endphp
 
     <x-app-card>
         <x-list-toolbar eyebrow="{{ __('Payments') }}" title="{{ __('Recorded transactions') }}" :count="$transactions->total()" :reset-url="route('staff.transactions.index')">
@@ -48,7 +56,14 @@
                             <td class="px-4 py-4 text-casa-muted">{{ $transaction->service?->name }}</td>
                             <td class="px-4 py-4 font-semibold text-casa-text">PHP {{ number_format((float) $transaction->amount, 2) }}</td>
                             <td class="px-4 py-4"><x-status-badge>{{ ucfirst($transaction->payment_status) }}</x-status-badge></td>
-                            <td class="px-4 py-4"><a href="{{ route('staff.transactions.show', $transaction) }}" class="font-bold text-casa-primary hover:text-casa-primary-dark">{{ __('Open') }}</a></td>
+                            <td class="px-4 py-4">
+                                <div class="flex flex-wrap gap-3">
+                                    <a href="{{ route('staff.transactions.show', $transaction) }}" class="font-bold text-casa-primary hover:text-casa-primary-dark">{{ __('Open') }}</a>
+                                    <button type="button" class="font-bold text-casa-muted hover:text-casa-primary" x-data="" x-on:click="$dispatch('open-modal', 'staff-transaction-edit-{{ $transaction->id }}')">
+                                        {{ __('Edit') }}
+                                    </button>
+                                </div>
+                            </td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -57,4 +72,33 @@
         @endif
         </div>
     </x-app-card>
+
+    <x-modal :name="$createTransactionModal" :show="old('_modal') === $createTransactionModal" maxWidth="4xl" focusable>
+        <div class="p-5">
+            @include('staff.transactions.partials.form', [
+                'transaction' => $createTransaction,
+                'action' => route('staff.transactions.store'),
+                'method' => 'POST',
+                'submitLabel' => __('Create transaction'),
+                'modalName' => $createTransactionModal,
+            ])
+        </div>
+    </x-modal>
+
+    @foreach ($transactions as $transaction)
+        @php
+            $editTransactionModal = 'staff-transaction-edit-'.$transaction->id;
+        @endphp
+        <x-modal :name="$editTransactionModal" :show="old('_modal') === $editTransactionModal" maxWidth="4xl" focusable>
+            <div class="p-5">
+                @include('staff.transactions.partials.form', [
+                    'transaction' => $transaction,
+                    'action' => route('staff.transactions.update', $transaction),
+                    'method' => 'PATCH',
+                    'submitLabel' => __('Save transaction'),
+                    'modalName' => $editTransactionModal,
+                ])
+            </div>
+        </x-modal>
+    @endforeach
 </x-app-layout>

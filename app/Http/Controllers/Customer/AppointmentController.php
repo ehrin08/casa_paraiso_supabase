@@ -73,6 +73,8 @@ class AppointmentController extends Controller
             'search' => $search,
             'sort' => $sort,
             'direction' => $direction,
+            'services' => Service::query()->with('staffProfiles.user')->where('is_active', true)->orderBy('name')->get(),
+            'staffProfiles' => StaffProfile::query()->with(['user', 'services'])->where('is_bookable', true)->get()->sortBy('user.name'),
         ]);
     }
 

@@ -11,92 +11,48 @@
     $navGroups = match (true) {
         $user->isAdmin() => [
             [
-                'label' => 'Overview',
+                'label' => 'Workspace',
                 'items' => [
                     ['label' => 'Dashboard', 'route' => 'admin.dashboard', 'active' => 'admin.dashboard'],
-                ],
-            ],
-            [
-                'label' => 'Operations',
-                'items' => [
                     ['label' => 'Appointments', 'route' => 'admin.appointments.index', 'active' => 'admin.appointments.*'],
-                    ['label' => 'Transactions', 'route' => 'admin.transactions.index', 'active' => 'admin.transactions.*'],
-                ],
-            ],
-            [
-                'label' => 'People',
-                'items' => [
                     ['label' => 'Customers', 'route' => 'admin.customers.index', 'active' => 'admin.customers.*'],
-                    ['label' => 'Staff', 'route' => 'admin.staff.index', 'active' => 'admin.staff.*'],
-                ],
-            ],
-            [
-                'label' => 'Catalog',
-                'items' => [
-                    ['label' => 'Services', 'route' => 'admin.services.index', 'active' => 'admin.services.*'],
-                ],
-            ],
-            [
-                'label' => 'Insights',
-                'items' => [
-                    ['label' => 'Promotions', 'route' => 'admin.promotions.index', 'active' => 'admin.promotions.*'],
-                    ['label' => 'Feedback', 'route' => 'admin.feedback.index', 'active' => 'admin.feedback.*'],
-                    ['label' => 'Reports', 'route' => 'admin.reports.index', 'active' => 'admin.reports.*'],
-                ],
-            ],
-            [
-                'label' => 'Account',
-                'items' => [
-                    ['label' => 'Settings', 'route' => 'admin.settings.index', 'active' => 'admin.settings.*'],
-                    ['label' => 'Profile', 'route' => 'profile.edit', 'active' => 'profile.*'],
+                    ['label' => 'Team & Services', 'route' => 'admin.staff.index', 'active' => ['admin.staff.*', 'admin.services.*']],
+                    ['label' => 'Payments', 'route' => 'admin.transactions.index', 'active' => 'admin.transactions.*'],
+                    ['label' => 'Insights', 'route' => 'admin.promotions.index', 'active' => ['admin.promotions.*', 'admin.feedback.*', 'admin.reports.*']],
                 ],
             ],
         ],
         $user->isStaff() => [
             [
-                'label' => 'Today',
+                'label' => 'Workspace',
                 'items' => [
                     ['label' => 'Dashboard', 'route' => 'staff.dashboard', 'active' => 'staff.dashboard'],
                     ['label' => 'Appointments', 'route' => 'staff.appointments.index', 'active' => 'staff.appointments.*'],
-                ],
-            ],
-            [
-                'label' => 'Records',
-                'items' => [
                     ['label' => 'Customers', 'route' => 'staff.customers.index', 'active' => 'staff.customers.*'],
-                    ['label' => 'Transactions', 'route' => 'staff.transactions.index', 'active' => 'staff.transactions.*'],
+                    ['label' => 'Payments', 'route' => 'staff.transactions.index', 'active' => 'staff.transactions.*'],
                     ['label' => 'Feedback', 'route' => 'staff.feedback.index', 'active' => 'staff.feedback.*'],
-                ],
-            ],
-            [
-                'label' => 'Account',
-                'items' => [
-                    ['label' => 'Profile', 'route' => 'profile.edit', 'active' => 'profile.*'],
                 ],
             ],
         ],
         default => [
             [
-                'label' => 'Appointments',
+                'label' => 'Workspace',
                 'items' => [
-                    ['label' => 'Appointments', 'route' => 'customer.appointments.index', 'active' => ['customer.appointments.index', 'customer.appointments.show']],
-                    ['label' => 'Request', 'route' => 'customer.appointments.create', 'active' => 'customer.appointments.create'],
-                ],
-            ],
-            [
-                'label' => 'Care',
-                'items' => [
+                    ['label' => 'Appointments', 'route' => 'customer.appointments.index', 'active' => ['customer.appointments.index', 'customer.appointments.show', 'customer.appointments.create']],
                     ['label' => 'Feedback', 'route' => 'customer.feedback.index', 'active' => 'customer.feedback.*'],
-                ],
-            ],
-            [
-                'label' => 'Account',
-                'items' => [
-                    ['label' => 'Profile', 'route' => 'profile.edit', 'active' => 'profile.*'],
                 ],
             ],
         ],
     };
+
+    $accountLinks = $user->isAdmin()
+        ? [
+            ['label' => 'Settings', 'route' => 'admin.settings.index', 'active' => 'admin.settings.*'],
+            ['label' => 'Profile', 'route' => 'profile.edit', 'active' => 'profile.*'],
+        ]
+        : [
+            ['label' => 'Profile', 'route' => 'profile.edit', 'active' => 'profile.*'],
+        ];
 @endphp
 
 <nav x-data="{ open: false }">
@@ -123,6 +79,16 @@
             <p class="text-[0.68rem] font-black uppercase tracking-[0.18em] text-casa-gold">{{ $roleLabel }}</p>
             <p class="mt-1 truncate text-sm font-semibold text-white">{{ $user->name }}</p>
             <p class="mt-0.5 truncate text-xs text-casa-bg/65">{{ $user->email }}</p>
+            <div class="mt-3 flex flex-wrap gap-2">
+                @foreach ($accountLinks as $item)
+                    <a href="{{ route($item['route']) }}" data-prefetch @class([
+                        'rounded-full border border-white/10 px-2.5 py-1 text-[0.68rem] font-black uppercase tracking-[0.08em] text-casa-bg/70 hover:bg-white/10 hover:text-white',
+                        'bg-white/10 text-white' => request()->routeIs(...(array) $item['active']),
+                    ])>
+                        {{ $item['label'] }}
+                    </a>
+                @endforeach
+            </div>
         </div>
 
         <div class="mt-5 space-y-5">
@@ -131,7 +97,9 @@
                     <p class="px-3 text-[0.66rem] font-black uppercase tracking-[0.16em] text-casa-bg/48">{{ $group['label'] }}</p>
                     <div class="mt-2 space-y-1">
                         @foreach ($group['items'] as $item)
-                            @php($isActive = request()->routeIs(...(array) $item['active']))
+                            @php
+                                $isActive = request()->routeIs(...(array) $item['active']);
+                            @endphp
                             <a href="{{ route($item['route']) }}" data-prefetch @class([
                                 'casa-nav-link w-full',
                                 'casa-nav-link-active' => $isActive,
@@ -169,6 +137,16 @@
             <div class="mt-5 rounded-lg border border-white/10 bg-white/[0.07] p-3">
                 <p class="text-[0.68rem] font-black uppercase tracking-[0.18em] text-casa-gold">{{ $roleLabel }}</p>
                 <p class="mt-1 truncate text-sm font-semibold text-white">{{ $user->name }}</p>
+                <div class="mt-3 flex flex-wrap gap-2">
+                    @foreach ($accountLinks as $item)
+                        <a href="{{ route($item['route']) }}" data-prefetch @class([
+                            'rounded-full border border-white/10 px-2.5 py-1 text-[0.68rem] font-black uppercase tracking-[0.08em] text-casa-bg/70 hover:bg-white/10 hover:text-white',
+                            'bg-white/10 text-white' => request()->routeIs(...(array) $item['active']),
+                        ]) @click="open = false">
+                            {{ $item['label'] }}
+                        </a>
+                    @endforeach
+                </div>
             </div>
 
             <div class="mt-5 space-y-5">
@@ -177,7 +155,9 @@
                         <p class="px-3 text-[0.66rem] font-black uppercase tracking-[0.16em] text-casa-bg/48">{{ $group['label'] }}</p>
                         <div class="mt-2 space-y-1">
                             @foreach ($group['items'] as $item)
-                                @php($isActive = request()->routeIs(...(array) $item['active']))
+                                @php
+                                    $isActive = request()->routeIs(...(array) $item['active']);
+                                @endphp
                                 <a href="{{ route($item['route']) }}" data-prefetch @class([
                                     'casa-nav-link w-full',
                                     'casa-nav-link-active' => $isActive,

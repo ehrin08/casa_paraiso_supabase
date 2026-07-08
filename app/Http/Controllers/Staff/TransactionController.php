@@ -61,6 +61,12 @@ class TransactionController extends Controller
             'search' => $search,
             'sort' => $sort,
             'direction' => $direction,
+            'transaction' => new Transaction([
+                'payment_status' => Transaction::PAYMENT_PAID,
+                'payment_method' => Transaction::METHOD_CASH,
+                'paid_at' => now(),
+            ]),
+            'appointments' => $this->eligibleAppointments($staffProfile?->id ?? 0),
         ]);
     }
 

@@ -64,6 +64,17 @@ class StaffController extends Controller
             'activeAccountCount' => User::query()->where('role', User::ROLE_STAFF)->where('is_active', true)->count(),
             'inactiveAccountCount' => User::query()->where('role', User::ROLE_STAFF)->where('is_active', false)->count(),
             'bookableCount' => StaffProfile::query()->where('is_bookable', true)->count(),
+            'staffAssignableServices' => $this->activeServices(),
+            'newStaffProfile' => new StaffProfile(['is_bookable' => true]),
+            'newStaffUser' => new User(['is_active' => true]),
+            'serviceCatalog' => Service::query()
+                ->withCount(['staffProfiles', 'appointments'])
+                ->orderByDesc('is_active')
+                ->orderBy('name')
+                ->get(),
+            'newService' => new Service(['is_active' => true]),
+            'activeServiceCount' => Service::query()->where('is_active', true)->count(),
+            'inactiveServiceCount' => Service::query()->where('is_active', false)->count(),
         ]);
     }
 

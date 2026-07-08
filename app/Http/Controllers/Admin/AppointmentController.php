@@ -9,6 +9,7 @@ use App\Models\Appointment;
 use App\Models\CustomerProfile;
 use App\Models\Service;
 use App\Models\StaffProfile;
+use App\Models\Transaction;
 use App\Services\AppointmentWorkflow;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -57,6 +58,11 @@ class AppointmentController extends Controller
             ->paginate(12)
             ->withQueryString();
 
+        $formData = $this->formData(new Appointment([
+            'requested_start_at' => now()->addDay()->setTime(10, 0),
+            'status' => Appointment::STATUS_PENDING,
+        ]));
+
         return view('admin.appointments.index', [
             'appointments' => $appointments,
             'status' => $status,
@@ -68,6 +74,7 @@ class AppointmentController extends Controller
                 'confirmed' => Appointment::query()->where('status', Appointment::STATUS_CONFIRMED)->count(),
                 'completed' => Appointment::query()->where('status', Appointment::STATUS_COMPLETED)->count(),
             ],
+            ...$formData,
         ]);
     }
 
@@ -100,8 +107,21 @@ class AppointmentController extends Controller
             'statusLogs.changedBy',
         ]);
 
+        $formData = $this->formData($appointment);
+
         return view('admin.appointments.show', [
             'appointment' => $appointment,
+            'transaction' => new Transaction([
+                'appointment_id' => $appointment->id,
+                'customer_profile_id' => $appointment->customer_profile_id,
+                'service_id' => $appointment->service_id,
+                'amount' => $appointment->service?->price,
+                'payment_status' => Transaction::PAYMENT_PAID,
+                'payment_method' => Transaction::METHOD_CASH,
+                'paid_at' => now(),
+            ]),
+            'transactionAppointments' => collect([$appointment]),
+            ...$formData,
         ]);
     }
 

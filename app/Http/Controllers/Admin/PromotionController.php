@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Concerns\HandlesIndexSorting;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\PromotionSuggestionStatusRequest;
+use App\Models\Feedback;
 use App\Models\PromotionRule;
 use App\Models\PromotionSuggestion;
 use App\Models\RfmSegment;
@@ -63,6 +64,16 @@ class PromotionController extends Controller
                 'applied' => PromotionSuggestion::query()->where('status', PromotionSuggestion::STATUS_APPLIED)->count(),
                 'dismissed' => PromotionSuggestion::query()->where('status', PromotionSuggestion::STATUS_DISMISSED)->count(),
             ],
+            'feedbackSummary' => [
+                'positive' => Feedback::query()->where('sentiment_label', Feedback::SENTIMENT_POSITIVE)->count(),
+                'neutral' => Feedback::query()->where('sentiment_label', Feedback::SENTIMENT_NEUTRAL)->count(),
+                'negative' => Feedback::query()->where('sentiment_label', Feedback::SENTIMENT_NEGATIVE)->count(),
+            ],
+            'recentFeedback' => Feedback::query()
+                ->with(['customerProfile.user', 'service'])
+                ->latest('submitted_at')
+                ->limit(5)
+                ->get(),
         ]);
     }
 

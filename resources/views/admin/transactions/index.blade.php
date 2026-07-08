@@ -1,15 +1,26 @@
 <x-app-layout>
+    @php
+        $createTransactionModal = 'admin-transaction-create';
+    @endphp
+
     <x-slot name="header">
         <div>
             <p class="casa-section-label">{{ __('Admin module') }}</p>
-            <h1 class="mt-2 font-display text-3xl font-black text-casa-text">{{ __('Transactions') }}</h1>
+            <h1 class="mt-2 font-display text-3xl font-black text-casa-text">{{ __('Payments') }}</h1>
             <p class="mt-2 max-w-2xl text-sm leading-6 text-casa-muted">
-                {{ __('Record manual payments and manage transaction status for service visits.') }}
+                {{ __('Record manual payments, manage transaction status, and jump into revenue exports from one workspace.') }}
             </p>
         </div>
 
-        <a href="{{ route('admin.transactions.create') }}" class="casa-button-primary">{{ __('Record payment') }}</a>
+        <div class="flex flex-wrap gap-3">
+            <a href="{{ route('admin.reports.index', ['type' => 'transactions']) }}" class="casa-button-secondary">{{ __('Revenue report') }}</a>
+            <button type="button" class="casa-button-primary" x-data="" x-on:click="$dispatch('open-modal', '{{ $createTransactionModal }}')">{{ __('Record payment') }}</button>
+        </div>
     </x-slot>
+
+    @php
+        $createTransaction = $transaction;
+    @endphp
 
     <div class="space-y-6">
         <section class="grid gap-4 md:grid-cols-3">
@@ -58,7 +69,12 @@
                                     <td class="px-4 py-4 font-semibold text-casa-text">PHP {{ number_format((float) $transaction->amount, 2) }}</td>
                                     <td class="px-4 py-4"><x-status-badge>{{ ucfirst($transaction->payment_status) }}</x-status-badge></td>
                                     <td class="px-4 py-4">
-                                        <a href="{{ route('admin.transactions.show', $transaction) }}" class="font-bold text-casa-primary hover:text-casa-primary-dark">{{ __('Open') }}</a>
+                                        <div class="flex flex-wrap gap-3">
+                                            <a href="{{ route('admin.transactions.show', $transaction) }}" class="font-bold text-casa-primary hover:text-casa-primary-dark">{{ __('Open') }}</a>
+                                            <button type="button" class="font-bold text-casa-muted hover:text-casa-primary" x-data="" x-on:click="$dispatch('open-modal', 'admin-transaction-edit-{{ $transaction->id }}')">
+                                                {{ __('Edit') }}
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach
@@ -68,5 +84,53 @@
                 @endif
             </div>
         </x-app-card>
+
+        <section class="grid gap-4 md:grid-cols-2">
+            <x-app-card>
+                <p class="casa-section-label">{{ __('Exports') }}</p>
+                <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ __('Download payment records') }}</h2>
+                <p class="mt-3 text-sm leading-6 text-casa-muted">{{ __('Use the filtered revenue report when management needs CSV records without database access.') }}</p>
+                <a href="{{ route('admin.reports.export', ['type' => 'transactions']) }}" class="mt-5 casa-button-secondary w-full">{{ __('Export transactions CSV') }}</a>
+            </x-app-card>
+
+            <x-app-card>
+                <p class="casa-section-label">{{ __('Manual payment flow') }}</p>
+                <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ __('Record, update, review') }}</h2>
+                <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                    <div class="rounded-2xl bg-casa-bg p-4 text-sm font-semibold text-casa-text">{{ __('Link appointment') }}</div>
+                    <div class="rounded-2xl bg-casa-bg p-4 text-sm font-semibold text-casa-text">{{ __('Set status') }}</div>
+                    <div class="rounded-2xl bg-casa-bg p-4 text-sm font-semibold text-casa-text">{{ __('Export report') }}</div>
+                </div>
+            </x-app-card>
+        </section>
     </div>
+
+    <x-modal :name="$createTransactionModal" :show="old('_modal') === $createTransactionModal" maxWidth="5xl" focusable>
+        <div class="p-5">
+            @include('admin.transactions.partials.form', [
+                'transaction' => $createTransaction,
+                'action' => route('admin.transactions.store'),
+                'method' => 'POST',
+                'submitLabel' => __('Create transaction'),
+                'modalName' => $createTransactionModal,
+            ])
+        </div>
+    </x-modal>
+
+    @foreach ($transactions as $transaction)
+        @php
+            $editTransactionModal = 'admin-transaction-edit-'.$transaction->id;
+        @endphp
+        <x-modal :name="$editTransactionModal" :show="old('_modal') === $editTransactionModal" maxWidth="5xl" focusable>
+            <div class="p-5">
+                @include('admin.transactions.partials.form', [
+                    'transaction' => $transaction,
+                    'action' => route('admin.transactions.update', $transaction),
+                    'method' => 'PATCH',
+                    'submitLabel' => __('Save transaction'),
+                    'modalName' => $editTransactionModal,
+                ])
+            </div>
+        </x-modal>
+    @endforeach
 </x-app-layout>

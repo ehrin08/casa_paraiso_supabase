@@ -93,9 +93,9 @@ class RoleWorkspaceTest extends TestCase
             ->assertSee('lg:ps-64', false)
             ->assertSee('casa-wood-panel fixed', false)
             ->assertSee('Customer lounge')
-            ->assertSeeInOrder(['Appointments', 'Request', 'Feedback', 'Profile'])
+            ->assertSeeInOrder(['Appointments', 'Feedback', 'Profile'])
             ->assertSee(route('customer.appointments.index'), false)
-            ->assertSee(route('customer.appointments.create'), false)
+            ->assertSee('customer-appointment-request')
             ->assertSee(route('customer.feedback.index'), false)
             ->assertSee(route('profile.edit'), false)
             ->assertSee(route('logout'), false);

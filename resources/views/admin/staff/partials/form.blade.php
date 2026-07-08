@@ -1,7 +1,17 @@
-<form method="POST" action="{{ $action }}" class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+@php
+    $modalName = $modalName ?? null;
+@endphp
+
+<form method="POST" action="{{ $action }}" @class([
+    'grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]',
+    'casa-modal-form' => $modalName,
+])>
     @csrf
     @if ($method !== 'POST')
         @method($method)
+    @endif
+    @if ($modalName)
+        <input type="hidden" name="_modal" value="{{ $modalName }}">
     @endif
 
     <div class="space-y-6">
@@ -106,7 +116,9 @@
             </p>
 
             <div class="mt-5 space-y-3">
-                @php($selectedServiceIds = collect(old('service_ids', $assignedServiceIds))->map(fn ($id) => (int) $id)->all())
+                @php
+                    $selectedServiceIds = collect(old('service_ids', $assignedServiceIds))->map(fn ($id) => (int) $id)->all();
+                @endphp
                 @forelse ($services as $service)
                     <label class="flex items-start gap-3 rounded-2xl border border-casa-border bg-casa-bg p-4">
                         <input type="checkbox" name="service_ids[]" value="{{ $service->id }}" @checked(in_array($service->id, $selectedServiceIds, true)) class="mt-1 rounded border-casa-border text-casa-primary shadow-sm focus:ring-casa-gold">
@@ -128,10 +140,14 @@
             <x-input-error class="mt-2" :messages="$errors->get('service_ids.*')" />
         </x-app-card>
 
-        <x-app-card>
+        <x-app-card data-modal-actions>
             <div class="flex flex-col gap-3">
                 <button type="submit" class="casa-button-primary w-full">{{ $submitLabel }}</button>
-                <a href="{{ route('admin.staff.index') }}" class="casa-button-secondary w-full">{{ __('Cancel') }}</a>
+                @if ($modalName)
+                    <button type="button" class="casa-button-secondary w-full" x-on:click="$dispatch('close-modal', '{{ $modalName }}')">{{ __('Cancel') }}</button>
+                @else
+                    <a href="{{ route('admin.staff.index') }}" class="casa-button-secondary w-full">{{ __('Cancel') }}</a>
+                @endif
             </div>
         </x-app-card>
     </aside>

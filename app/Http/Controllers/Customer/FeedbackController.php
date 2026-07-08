@@ -38,6 +38,10 @@ class FeedbackController extends Controller
             ->latest('completed_at')
             ->get();
 
+        $appointments = $completedAppointments
+            ->filter(fn (Appointment $appointment) => ! $appointment->feedback)
+            ->values();
+
         $feedback = Feedback::query()
             ->with(['service', 'appointment'])
             ->leftJoin('services as feedback_services', 'feedback_services.id', '=', 'feedback.service_id')
@@ -60,6 +64,8 @@ class FeedbackController extends Controller
             'search' => $search,
             'sort' => $sort,
             'direction' => $direction,
+            'appointments' => $appointments,
+            'selectedAppointmentId' => $request->integer('appointment_id') ?: null,
         ]);
     }
 

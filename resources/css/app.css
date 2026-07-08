@@ -507,6 +507,15 @@
     padding-block: 0.72rem;
 }
 
+.casa-modal-form [data-modal-actions] {
+    position: sticky;
+    bottom: -1px;
+    z-index: 5;
+    border-color: var(--color-casa-border);
+    background: rgba(255, 255, 255, 0.97);
+    box-shadow: 0 -10px 24px rgba(47, 55, 50, 0.08);
+}
+
 .casa-panel .lg\:grid-cols-\[minmax\(0\,1fr\)_22rem\],
 .casa-panel .lg\:grid-cols-\[minmax\(0\,1fr\)_minmax\(320px\,0\.8fr\)\],
 .casa-panel .xl\:grid-cols-\[minmax\(0\,1fr\)_minmax\(320px\,0\.55fr\)\],

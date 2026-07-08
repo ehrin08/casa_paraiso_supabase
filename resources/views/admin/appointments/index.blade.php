@@ -1,4 +1,8 @@
 <x-app-layout>
+    @php
+        $createAppointmentModal = 'admin-appointment-create';
+    @endphp
+
     <x-slot name="header">
         <div>
             <p class="casa-section-label">{{ __('Admin module') }}</p>
@@ -8,8 +12,12 @@
             </p>
         </div>
 
-        <a href="{{ route('admin.appointments.create') }}" class="casa-button-primary">{{ __('Add appointment') }}</a>
+        <button type="button" class="casa-button-primary" x-data="" x-on:click="$dispatch('open-modal', '{{ $createAppointmentModal }}')">{{ __('Add appointment') }}</button>
     </x-slot>
+
+    @php
+        $createAppointment = $appointment;
+    @endphp
 
     <div class="space-y-6">
         <section class="grid gap-4 md:grid-cols-3">
@@ -69,7 +77,12 @@
                                     <td class="px-4 py-4 text-casa-muted">{{ $appointment->staffProfile?->user?->name ?? __('Pending') }}</td>
                                     <td class="px-4 py-4"><x-status-badge :tone="$tone">{{ ucfirst(str_replace('_', ' ', $appointment->status)) }}</x-status-badge></td>
                                     <td class="px-4 py-4">
-                                        <a href="{{ route('admin.appointments.show', $appointment) }}" class="font-bold text-casa-primary hover:text-casa-primary-dark">{{ __('Open') }}</a>
+                                        <div class="flex flex-wrap gap-3">
+                                            <a href="{{ route('admin.appointments.show', $appointment) }}" class="font-bold text-casa-primary hover:text-casa-primary-dark">{{ __('Open') }}</a>
+                                            <button type="button" class="font-bold text-casa-muted hover:text-casa-primary" x-data="" x-on:click="$dispatch('open-modal', 'admin-appointment-edit-{{ $appointment->id }}')">
+                                                {{ __('Edit') }}
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach
@@ -83,4 +96,33 @@
             </div>
         </x-app-card>
     </div>
+
+    <x-modal :name="$createAppointmentModal" :show="old('_modal') === $createAppointmentModal" maxWidth="5xl" focusable>
+        <div class="p-5">
+            @include('admin.appointments.partials.form', [
+                'appointment' => $createAppointment,
+                'action' => route('admin.appointments.store'),
+                'method' => 'POST',
+                'submitLabel' => __('Create appointment'),
+                'modalName' => $createAppointmentModal,
+            ])
+        </div>
+    </x-modal>
+
+    @foreach ($appointments as $appointment)
+        @php
+            $editAppointmentModal = 'admin-appointment-edit-'.$appointment->id;
+        @endphp
+        <x-modal :name="$editAppointmentModal" :show="old('_modal') === $editAppointmentModal" maxWidth="5xl" focusable>
+            <div class="p-5">
+                @include('admin.appointments.partials.form', [
+                    'appointment' => $appointment,
+                    'action' => route('admin.appointments.update', $appointment),
+                    'method' => 'PATCH',
+                    'submitLabel' => __('Save appointment'),
+                    'modalName' => $editAppointmentModal,
+                ])
+            </div>
+        </x-modal>
+    @endforeach
 </x-app-layout>

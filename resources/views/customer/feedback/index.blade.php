@@ -1,11 +1,15 @@
 <x-app-layout>
+    @php
+        $submitFeedbackModal = 'customer-feedback-submit';
+    @endphp
+
     <x-slot name="header">
         <div>
             <p class="casa-section-label">{{ __('Customer lounge') }}</p>
             <h1 class="mt-2 font-display text-3xl font-black text-casa-text">{{ __('Feedback') }}</h1>
             <p class="mt-2 max-w-2xl text-sm leading-6 text-casa-muted">{{ __('Submit feedback after completed appointments and review your past comments.') }}</p>
         </div>
-        <a href="{{ route('customer.feedback.create') }}" class="casa-button-primary">{{ __('Submit feedback') }}</a>
+        <button type="button" class="casa-button-primary" x-data="" x-on:click="$dispatch('open-modal', '{{ $submitFeedbackModal }}')">{{ __('Submit feedback') }}</button>
     </x-slot>
 
     <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
@@ -61,9 +65,9 @@
                 <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ __('Completed appointments') }}</h2>
                 <div class="mt-5 space-y-3">
                     @forelse ($completedAppointments->whereNull('feedback') as $appointment)
-                        <a href="{{ route('customer.feedback.create', ['appointment_id' => $appointment->id]) }}" class="block rounded-2xl border border-casa-border bg-casa-bg p-4 text-sm font-semibold text-casa-text hover:border-casa-gold">
+                        <button type="button" class="block w-full rounded-2xl border border-casa-border bg-casa-bg p-4 text-left text-sm font-semibold text-casa-text hover:border-casa-gold" x-data="" x-on:click="$dispatch('open-modal', '{{ $submitFeedbackModal }}')">
                             {{ $appointment->service?->name }} · {{ $appointment->completed_at?->format('M d, Y') }}
-                        </a>
+                        </button>
                     @empty
                         <p class="text-sm leading-6 text-casa-muted">{{ __('No completed appointments are waiting for feedback.') }}</p>
                     @endforelse
@@ -71,4 +75,12 @@
             </x-app-card>
         </aside>
     </div>
+
+    <x-modal :name="$submitFeedbackModal" :show="old('_modal') === $submitFeedbackModal" maxWidth="4xl" focusable>
+        <div class="p-5">
+            @include('customer.feedback.partials.form', [
+                'modalName' => $submitFeedbackModal,
+            ])
+        </div>
+    </x-modal>
 </x-app-layout>

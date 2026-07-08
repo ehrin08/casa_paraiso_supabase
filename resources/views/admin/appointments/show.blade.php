@@ -1,4 +1,9 @@
 <x-app-layout>
+    @php
+        $recordPaymentModal = 'admin-appointment-payment-'.$appointment->id;
+        $editAppointmentModal = 'admin-appointment-edit-'.$appointment->id;
+    @endphp
+
     <x-slot name="header">
         <div>
             <p class="casa-section-label">{{ __('Appointment detail') }}</p>
@@ -9,8 +14,8 @@
         </div>
 
         <div class="flex flex-wrap gap-3">
-            <a href="{{ route('admin.transactions.create', ['appointment_id' => $appointment->id]) }}" class="casa-button-secondary">{{ __('Record payment') }}</a>
-            <a href="{{ route('admin.appointments.edit', $appointment) }}" class="casa-button-primary">{{ __('Edit') }}</a>
+            <button type="button" class="casa-button-secondary" x-data="" x-on:click="$dispatch('open-modal', '{{ $recordPaymentModal }}')">{{ __('Record payment') }}</button>
+            <button type="button" class="casa-button-primary" x-data="" x-on:click="$dispatch('open-modal', '{{ $editAppointmentModal }}')">{{ __('Edit') }}</button>
         </div>
     </x-slot>
 
@@ -95,4 +100,29 @@
             </x-app-card>
         </aside>
     </div>
+
+    <x-modal :name="$editAppointmentModal" :show="old('_modal') === $editAppointmentModal" maxWidth="5xl" focusable>
+        <div class="p-5">
+            @include('admin.appointments.partials.form', [
+                'appointment' => $appointment,
+                'action' => route('admin.appointments.update', $appointment),
+                'method' => 'PATCH',
+                'submitLabel' => __('Save appointment'),
+                'modalName' => $editAppointmentModal,
+            ])
+        </div>
+    </x-modal>
+
+    <x-modal :name="$recordPaymentModal" :show="old('_modal') === $recordPaymentModal" maxWidth="5xl" focusable>
+        <div class="p-5">
+            @include('admin.transactions.partials.form', [
+                'transaction' => $transaction,
+                'appointments' => $transactionAppointments,
+                'action' => route('admin.transactions.store'),
+                'method' => 'POST',
+                'submitLabel' => __('Create transaction'),
+                'modalName' => $recordPaymentModal,
+            ])
+        </div>
+    </x-modal>
 </x-app-layout>

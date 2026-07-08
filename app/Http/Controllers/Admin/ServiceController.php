@@ -113,8 +113,11 @@ class ServiceController extends Controller
             'is_active' => ! $service->is_active,
         ]);
 
-        return redirect()
-            ->route('admin.services.index')
+        $redirect = request()->headers->has('referer')
+            ? back()
+            : redirect()->route('admin.services.index');
+
+        return $redirect
             ->with('status', $service->is_active ? 'service-activated' : 'service-deactivated');
     }
 

@@ -1,4 +1,8 @@
 <x-app-layout>
+    @php
+        $requestAppointmentModal = 'customer-appointment-request';
+    @endphp
+
     <x-slot name="header">
         <div>
             <p class="casa-section-label">{{ __('Customer lounge') }}</p>
@@ -8,7 +12,7 @@
             </p>
         </div>
 
-        <a href="{{ route('customer.appointments.create') }}" class="casa-button-primary">{{ __('Request appointment') }}</a>
+        <button type="button" class="casa-button-primary" x-data="" x-on:click="$dispatch('open-modal', '{{ $requestAppointmentModal }}')">{{ __('Request appointment') }}</button>
     </x-slot>
 
     <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
@@ -43,7 +47,7 @@
                     description="{{ __('Start with a service, preferred date, and notes. Staff will confirm the final booking time.') }}"
                 >
                     <x-slot name="action">
-                        <a href="{{ route('customer.appointments.create') }}" class="casa-button-primary">{{ __('Request appointment') }}</a>
+                        <button type="button" class="casa-button-primary" x-data="" x-on:click="$dispatch('open-modal', '{{ $requestAppointmentModal }}')">{{ __('Request appointment') }}</button>
                     </x-slot>
                 </x-empty-state>
             @else
@@ -129,4 +133,12 @@
             </x-app-card>
         </aside>
     </div>
+
+    <x-modal :name="$requestAppointmentModal" :show="old('_modal') === $requestAppointmentModal" maxWidth="6xl" focusable>
+        <div class="p-5">
+            @include('customer.appointments.partials.form', [
+                'modalName' => $requestAppointmentModal,
+            ])
+        </div>
+    </x-modal>
 </x-app-layout>

@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\HandlesIndexSorting;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AppointmentRequest;
 use App\Models\Appointment;
+use App\Models\Transaction;
 use App\Services\AppointmentWorkflow;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -74,6 +75,16 @@ class AppointmentController extends Controller
 
         return view('staff.appointments.show', [
             'appointment' => $appointment,
+            'transaction' => new Transaction([
+                'appointment_id' => $appointment->id,
+                'customer_profile_id' => $appointment->customer_profile_id,
+                'service_id' => $appointment->service_id,
+                'amount' => $appointment->service?->price,
+                'payment_status' => Transaction::PAYMENT_PAID,
+                'payment_method' => Transaction::METHOD_CASH,
+                'paid_at' => now(),
+            ]),
+            'appointments' => collect([$appointment]),
         ]);
     }
 

@@ -9,6 +9,10 @@
         </div>
     </x-slot>
 
+    @php
+        $recordPaymentModal = 'staff-appointment-payment-'.$appointment->id;
+    @endphp
+
     <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <section class="space-y-6">
             <x-input-error :messages="$errors->all()" />
@@ -52,7 +56,9 @@
                 <x-app-card>
                     <p class="casa-section-label">{{ __('Confirm') }}</p>
                     <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ __('Accept request') }}</h2>
-                    @php($confirmAppointmentFormId = 'confirm-appointment-'.$appointment->id)
+                    @php
+                        $confirmAppointmentFormId = 'confirm-appointment-'.$appointment->id;
+                    @endphp
                     <form id="{{ $confirmAppointmentFormId }}" method="POST" action="{{ route('staff.appointments.update', $appointment) }}" class="mt-5 space-y-4">
                         @csrf
                         @method('PATCH')
@@ -110,7 +116,7 @@
                     </div>
                 </x-app-card>
 
-                <a href="{{ route('staff.transactions.create', ['appointment_id' => $appointment->id]) }}" class="casa-button-secondary w-full">{{ __('Record payment') }}</a>
+                <button type="button" class="casa-button-secondary w-full" x-data="" x-on:click="$dispatch('open-modal', '{{ $recordPaymentModal }}')">{{ __('Record payment') }}</button>
             @endif
 
             <x-app-card>
@@ -122,4 +128,16 @@
             </x-app-card>
         </aside>
     </div>
+
+    <x-modal :name="$recordPaymentModal" :show="old('_modal') === $recordPaymentModal" maxWidth="4xl" focusable>
+        <div class="p-5">
+            @include('staff.transactions.partials.form', [
+                'transaction' => $transaction,
+                'action' => route('staff.transactions.store'),
+                'method' => 'POST',
+                'submitLabel' => __('Create transaction'),
+                'modalName' => $recordPaymentModal,
+            ])
+        </div>
+    </x-modal>
 </x-app-layout>

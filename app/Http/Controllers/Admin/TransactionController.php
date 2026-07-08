@@ -54,6 +54,12 @@ class TransactionController extends Controller
             ->paginate(12)
             ->withQueryString();
 
+        $formData = $this->formData(new Transaction([
+            'payment_status' => Transaction::PAYMENT_PAID,
+            'payment_method' => Transaction::METHOD_CASH,
+            'paid_at' => now(),
+        ]));
+
         return view('admin.transactions.index', [
             'transactions' => $transactions,
             'status' => $status,
@@ -65,6 +71,7 @@ class TransactionController extends Controller
                 'unpaid' => Transaction::query()->whereIn('payment_status', [Transaction::PAYMENT_UNPAID, Transaction::PAYMENT_PARTIAL])->sum('amount'),
                 'count' => Transaction::query()->count(),
             ],
+            ...$formData,
         ]);
     }
 

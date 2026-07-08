@@ -14,6 +14,10 @@
         </div>
     </x-slot>
 
+    @php
+        $customerNotesModal = 'admin-customer-notes-'.$customer->id;
+    @endphp
+
     <div class="space-y-6">
         <section class="grid gap-4 md:grid-cols-4">
             <x-metric-card label="Appointments" :value="$customer->appointments_count" meta="Booking records" tone="brown" />
@@ -63,15 +67,28 @@
                 <x-app-card>
                     <p class="casa-section-label">{{ __('Care notes') }}</p>
                     <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ __('Internal note') }}</h2>
-                    <form method="POST" action="{{ route('admin.customers.update', $customer) }}" class="mt-5 space-y-4">
-                        @csrf
-                        @method('PATCH')
-                        <textarea name="notes" rows="8" class="casa-input">{{ old('notes', $customer->notes) }}</textarea>
-                        <x-input-error :messages="$errors->get('notes')" />
-                        <button type="submit" class="casa-button-primary w-full">{{ __('Save notes') }}</button>
-                    </form>
+                    <p class="mt-4 whitespace-pre-line text-sm leading-6 text-casa-muted">{{ $customer->notes ?: __('No internal note yet.') }}</p>
+                    <button type="button" class="mt-5 casa-button-primary w-full" x-data="" x-on:click="$dispatch('open-modal', '{{ $customerNotesModal }}')">{{ __('Update notes') }}</button>
                 </x-app-card>
             </aside>
         </section>
     </div>
+
+    <x-modal :name="$customerNotesModal" :show="old('_modal') === $customerNotesModal" maxWidth="2xl" focusable>
+        <form method="POST" action="{{ route('admin.customers.update', $customer) }}" class="casa-modal-form p-6">
+            @csrf
+            @method('PATCH')
+            <input type="hidden" name="_modal" value="{{ $customerNotesModal }}">
+
+            <p class="casa-section-label">{{ __('Care notes') }}</p>
+            <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ __('Update internal note') }}</h2>
+            <textarea name="notes" rows="8" class="casa-input mt-5">{{ old('notes', $customer->notes) }}</textarea>
+            <x-input-error class="mt-2" :messages="$errors->get('notes')" />
+
+            <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end" data-modal-actions>
+                <button type="button" class="casa-button-secondary" x-on:click="$dispatch('close-modal', '{{ $customerNotesModal }}')">{{ __('Cancel') }}</button>
+                <button type="submit" class="casa-button-primary">{{ __('Save notes') }}</button>
+            </div>
+        </form>
+    </x-modal>
 </x-app-layout>

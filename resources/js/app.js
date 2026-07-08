@@ -15,7 +15,7 @@ window.customerCalendarBooking = (config) => ({
     loading: false,
     error: '',
     weekDays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-    slotPreviewLimit: 2,
+    slotPreviewLimit: config.slotPreviewLimit || 2,
 
     init() {
         if (this.selectedSlot) {
@@ -282,9 +282,7 @@ const isPanelLink = (link) => {
         return false;
     }
 
-    const url = linkUrl(link);
-
-    return link.hasAttribute('data-panel-link') || isPanelEligibleUrl(url);
+    return link.hasAttribute('data-panel-link');
 };
 
 const setPanelLoading = (url) => {
