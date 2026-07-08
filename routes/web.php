@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
 use App\Http\Controllers\Customer\AppointmentIndexController as CustomerAppointmentIndexController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Staff\DashboardController as StaffDashboardController;
@@ -65,19 +66,8 @@ Route::middleware(['auth', 'active', 'verified', 'role:admin'])
                 ['label' => 'Schedules', 'value' => 'Weekly availability'],
             ],
         ])->name('staff.index');
-        Route::view('/services', 'modules.placeholder', [
-            'eyebrow' => 'Admin module',
-            'title' => 'Services',
-            'description' => 'Maintain the spa catalog with treatment details, durations, prices, and active status.',
-            'status' => 'Phase 5',
-            'actionLabel' => 'Back to dashboard',
-            'actionRoute' => 'admin.dashboard',
-            'cards' => [
-                ['label' => 'Catalog', 'value' => 'Active treatments'],
-                ['label' => 'Pricing', 'value' => 'Service rates'],
-                ['label' => 'Duration', 'value' => 'Booking length'],
-            ],
-        ])->name('services.index');
+        Route::patch('/services/{service}/toggle', [AdminServiceController::class, 'toggle'])->name('services.toggle');
+        Route::resource('services', AdminServiceController::class)->except('destroy');
         Route::view('/transactions', 'modules.placeholder', [
             'eyebrow' => 'Admin module',
             'title' => 'Transactions',
