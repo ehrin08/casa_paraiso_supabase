@@ -9,17 +9,17 @@
         </div>
 
         <div class="flex flex-wrap gap-3">
-            <x-secondary-button type="button">{{ __('View reports') }}</x-secondary-button>
-            <x-primary-button type="button">{{ __('Review requests') }}</x-primary-button>
+            <a href="{{ route('admin.reports.index') }}" class="casa-button-secondary">{{ __('View reports') }}</a>
+            <a href="{{ route('admin.appointments.index') }}" class="casa-button-primary">{{ __('Review requests') }}</a>
         </div>
     </x-slot>
 
     <div class="space-y-6">
         <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <x-metric-card label="Today" value="0" meta="Appointments scheduled" tone="brown" />
-            <x-metric-card label="Pending" value="0" meta="Requests awaiting review" tone="gold" />
-            <x-metric-card label="Revenue" value="PHP 0" meta="Recorded today" tone="green" />
-            <x-metric-card label="Feedback" value="0" meta="New reviews to read" tone="charcoal" />
+            <x-metric-card label="Today" :value="$summary['todayAppointments'] ?? 0" meta="Appointments scheduled" tone="brown" />
+            <x-metric-card label="Pending" :value="$summary['pendingAppointments'] ?? 0" meta="Requests awaiting review" tone="gold" />
+            <x-metric-card label="Revenue" value="PHP {{ number_format((float) ($summary['todayRevenue'] ?? 0), 2) }}" meta="Paid transactions today" tone="green" />
+            <x-metric-card label="Feedback" :value="$summary['newFeedback'] ?? 0" meta="New reviews today" tone="charcoal" />
         </section>
 
         <section class="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.55fr)]">
@@ -29,26 +29,40 @@
                         <p class="casa-section-label">{{ __('Appointment queue') }}</p>
                         <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ __('Pending requests') }}</h2>
                     </div>
-                    <x-status-badge tone="warning">{{ __('Ready for Phase 6') }}</x-status-badge>
+                    <x-status-badge tone="warning">{{ trans_choice(':count pending|:count pending', $summary['pendingAppointments'] ?? 0) }}</x-status-badge>
                 </div>
 
                 <div class="mt-5">
                     <x-table-shell>
                         <thead class="bg-casa-bg text-left text-xs font-black uppercase tracking-[0.1em] text-casa-muted">
                             <tr>
+                                <th class="px-4 py-3">{{ __('No.') }}</th>
                                 <th class="px-4 py-3">{{ __('Customer') }}</th>
                                 <th class="px-4 py-3">{{ __('Service') }}</th>
+                                <th class="px-4 py-3">{{ __('Requested') }}</th>
                                 <th class="px-4 py-3">{{ __('Status') }}</th>
                                 <th class="px-4 py-3">{{ __('Action') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-casa-border text-sm">
-                            <tr>
-                                <td class="px-4 py-4 font-semibold text-casa-text">{{ __('No requests yet') }}</td>
-                                <td class="px-4 py-4 text-casa-muted">{{ __('Appointments module pending') }}</td>
-                                <td class="px-4 py-4"><x-status-badge>{{ __('Empty') }}</x-status-badge></td>
-                                <td class="px-4 py-4 text-casa-muted">{{ __('Add workflow later') }}</td>
-                            </tr>
+                            @forelse ($pendingAppointments as $appointment)
+                                <tr>
+                                    <td class="px-4 py-4 font-semibold text-casa-text">{{ $appointment->appointment_number }}</td>
+                                    <td class="px-4 py-4 text-casa-muted">{{ $appointment->customerProfile?->user?->name ?? __('Customer') }}</td>
+                                    <td class="px-4 py-4 text-casa-muted">{{ $appointment->service?->name ?? __('Service') }}</td>
+                                    <td class="px-4 py-4 text-casa-muted">{{ $appointment->requested_start_at?->format('M d, Y g:i A') }}</td>
+                                    <td class="px-4 py-4"><x-status-badge tone="warning">{{ __(ucfirst($appointment->status)) }}</x-status-badge></td>
+                                    <td class="px-4 py-4">
+                                        <a href="{{ route('admin.appointments.index') }}" class="font-bold text-casa-primary hover:text-casa-primary-dark">
+                                            {{ __('Review') }}
+                                        </a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td class="px-4 py-4 font-semibold text-casa-text" colspan="6">{{ __('No pending requests') }}</td>
+                                </tr>
+                            @endforelse
                         </tbody>
                     </x-table-shell>
                 </div>
@@ -65,6 +79,7 @@
                     <p>{{ __('Appointments and staff schedules') }}</p>
                     <p>{{ __('Transactions and exports') }}</p>
                     <p>{{ __('Feedback sentiment and RFM suggestions') }}</p>
+                    <p>{{ trans_choice(':count promotion review waiting|:count promotion reviews waiting', $summary['promotionReviews'] ?? 0) }}</p>
                 </div>
             </aside>
         </section>

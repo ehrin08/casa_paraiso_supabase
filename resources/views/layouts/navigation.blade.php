@@ -12,15 +12,28 @@
     $navItems = match (true) {
         $user->isAdmin() => [
             ['label' => 'Dashboard', 'route' => 'admin.dashboard', 'active' => 'admin.dashboard'],
-            ['label' => 'Profile', 'route' => 'profile.edit', 'active' => 'profile.*'],
+            ['label' => 'Appointments', 'route' => 'admin.appointments.index', 'active' => 'admin.appointments.*'],
+            ['label' => 'Customers', 'route' => 'admin.customers.index', 'active' => 'admin.customers.*'],
+            ['label' => 'Staff', 'route' => 'admin.staff.index', 'active' => 'admin.staff.*'],
+            ['label' => 'Services', 'route' => 'admin.services.index', 'active' => 'admin.services.*'],
+            ['label' => 'Transactions', 'route' => 'admin.transactions.index', 'active' => 'admin.transactions.*'],
+            ['label' => 'Promotions', 'route' => 'admin.promotions.index', 'active' => 'admin.promotions.*'],
+            ['label' => 'Feedback', 'route' => 'admin.feedback.index', 'active' => 'admin.feedback.*'],
+            ['label' => 'Reports', 'route' => 'admin.reports.index', 'active' => 'admin.reports.*'],
+            ['label' => 'Settings', 'route' => 'admin.settings.index', 'active' => 'admin.settings.*'],
         ],
         $user->isStaff() => [
             ['label' => 'Dashboard', 'route' => 'staff.dashboard', 'active' => 'staff.dashboard'],
-            ['label' => 'Profile', 'route' => 'profile.edit', 'active' => 'profile.*'],
+            ['label' => 'Appointments', 'route' => 'staff.appointments.index', 'active' => 'staff.appointments.*'],
+            ['label' => 'Customers', 'route' => 'staff.customers.index', 'active' => 'staff.customers.*'],
+            ['label' => 'Transactions', 'route' => 'staff.transactions.index', 'active' => 'staff.transactions.*'],
+            ['label' => 'Feedback', 'route' => 'staff.feedback.index', 'active' => 'staff.feedback.*'],
         ],
         default => [
             ['label' => 'Appointments', 'route' => 'customer.appointments.index', 'active' => 'customer.appointments.*'],
-            ['label' => 'Profile', 'route' => 'profile.edit', 'active' => 'profile.*'],
+            ['label' => 'Request', 'route' => 'customer.appointments.create', 'active' => 'customer.appointments.create'],
+            ['label' => 'Feedback', 'route' => 'customer.feedback.index', 'active' => 'customer.feedback.*'],
+            ['label' => 'Profile', 'route' => 'customer.profile.edit', 'active' => ['customer.profile.*', 'profile.*']],
         ],
     };
 @endphp
@@ -41,7 +54,7 @@
             </div>
         </div>
 
-        <aside class="casa-wood-panel fixed inset-y-0 start-0 z-30 hidden w-72 flex-col border-e border-white/10 p-5 lg:flex">
+        <aside class="casa-wood-panel fixed inset-y-0 start-0 z-30 hidden w-72 flex-col overflow-y-auto border-e border-white/10 p-5 lg:flex">
             <a href="{{ route($dashboardRoute) }}" class="rounded-[22px] bg-white/95 p-4 shadow-casa-lift">
                 <x-application-logo />
             </a>
@@ -53,9 +66,10 @@
 
             <div class="mt-8 space-y-2">
                 @foreach ($navItems as $item)
+                    @php($isActive = request()->routeIs(...(array) $item['active']))
                     <a href="{{ route($item['route']) }}" @class([
                         'casa-nav-link w-full',
-                        'casa-nav-link-active' => request()->routeIs($item['active']),
+                        'casa-nav-link-active' => $isActive,
                     ])>
                         {{ $item['label'] }}
                     </a>
@@ -91,9 +105,10 @@
 
                 <div class="mt-8 space-y-2">
                     @foreach ($navItems as $item)
+                        @php($isActive = request()->routeIs(...(array) $item['active']))
                         <a href="{{ route($item['route']) }}" @class([
                             'casa-nav-link w-full',
-                            'casa-nav-link-active' => request()->routeIs($item['active']),
+                            'casa-nav-link-active' => $isActive,
                         ]) @click="open = false">
                             {{ $item['label'] }}
                         </a>
@@ -119,7 +134,8 @@
 
                 <div class="hidden items-center gap-7 md:flex">
                     @foreach ($navItems as $item)
-                        <x-nav-link :href="route($item['route'])" :active="request()->routeIs($item['active'])">
+                        @php($isActive = request()->routeIs(...(array) $item['active']))
+                        <x-nav-link :href="route($item['route'])" :active="$isActive">
                             {{ $item['label'] }}
                         </x-nav-link>
                     @endforeach
@@ -160,7 +176,8 @@
         <div x-show="open" class="border-t border-casa-border bg-casa-bg px-4 py-4 md:hidden" style="display: none;">
             <div class="space-y-2">
                 @foreach ($navItems as $item)
-                    <x-responsive-nav-link :href="route($item['route'])" :active="request()->routeIs($item['active'])">
+                    @php($isActive = request()->routeIs(...(array) $item['active']))
+                    <x-responsive-nav-link :href="route($item['route'])" :active="$isActive">
                         {{ $item['label'] }}
                     </x-responsive-nav-link>
                 @endforeach

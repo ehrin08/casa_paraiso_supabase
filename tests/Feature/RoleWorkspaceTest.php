@@ -1,0 +1,233 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Appointment;
+use App\Models\CustomerProfile;
+use App\Models\Feedback;
+use App\Models\PromotionSuggestion;
+use App\Models\Service;
+use App\Models\StaffProfile;
+use App\Models\Transaction;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class RoleWorkspaceTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_admin_module_routes_are_available_only_to_admins(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $staff = User::factory()->staff()->create();
+        $customer = User::factory()->customer()->create();
+
+        foreach ([
+            '/admin/dashboard',
+            '/admin/appointments',
+            '/admin/customers',
+            '/admin/staff',
+            '/admin/services',
+            '/admin/transactions',
+            '/admin/promotions',
+            '/admin/feedback',
+            '/admin/reports',
+            '/admin/settings',
+        ] as $path) {
+            $this->actingAs($admin)->get($path)->assertOk();
+            $this->actingAs($staff)->get($path)->assertForbidden();
+            $this->actingAs($customer)->get($path)->assertForbidden();
+        }
+    }
+
+    public function test_staff_module_routes_are_available_only_to_staff(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $staff = User::factory()->staff()->create();
+        $customer = User::factory()->customer()->create();
+
+        foreach ([
+            '/staff/dashboard',
+            '/staff/appointments',
+            '/staff/customers',
+            '/staff/transactions',
+            '/staff/feedback',
+        ] as $path) {
+            $this->actingAs($staff)->get($path)->assertOk();
+            $this->actingAs($admin)->get($path)->assertForbidden();
+            $this->actingAs($customer)->get($path)->assertForbidden();
+        }
+    }
+
+    public function test_customer_module_routes_are_available_only_to_customers(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $staff = User::factory()->staff()->create();
+        $customer = User::factory()->customer()->create();
+
+        foreach ([
+            '/customer/appointments',
+            '/customer/appointments/create',
+            '/customer/feedback',
+        ] as $path) {
+            $this->actingAs($customer)->get($path)->assertOk();
+            $this->actingAs($admin)->get($path)->assertForbidden();
+            $this->actingAs($staff)->get($path)->assertForbidden();
+        }
+
+        $this->actingAs($customer)
+            ->get('/customer/profile')
+            ->assertRedirect(route('profile.edit', absolute: false));
+    }
+
+    public function test_admin_dashboard_shows_operational_counts(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $staff = User::factory()->staff()->create();
+        $customerProfile = CustomerProfile::factory()->create();
+        $service = Service::factory()->create(['name' => 'Hilot Massage']);
+
+        Appointment::factory()
+            ->for($customerProfile)
+            ->for($service)
+            ->create([
+                'appointment_number' => 'APT-PENDING',
+                'status' => Appointment::STATUS_PENDING,
+                'requested_start_at' => now()->addDay()->setTime(14, 0),
+            ]);
+
+        Appointment::factory()
+            ->for($customerProfile)
+            ->for($service)
+            ->for(StaffProfile::factory()->for($staff), 'staffProfile')
+            ->create([
+                'appointment_number' => 'APT-TODAY',
+                'status' => Appointment::STATUS_CONFIRMED,
+                'scheduled_start_at' => now()->setTime(10, 0),
+                'scheduled_end_at' => now()->setTime(11, 0),
+            ]);
+
+        Transaction::factory()
+            ->for($customerProfile)
+            ->for($service)
+            ->for($admin, 'recorder')
+            ->create([
+                'amount' => 1200,
+                'payment_status' => Transaction::PAYMENT_PAID,
+                'paid_at' => now(),
+            ]);
+
+        Feedback::factory()
+            ->for($customerProfile)
+            ->for($service)
+            ->create(['submitted_at' => now()]);
+
+        PromotionSuggestion::factory()
+            ->for($customerProfile)
+            ->create(['status' => PromotionSuggestion::STATUS_SUGGESTED]);
+
+        $this->actingAs($admin)
+            ->get('/admin/dashboard')
+            ->assertOk()
+            ->assertSee('APT-PENDING')
+            ->assertSee('Hilot Massage')
+            ->assertSee('PHP 1,200.00')
+            ->assertSee('1 promotion review waiting');
+    }
+
+    public function test_staff_dashboard_shows_assigned_pending_and_completed_counts(): void
+    {
+        $staff = User::factory()->staff()->create();
+        $staffProfile = StaffProfile::factory()->for($staff)->create();
+        $customerProfile = CustomerProfile::factory()->create();
+        $service = Service::factory()->create(['name' => 'Signature Body Care']);
+
+        $staffProfile->services()->attach($service);
+
+        Appointment::factory()
+            ->for($customerProfile)
+            ->for($service)
+            ->for($staffProfile, 'staffProfile')
+            ->create([
+                'appointment_number' => 'APT-STAFF',
+                'status' => Appointment::STATUS_CONFIRMED,
+                'scheduled_start_at' => now()->setTime(9, 0),
+                'scheduled_end_at' => now()->setTime(10, 0),
+            ]);
+
+        Appointment::factory()
+            ->for($customerProfile)
+            ->for($service)
+            ->create([
+                'appointment_number' => 'APT-PENDING-STAFF',
+                'status' => Appointment::STATUS_PENDING,
+            ]);
+
+        Appointment::factory()
+            ->for($customerProfile)
+            ->for($service)
+            ->for($staffProfile, 'staffProfile')
+            ->create([
+                'appointment_number' => 'APT-DONE',
+                'status' => Appointment::STATUS_COMPLETED,
+                'scheduled_start_at' => now()->setTime(11, 0),
+                'scheduled_end_at' => now()->setTime(12, 0),
+                'completed_at' => now(),
+            ]);
+
+        $this->actingAs($staff)
+            ->get('/staff/dashboard')
+            ->assertOk()
+            ->assertSee('APT-STAFF')
+            ->assertSee('Signature Body Care')
+            ->assertSeeInOrder(['Assigned today', '1', 'Confirmed appointments'])
+            ->assertSeeInOrder(['Pending', '1', 'Requests needing action'])
+            ->assertSeeInOrder(['Completed', '1', 'Services finished today']);
+    }
+
+    public function test_customer_appointment_lounge_shows_own_appointment_summary(): void
+    {
+        $customer = User::factory()->customer()->create();
+        $customerProfile = CustomerProfile::factory()->for($customer)->create();
+        $service = Service::factory()->create(['name' => 'Tropical Wellness Massage']);
+
+        Appointment::factory()
+            ->for($customerProfile)
+            ->for($service)
+            ->create([
+                'appointment_number' => 'APT-CUSTOMER-PENDING',
+                'status' => Appointment::STATUS_PENDING,
+            ]);
+
+        Appointment::factory()
+            ->for($customerProfile)
+            ->for($service)
+            ->confirmed()
+            ->create([
+                'appointment_number' => 'APT-CUSTOMER-CONFIRMED',
+                'scheduled_start_at' => now()->addDay()->setTime(15, 0),
+                'scheduled_end_at' => now()->addDay()->setTime(16, 0),
+            ]);
+
+        Appointment::factory()
+            ->for($customerProfile)
+            ->for($service)
+            ->create([
+                'appointment_number' => 'APT-CUSTOMER-COMPLETE',
+                'status' => Appointment::STATUS_COMPLETED,
+                'completed_at' => now()->subDay(),
+            ]);
+
+        $this->actingAs($customer)
+            ->get('/customer/appointments')
+            ->assertOk()
+            ->assertSee('APT-CUSTOMER-PENDING')
+            ->assertSee('APT-CUSTOMER-CONFIRMED')
+            ->assertSee('APT-CUSTOMER-COMPLETE')
+            ->assertSee('Tropical Wellness Massage')
+            ->assertSeeInOrder(['Upcoming', '1'])
+            ->assertSeeInOrder(['Pending', '1'])
+            ->assertSeeInOrder(['Completed', '1']);
+    }
+}

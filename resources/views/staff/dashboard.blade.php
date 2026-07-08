@@ -9,16 +9,16 @@
         </div>
 
         <div class="flex flex-wrap gap-3">
-            <x-secondary-button type="button">{{ __('Customer lookup') }}</x-secondary-button>
-            <x-primary-button type="button">{{ __('Today schedule') }}</x-primary-button>
+            <a href="{{ route('staff.customers.index') }}" class="casa-button-secondary">{{ __('Customer lookup') }}</a>
+            <a href="{{ route('staff.appointments.index') }}" class="casa-button-primary">{{ __('Today schedule') }}</a>
         </div>
     </x-slot>
 
     <div class="grid gap-6 xl:grid-cols-[minmax(320px,0.8fr)_minmax(0,1.2fr)]">
         <section class="space-y-4">
-            <x-metric-card label="Assigned today" value="0" meta="Confirmed appointments" tone="green" />
-            <x-metric-card label="Pending" value="0" meta="Requests needing action" tone="gold" />
-            <x-metric-card label="Completed" value="0" meta="Services finished today" tone="brown" />
+            <x-metric-card label="Assigned today" :value="$summary['assignedToday'] ?? 0" meta="Confirmed appointments" tone="green" />
+            <x-metric-card label="Pending" :value="$summary['pendingRequests'] ?? 0" meta="Requests needing action" tone="gold" />
+            <x-metric-card label="Completed" :value="$summary['completedToday'] ?? 0" meta="Services finished today" tone="brown" />
         </section>
 
         <x-app-card>
@@ -27,14 +27,39 @@
                     <p class="casa-section-label">{{ __('Service flow') }}</p>
                     <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ __('Today appointments') }}</h2>
                 </div>
-                <x-status-badge tone="success">{{ __('Prepared') }}</x-status-badge>
+                <x-status-badge tone="success">{{ trans_choice(':count assigned|:count assigned', $summary['assignedToday'] ?? 0) }}</x-status-badge>
             </div>
 
             <div class="mt-5 space-y-4">
-                <x-empty-state
-                    title="{{ __('No appointments assigned yet') }}"
-                    description="{{ __('Once appointment data is added, this area will show the staff member current bookings and next actions.') }}"
-                />
+                @if ($todayAppointments->isEmpty())
+                    <x-empty-state
+                        title="{{ __('No appointments assigned today') }}"
+                        description="{{ __('Confirmed visits for today will appear here when appointments are scheduled.') }}"
+                    />
+                @else
+                    <x-table-shell>
+                        <thead class="bg-casa-bg text-left text-xs font-black uppercase tracking-[0.1em] text-casa-muted">
+                            <tr>
+                                <th class="px-4 py-3">{{ __('No.') }}</th>
+                                <th class="px-4 py-3">{{ __('Time') }}</th>
+                                <th class="px-4 py-3">{{ __('Customer') }}</th>
+                                <th class="px-4 py-3">{{ __('Service') }}</th>
+                                <th class="px-4 py-3">{{ __('Status') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-casa-border text-sm">
+                            @foreach ($todayAppointments as $appointment)
+                                <tr>
+                                    <td class="px-4 py-4 font-semibold text-casa-text">{{ $appointment->appointment_number }}</td>
+                                    <td class="px-4 py-4 font-semibold text-casa-text">{{ $appointment->scheduled_start_at?->format('g:i A') }}</td>
+                                    <td class="px-4 py-4 text-casa-muted">{{ $appointment->customerProfile?->user?->name ?? __('Customer') }}</td>
+                                    <td class="px-4 py-4 text-casa-muted">{{ $appointment->service?->name ?? __('Service') }}</td>
+                                    <td class="px-4 py-4"><x-status-badge tone="success">{{ __(ucfirst($appointment->status)) }}</x-status-badge></td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </x-table-shell>
+                @endif
 
                 <div class="grid gap-3 sm:grid-cols-3">
                     <div class="rounded-2xl bg-casa-bg p-4">
