@@ -65,6 +65,7 @@
                                     <th class="px-4 py-3">{{ __('Schedule') }}</th>
                                     <th class="px-4 py-3">{{ __('Staff') }}</th>
                                     <th class="px-4 py-3">{{ __('Status') }}</th>
+                                    <th class="px-4 py-3">{{ __('Action') }}</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-casa-border text-sm">
@@ -84,10 +85,17 @@
                                         <td class="px-4 py-4 text-casa-muted">{{ ($appointment->scheduled_start_at ?? $appointment->requested_start_at)?->format('M d, Y g:i A') }}</td>
                                         <td class="px-4 py-4 text-casa-muted">{{ $appointment->staffProfile?->user?->name ?? __('Pending') }}</td>
                                         <td class="px-4 py-4"><x-status-badge :tone="$statusTone">{{ __(ucfirst(str_replace('_', ' ', $appointment->status))) }}</x-status-badge></td>
+                                        <td class="px-4 py-4">
+                                            <a href="{{ route('customer.appointments.show', $appointment) }}" class="font-bold text-casa-primary hover:text-casa-primary-dark">{{ __('Open') }}</a>
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>
                         </x-table-shell>
+
+                        <div class="mt-5">
+                            {{ $appointments->links() }}
+                        </div>
                     </div>
                 </x-app-card>
             @endif

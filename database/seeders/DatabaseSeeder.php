@@ -3,10 +3,14 @@
 namespace Database\Seeders;
 
 use App\Models\PromotionRule;
+use App\Models\PromotionSuggestion;
 use App\Models\RfmSegment;
 use App\Models\Service;
 use App\Models\StaffProfile;
 use App\Models\StaffWeeklySchedule;
+use App\Models\Appointment;
+use App\Models\Feedback;
+use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -98,7 +102,7 @@ class DatabaseSeeder extends Seeder
             ],
         );
 
-        $customer->customerProfile()->updateOrCreate(
+        $customerProfile = $customer->customerProfile()->updateOrCreate(
             ['user_id' => $customer->id],
             [
                 'customer_code' => 'CP-00001',
@@ -109,7 +113,7 @@ class DatabaseSeeder extends Seeder
             ],
         );
 
-        $returningCustomer->customerProfile()->updateOrCreate(
+        $returningCustomerProfile = $returningCustomer->customerProfile()->updateOrCreate(
             ['user_id' => $returningCustomer->id],
             [
                 'customer_code' => 'CP-00002',
@@ -262,5 +266,107 @@ class DatabaseSeeder extends Seeder
                 ],
             );
         });
+
+        $signature = $services->firstWhere('slug', 'signature-hilot-massage');
+        $aromatherapy = $services->firstWhere('slug', 'aromatherapy-massage');
+
+        Appointment::updateOrCreate(
+            ['appointment_number' => 'APT-DEMO-PENDING'],
+            [
+                'customer_profile_id' => $customerProfile->id,
+                'service_id' => $signature->id,
+                'staff_profile_id' => null,
+                'requested_start_at' => now()->addDays(2)->setTime(14, 0),
+                'scheduled_start_at' => null,
+                'scheduled_end_at' => null,
+                'status' => Appointment::STATUS_PENDING,
+                'customer_notes' => 'Prefers a quiet room if available.',
+                'created_by' => $customer->id,
+            ],
+        );
+
+        $confirmedStart = now()->addDay()->setTime(11, 0);
+        Appointment::updateOrCreate(
+            ['appointment_number' => 'APT-DEMO-CONFIRMED'],
+            [
+                'customer_profile_id' => $returningCustomerProfile->id,
+                'service_id' => $aromatherapy->id,
+                'staff_profile_id' => $staffProfile->id,
+                'requested_start_at' => $confirmedStart,
+                'scheduled_start_at' => $confirmedStart,
+                'scheduled_end_at' => $confirmedStart->copy()->addMinutes($aromatherapy->duration_minutes),
+                'status' => Appointment::STATUS_CONFIRMED,
+                'confirmed_at' => now(),
+                'created_by' => $admin->id,
+                'updated_by' => $admin->id,
+            ],
+        );
+
+        $completedStart = now()->subDays(10)->setTime(10, 0);
+        $completedAppointment = Appointment::updateOrCreate(
+            ['appointment_number' => 'APT-DEMO-COMPLETED'],
+            [
+                'customer_profile_id' => $returningCustomerProfile->id,
+                'service_id' => $signature->id,
+                'staff_profile_id' => $staffProfile->id,
+                'requested_start_at' => $completedStart,
+                'scheduled_start_at' => $completedStart,
+                'scheduled_end_at' => $completedStart->copy()->addMinutes($signature->duration_minutes),
+                'status' => Appointment::STATUS_COMPLETED,
+                'confirmed_at' => $completedStart->copy()->subDay(),
+                'completed_at' => $completedStart->copy()->addMinutes($signature->duration_minutes),
+                'created_by' => $admin->id,
+                'updated_by' => $staff->id,
+            ],
+        );
+
+        Transaction::updateOrCreate(
+            ['transaction_number' => 'TRX-DEMO-PAID'],
+            [
+                'customer_profile_id' => $returningCustomerProfile->id,
+                'appointment_id' => $completedAppointment->id,
+                'service_id' => $signature->id,
+                'amount' => $signature->price,
+                'payment_status' => Transaction::PAYMENT_PAID,
+                'payment_method' => Transaction::METHOD_GCASH,
+                'paid_at' => $completedAppointment->completed_at,
+                'recorded_by' => $staff->id,
+                'notes' => 'Demo completed appointment payment.',
+            ],
+        );
+
+        Feedback::updateOrCreate(
+            ['appointment_id' => $completedAppointment->id],
+            [
+                'customer_profile_id' => $returningCustomerProfile->id,
+                'service_id' => $signature->id,
+                'rating' => 5,
+                'comment' => 'Excellent and relaxing service.',
+                'sentiment_label' => Feedback::SENTIMENT_POSITIVE,
+                'sentiment_score' => 1.0,
+                'submitted_at' => $completedAppointment->completed_at->copy()->addDay(),
+            ],
+        );
+
+        $loyalSegment = RfmSegment::query()->where('name', 'New customer')->first();
+        $loyalRule = $loyalSegment?->promotionRules()->first();
+
+        if ($loyalSegment && $loyalRule) {
+            PromotionSuggestion::updateOrCreate(
+                [
+                    'customer_profile_id' => $returningCustomerProfile->id,
+                    'promotion_rule_id' => $loyalRule->id,
+                ],
+                [
+                    'rfm_segment_id' => $loyalSegment->id,
+                    'recency_days' => 10,
+                    'frequency_count' => 1,
+                    'monetary_total' => $signature->price,
+                    'suggested_offer' => $loyalRule->suggested_offer,
+                    'status' => PromotionSuggestion::STATUS_SUGGESTED,
+                    'notes' => 'Demo suggestion for the promotion review queue.',
+                ],
+            );
+        }
     }
 }

@@ -1,0 +1,83 @@
+<x-app-layout>
+    <x-slot name="header">
+        <div>
+            <p class="casa-section-label">{{ __('Customer detail') }}</p>
+            <h1 class="mt-2 font-display text-3xl font-black text-casa-text">{{ $customer->user->name }}</h1>
+            <p class="mt-2 max-w-2xl text-sm leading-6 text-casa-muted">
+                {{ $customer->customer_code }} · {{ $customer->user->email }}
+            </p>
+        </div>
+
+        <div class="flex flex-wrap gap-3">
+            <a href="{{ route('admin.appointments.create', ['customer_profile_id' => $customer->id]) }}" class="casa-button-primary">{{ __('Add appointment') }}</a>
+            <a href="{{ route('admin.customers.index') }}" class="casa-button-secondary">{{ __('All customers') }}</a>
+        </div>
+    </x-slot>
+
+    <div class="space-y-6">
+        @if (session('status'))
+            <div class="rounded-[18px] border border-casa-green/30 bg-casa-green/10 px-5 py-4 text-sm font-semibold text-casa-green">
+                {{ __('Customer record updated.') }}
+            </div>
+        @endif
+
+        <section class="grid gap-4 md:grid-cols-4">
+            <x-metric-card label="Appointments" :value="$customer->appointments_count" meta="Booking records" tone="brown" />
+            <x-metric-card label="Transactions" :value="$customer->transactions_count" meta="Payment records" tone="green" />
+            <x-metric-card label="Feedback" :value="$customer->feedback_count" meta="Submitted reviews" tone="gold" />
+            <x-metric-card label="Promos" :value="$customer->promotion_suggestions_count" meta="RFM suggestions" tone="charcoal" />
+        </section>
+
+        <section class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+            <div class="space-y-6">
+                <x-app-card>
+                    <div class="border-b border-casa-border pb-5">
+                        <p class="casa-section-label">{{ __('Profile') }}</p>
+                        <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ __('Contact details') }}</h2>
+                    </div>
+                    <dl class="mt-5 grid gap-4 sm:grid-cols-2">
+                        <div class="rounded-2xl bg-casa-bg p-4">
+                            <dt class="text-xs font-black uppercase tracking-[0.12em] text-casa-muted">{{ __('Phone') }}</dt>
+                            <dd class="mt-2 font-semibold text-casa-text">{{ $customer->user->phone ?: __('Not set') }}</dd>
+                        </div>
+                        <div class="rounded-2xl bg-casa-bg p-4">
+                            <dt class="text-xs font-black uppercase tracking-[0.12em] text-casa-muted">{{ __('Preference') }}</dt>
+                            <dd class="mt-2 font-semibold text-casa-text">{{ $customer->contact_preference ?: __('Not set') }}</dd>
+                        </div>
+                        <div class="rounded-2xl bg-casa-bg p-4">
+                            <dt class="text-xs font-black uppercase tracking-[0.12em] text-casa-muted">{{ __('Birth date') }}</dt>
+                            <dd class="mt-2 font-semibold text-casa-text">{{ $customer->birth_date?->format('M d, Y') ?: __('Not set') }}</dd>
+                        </div>
+                        <div class="rounded-2xl bg-casa-bg p-4">
+                            <dt class="text-xs font-black uppercase tracking-[0.12em] text-casa-muted">{{ __('First visit') }}</dt>
+                            <dd class="mt-2 font-semibold text-casa-text">{{ $customer->first_visit_at?->format('M d, Y') ?: __('Not yet') }}</dd>
+                        </div>
+                        <div class="rounded-2xl bg-casa-bg p-4 sm:col-span-2">
+                            <dt class="text-xs font-black uppercase tracking-[0.12em] text-casa-muted">{{ __('Address') }}</dt>
+                            <dd class="mt-2 text-sm leading-6 text-casa-muted">{{ $customer->address ?: __('No address on file.') }}</dd>
+                        </div>
+                    </dl>
+                </x-app-card>
+
+                @include('admin.customers.partials.history-table', ['title' => __('Appointments'), 'records' => $customer->appointments, 'type' => 'appointments'])
+                @include('admin.customers.partials.history-table', ['title' => __('Transactions'), 'records' => $customer->transactions, 'type' => 'transactions'])
+                @include('admin.customers.partials.history-table', ['title' => __('Feedback'), 'records' => $customer->feedback, 'type' => 'feedback'])
+                @include('admin.customers.partials.history-table', ['title' => __('Promotion suggestions'), 'records' => $customer->promotionSuggestions, 'type' => 'promotions'])
+            </div>
+
+            <aside class="space-y-4">
+                <x-app-card>
+                    <p class="casa-section-label">{{ __('Care notes') }}</p>
+                    <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ __('Internal note') }}</h2>
+                    <form method="POST" action="{{ route('admin.customers.update', $customer) }}" class="mt-5 space-y-4">
+                        @csrf
+                        @method('PATCH')
+                        <textarea name="notes" rows="8" class="casa-input">{{ old('notes', $customer->notes) }}</textarea>
+                        <x-input-error :messages="$errors->get('notes')" />
+                        <button type="submit" class="casa-button-primary w-full">{{ __('Save notes') }}</button>
+                    </form>
+                </x-app-card>
+            </aside>
+        </section>
+    </div>
+</x-app-layout>
