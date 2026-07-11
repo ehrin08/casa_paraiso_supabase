@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <div>
-            <p class="casa-section-label">{{ __('Admin workspace') }}</p>
+            <p class="casa-eyebrow">{{ __('Admin workspace') }}</p>
             <h1 class="mt-2 font-display text-3xl font-black text-casa-text">{{ __('Dashboard') }}</h1>
             <p class="mt-2 max-w-2xl text-sm leading-6 text-casa-muted">
                 {{ __('A calm management overview for bookings, revenue, feedback, and promotion reviews.') }}
@@ -9,8 +9,8 @@
         </div>
 
         <div class="flex flex-wrap gap-3">
-            <a href="{{ route('admin.reports.index') }}" class="casa-button-secondary">{{ __('View reports') }}</a>
-            <a href="{{ route('admin.appointments.index') }}" class="casa-button-primary">{{ __('Review requests') }}</a>
+            <a href="{{ route('admin.reports.index') }}" class="casa-button-secondary" data-prefetch>{{ __('View reports') }}</a>
+            <a href="{{ route('admin.appointments.index') }}" class="casa-button-primary" data-prefetch>{{ __('Review requests') }}</a>
         </div>
     </x-slot>
 
@@ -46,14 +46,14 @@
                         </thead>
                         <tbody class="divide-y divide-casa-border text-sm">
                             @forelse ($pendingAppointments as $appointment)
-                                <tr>
+                                <tr class="casa-table-row">
                                     <td class="px-4 py-4 font-semibold text-casa-text">{{ $appointment->appointment_number }}</td>
                                     <td class="px-4 py-4 text-casa-muted">{{ $appointment->customerProfile?->user?->name ?? __('Customer') }}</td>
                                     <td class="px-4 py-4 text-casa-muted">{{ $appointment->service?->name ?? __('Service') }}</td>
                                     <td class="px-4 py-4 text-casa-muted">{{ $appointment->requested_start_at?->format('M d, Y g:i A') }}</td>
                                     <td class="px-4 py-4"><x-status-badge tone="warning">{{ __(ucfirst($appointment->status)) }}</x-status-badge></td>
                                     <td class="px-4 py-4">
-                                        <a href="{{ route('admin.appointments.index') }}" class="font-bold text-casa-primary hover:text-casa-primary-dark">
+                                        <a href="{{ route('admin.appointments.show', $appointment) }}" class="font-bold text-casa-cacao hover:text-casa-cacao-dark" data-panel-link>
                                             {{ __('Review') }}
                                         </a>
                                     </td>
@@ -69,17 +69,21 @@
             </x-app-card>
 
             <aside class="casa-dark-panel rounded-[24px] p-6 shadow-casa-card">
-                <p class="text-xs font-black uppercase tracking-[0.18em] text-casa-gold">{{ __('Management focus') }}</p>
-                <h2 class="mt-4 font-display text-2xl font-black text-white">{{ __('Spa operations, without visual noise.') }}</h2>
-                <p class="mt-4 text-sm leading-7 text-casa-bg/80">
-                    {{ __('The admin interface uses compact cards and tables over warm spa materials, keeping daily work quick to scan.') }}
-                </p>
+                <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.16em] text-casa-brass-light">{{ __('Management focus') }}</p>
+                <h2 class="mt-4 text-2xl font-extrabold text-white">{{ __('Keep today moving.') }}</h2>
+                <p class="mt-4 text-sm leading-7 text-white/65">{{ __('Review time-sensitive requests first, then move through payments, feedback, and promotion decisions.') }}</p>
                 <div class="casa-divider my-6"></div>
-                <div class="space-y-3 text-sm font-semibold text-casa-bg/80">
-                    <p>{{ __('Appointments and staff schedules') }}</p>
-                    <p>{{ __('Transactions and exports') }}</p>
-                    <p>{{ __('Feedback sentiment and RFM suggestions') }}</p>
-                    <p>{{ trans_choice(':count promotion review waiting|:count promotion reviews waiting', $summary['promotionReviews'] ?? 0) }}</p>
+                <div class="space-y-2">
+                    <a href="{{ route('admin.appointments.index') }}" class="flex min-h-11 items-center justify-between rounded-xl border border-white/10 bg-white/[0.06] px-4 text-sm font-bold text-white transition hover:bg-white/10" data-prefetch>
+                        <span>{{ __('Appointment queue') }}</span><span class="text-casa-brass-light">{{ $summary['pendingAppointments'] ?? 0 }}</span>
+                    </a>
+                    <a href="{{ route('admin.promotions.index') }}" class="flex min-h-11 items-center justify-between rounded-xl border border-white/10 bg-white/[0.06] px-4 text-sm font-bold text-white transition hover:bg-white/10" data-prefetch>
+                        <span>{{ __('Promotion reviews') }}</span><span class="text-casa-brass-light">{{ $summary['promotionReviews'] ?? 0 }}</span>
+                        <span class="sr-only">{{ trans_choice(':count promotion review waiting|:count promotion reviews waiting', $summary['promotionReviews'] ?? 0) }}</span>
+                    </a>
+                    <a href="{{ route('admin.reports.index') }}" class="flex min-h-11 items-center justify-between rounded-xl border border-white/10 bg-white/[0.06] px-4 text-sm font-bold text-white transition hover:bg-white/10" data-prefetch>
+                        <span>{{ __('Reports & exports') }}</span><span aria-hidden="true">→</span>
+                    </a>
                 </div>
             </aside>
         </section>

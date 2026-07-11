@@ -8,22 +8,23 @@
 @php
     $accent = match ($tone) {
         'green' => 'bg-casa-green',
-        'gold' => 'bg-casa-gold',
+        'gold' => 'bg-casa-brass',
         'charcoal' => 'bg-casa-charcoal',
-        default => 'bg-casa-primary',
+        default => 'bg-casa-cacao',
     };
 @endphp
 
-<div {{ $attributes->merge(['class' => 'casa-card-compact p-5']) }}>
+<div {{ $attributes->merge(['class' => 'casa-card-compact relative overflow-hidden p-5']) }}>
+    <span class="absolute inset-y-0 start-0 w-1 {{ $accent }}"></span>
     <div class="flex items-start justify-between gap-4">
         <div>
-            <p class="text-xs font-bold uppercase tracking-[0.12em] text-casa-muted">{{ $label }}</p>
-            <p class="mt-3 font-display text-3xl font-black text-casa-text">{{ $value }}</p>
+            <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.13em] text-casa-muted">{{ $label }}</p>
+            <p class="mt-3 text-3xl font-extrabold tracking-tight text-casa-text">{{ $value }}</p>
         </div>
-        <span class="mt-1 h-10 w-1.5 rounded-full {{ $accent }}"></span>
+        <span class="mt-1 size-2.5 rounded-full {{ $accent }} shadow-sm"></span>
     </div>
 
     @if ($meta)
-        <p class="mt-4 text-sm text-casa-muted">{{ $meta }}</p>
+        <p class="mt-3 text-xs font-semibold leading-5 text-casa-muted">{{ $meta }}</p>
     @endif
 </div>

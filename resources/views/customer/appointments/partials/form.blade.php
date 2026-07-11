@@ -1,5 +1,4 @@
 @php
-    $modalName = $modalName ?? null;
     $initialRequestedAt = old('requested_start_at');
     $initialMonth = $initialRequestedAt
         ? \Illuminate\Support\Carbon::parse($initialRequestedAt)->format('Y-m')
@@ -9,10 +8,8 @@
 <form
     method="POST"
     action="{{ route('customer.appointments.store') }}"
-    @class([
-        'grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]',
-        'casa-modal-form' => $modalName,
-    ])
+    class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_21rem]"
+    data-booking-form
     x-data="customerCalendarBooking({
         availabilityUrl: '{{ route('customer.appointments.availability') }}',
         initialMonth: '{{ $initialMonth }}',
@@ -24,174 +21,194 @@
     x-init="init()"
 >
     @csrf
-    @if ($modalName)
-        <input type="hidden" name="_modal" value="{{ $modalName }}">
-    @endif
     <input type="hidden" name="requested_start_at" x-bind:value="selectedSlot">
 
-    <x-app-card>
-        <div class="border-b border-casa-border pb-5">
-            <p class="casa-section-label">{{ __('Request details') }}</p>
-            <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ __('Preferred visit') }}</h2>
-        </div>
+    <div class="space-y-5">
+        <section class="casa-editorial-card p-5 sm:p-7">
+            <div class="flex items-start gap-4 border-b border-casa-border pb-5">
+                <span class="grid size-11 shrink-0 place-items-center rounded-full bg-casa-cacao text-sm font-extrabold text-white">1</span>
+                <div>
+                    <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.14em] text-casa-cacao">{{ __('Choose your care') }}</p>
+                    <h2 class="mt-1 font-editorial text-3xl font-semibold text-casa-text">{{ __('Treatment and therapist') }}</h2>
+                    <p class="mt-2 text-sm leading-6 text-casa-muted">{{ __('Start with a treatment. A preferred therapist is optional and availability will adjust automatically.') }}</p>
+                </div>
+            </div>
 
-        <div class="mt-5 grid gap-6">
-            <div class="grid gap-5 md:grid-cols-2">
+            <div class="mt-6 grid gap-5 md:grid-cols-2">
                 <div>
                     <x-input-label for="service_id" :value="__('Service')" />
                     <select id="service_id" name="service_id" class="casa-input mt-2" required x-model="serviceId" x-on:change="serviceChanged()">
                         <option value="">{{ __('Select service') }}</option>
                         @foreach ($services as $service)
                             <option value="{{ $service->id }}" @selected((int) old('service_id') === $service->id)>
-                                {{ $service->name }} - {{ $service->duration_minutes }} min - PHP {{ number_format((float) $service->price, 2) }}
+                                {{ $service->name }} · {{ $service->duration_minutes }} min · PHP {{ number_format((float) $service->price, 2) }}
                             </option>
                         @endforeach
                     </select>
+                    <p class="mt-2 text-xs leading-5 text-casa-muted">{{ __('Price and duration are shown before you continue.') }}</p>
                     <x-input-error class="mt-2" :messages="$errors->get('service_id')" />
                 </div>
 
                 <div>
-                    <x-input-label for="preferred_staff_profile_id" :value="__('Preferred staff (optional)')" />
+                    <x-input-label for="preferred_staff_profile_id" :value="__('Preferred therapist (optional)')" />
                     <select id="preferred_staff_profile_id" name="preferred_staff_profile_id" class="casa-input mt-2" x-model="staffId" x-on:change="staffChanged()">
                         <option value="">{{ __('No preference') }}</option>
                         @foreach ($staffProfiles as $staffProfile)
                             <option value="{{ $staffProfile->id }}" @selected((int) old('preferred_staff_profile_id') === $staffProfile->id)>
-                                {{ $staffProfile->user->name }} - {{ $staffProfile->specialization ?: __('Spa staff') }}
+                                {{ $staffProfile->user->name }} · {{ $staffProfile->specialization ?: __('Spa therapist') }}
                             </option>
                         @endforeach
                     </select>
+                    <p class="mt-2 text-xs leading-5 text-casa-muted">{{ __('Choosing no preference gives the team more scheduling flexibility.') }}</p>
                     <x-input-error class="mt-2" :messages="$errors->get('preferred_staff_profile_id')" />
                 </div>
             </div>
+        </section>
 
-            <section class="rounded-[22px] border border-casa-border bg-casa-bg p-4 sm:p-5">
-                <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <p class="casa-section-label">{{ __('Calendar') }}</p>
-                        <h3 class="mt-2 font-display text-xl font-black text-casa-text" x-text="monthLabel"></h3>
-                    </div>
-                    <div class="flex gap-2">
-                        <button type="button" class="casa-button-secondary min-h-10 px-4 py-2" x-on:click="previousMonth()">{{ __('Prev') }}</button>
-                        <button type="button" class="casa-button-secondary min-h-10 px-4 py-2" x-on:click="nextMonth()">{{ __('Next') }}</button>
-                    </div>
+        <section class="casa-editorial-card p-5 sm:p-7">
+            <div class="flex items-start gap-4 border-b border-casa-border pb-5">
+                <span class="grid size-11 shrink-0 place-items-center rounded-full bg-casa-palm text-sm font-extrabold text-white">2</span>
+                <div>
+                    <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.14em] text-casa-palm">{{ __('Choose your time') }}</p>
+                    <h2 class="mt-1 font-editorial text-3xl font-semibold text-casa-text">{{ __('Available dates') }}</h2>
+                    <p class="mt-2 text-sm leading-6 text-casa-muted">{{ __('Highlighted dates have at least one available time based on active staff schedules.') }}</p>
+                </div>
+            </div>
+
+            <div class="mt-6 rounded-2xl border border-casa-border bg-casa-sand/45 p-3 sm:p-5">
+                <div class="flex items-center justify-between gap-4">
+                    <button type="button" class="casa-icon-button" x-on:click="previousMonth()" aria-label="{{ __('Previous month') }}">
+                        <svg class="size-5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m15 18-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                    <h3 class="font-editorial text-2xl font-semibold text-casa-text sm:text-3xl" x-text="monthLabel"></h3>
+                    <button type="button" class="casa-icon-button" x-on:click="nextMonth()" aria-label="{{ __('Next month') }}">
+                        <svg class="size-5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m9 18 6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
                 </div>
 
-                <div class="mt-5 grid grid-cols-7 gap-2 text-center text-xs font-black uppercase tracking-[0.08em] text-casa-muted">
+                <div class="mt-5 grid grid-cols-7 gap-1.5 text-center text-[0.62rem] font-extrabold uppercase tracking-[0.08em] text-casa-muted sm:gap-2 sm:text-xs">
                     <template x-for="dayName in weekDays" x-bind:key="dayName">
                         <span x-text="dayName"></span>
                     </template>
                 </div>
 
-                <div class="mt-3 grid grid-cols-7 gap-2">
+                <div class="mt-2 grid grid-cols-7 gap-1.5 sm:gap-2">
                     <template x-for="day in calendarDays" x-bind:key="day.key">
                         <button
                             type="button"
-                            class="min-h-20 rounded-2xl border px-2 py-3 text-left text-sm font-bold transition sm:min-h-24"
+                            class="relative min-h-12 rounded-xl border px-1.5 py-2 text-center text-xs font-extrabold transition sm:min-h-24 sm:rounded-2xl sm:px-2 sm:py-3 sm:text-left sm:text-sm"
                             x-bind:class="day.date === selectedDate
-                                ? 'border-casa-primary bg-casa-primary text-white'
+                                ? 'border-casa-palm bg-casa-palm text-white shadow-md'
                                 : day.available
-                                    ? 'border-casa-gold bg-white text-casa-text hover:border-casa-primary'
-                                    : 'border-casa-border bg-white/45 text-casa-muted/50'"
+                                    ? 'border-casa-brass bg-casa-paper text-casa-text hover:border-casa-palm'
+                                    : 'border-casa-border/70 bg-casa-paper/45 text-casa-muted/40'"
                             x-bind:disabled="!day.available"
                             x-on:click="selectDate(day.date)"
+                            x-bind:aria-label="day.date ? `${day.date}${day.available ? ', available' : ', unavailable'}` : 'Blank calendar day'"
                         >
                             <span class="block" x-text="day.label"></span>
-                            <span class="mt-2 flex flex-col gap-1" x-show="day.available">
+                            <span class="mx-auto mt-1 block size-1.5 rounded-full bg-casa-brass sm:hidden" x-show="day.available && day.date !== selectedDate"></span>
+                            <span class="mt-2 hidden flex-col gap-1 sm:flex" x-show="day.available">
                                 <template x-for="slot in day.previewSlots" x-bind:key="slot.starts_at">
                                     <span
-                                        class="block w-full truncate rounded-full px-1.5 py-1 text-center text-[0.62rem] font-black uppercase leading-none"
-                                        x-bind:class="day.date === selectedDate
-                                            ? 'bg-white/18 text-white'
-                                            : 'bg-casa-gold/15 text-casa-primary'"
+                                        class="block w-full truncate rounded-full px-1.5 py-1 text-center text-[0.6rem] font-extrabold uppercase leading-none"
+                                        x-bind:class="day.date === selectedDate ? 'bg-white/15 text-white' : 'bg-casa-brass/15 text-casa-cacao'"
                                     >
                                         <span class="sm:hidden" x-text="slot.time"></span>
                                         <span class="hidden sm:inline" x-text="slot.label"></span>
                                     </span>
                                 </template>
-                                <span
-                                    class="block truncate text-center text-[0.62rem] font-black uppercase leading-none"
-                                    x-bind:class="day.date === selectedDate ? 'text-white/80' : 'text-casa-muted'"
-                                    x-show="day.moreSlots"
-                                    x-text="moreSlotsLabel(day)"
-                                ></span>
+                                <span class="block truncate text-center text-[0.6rem] font-extrabold uppercase leading-none" x-bind:class="day.date === selectedDate ? 'text-white/75' : 'text-casa-muted'" x-show="day.moreSlots" x-text="moreSlotsLabel(day)"></span>
                             </span>
                         </button>
                     </template>
                 </div>
+            </div>
 
-                <div class="mt-5 rounded-2xl border border-casa-border bg-white p-4">
-                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                            <p class="text-xs font-black uppercase tracking-[0.12em] text-casa-muted">{{ __('Available times') }}</p>
-                            <p class="mt-1 text-sm font-semibold text-casa-text" x-text="selectedDateLabel"></p>
-                        </div>
-                        <x-status-badge x-show="loading">{{ __('Loading') }}</x-status-badge>
+            <div class="mt-5 rounded-2xl border border-casa-border bg-casa-paper p-4 sm:p-5" aria-live="polite">
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.12em] text-casa-cacao">{{ __('Available times') }}</p>
+                        <p class="mt-1 text-sm font-semibold text-casa-text" x-text="selectedDateLabel"></p>
                     </div>
-
-                    <p class="mt-4 text-sm leading-6 text-casa-muted" x-show="!serviceId">
-                        {{ __('Choose a service to load available calendar slots.') }}
-                    </p>
-
-                    <p class="mt-4 text-sm leading-6 text-red-700" x-show="error" x-text="error"></p>
-
-                    <div class="mt-4 grid gap-2 sm:grid-cols-3" x-show="selectedDate && selectedDateSlots.length">
-                        <template x-for="slot in selectedDateSlots" x-bind:key="slot.starts_at">
-                            <button
-                                type="button"
-                                class="rounded-full border px-4 py-3 text-sm font-black uppercase tracking-[0.06em] transition"
-                                x-bind:class="selectedSlot === slot.starts_at
-                                    ? 'border-casa-primary bg-casa-primary text-white'
-                                    : 'border-casa-border bg-casa-bg text-casa-primary hover:border-casa-gold'"
-                                x-on:click="chooseSlot(slot)"
-                            >
-                                <span x-text="slot.label"></span>
-                            </button>
-                        </template>
-                    </div>
-
-                    <p class="mt-4 text-sm leading-6 text-casa-muted" x-show="serviceId && selectedDate && !selectedDateSlots.length && !loading">
-                        {{ __('No available times for this date. Choose another highlighted date.') }}
-                    </p>
+                    <x-status-badge x-show="loading">{{ __('Loading') }}</x-status-badge>
                 </div>
 
+                <p class="mt-4 text-sm leading-6 text-casa-muted" x-show="!serviceId">{{ __('Choose a service first to load available calendar slots.') }}</p>
+                <p class="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700" x-show="error" x-text="error" role="alert"></p>
+
+                <div class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4" x-show="selectedDate && selectedDateSlots.length">
+                    <template x-for="slot in selectedDateSlots" x-bind:key="slot.starts_at">
+                        <button
+                            type="button"
+                            class="min-h-11 rounded-xl border px-3 py-2 text-xs font-extrabold uppercase tracking-[0.055em] transition sm:text-sm"
+                            x-bind:class="selectedSlot === slot.starts_at
+                                ? 'border-casa-palm bg-casa-palm text-white shadow-md'
+                                : 'border-casa-border bg-casa-sand/45 text-casa-cacao hover:border-casa-brass'"
+                            x-on:click="chooseSlot(slot)"
+                        >
+                            <span x-text="slot.label"></span>
+                        </button>
+                    </template>
+                </div>
+
+                <p class="mt-4 text-sm leading-6 text-casa-muted" x-show="serviceId && selectedDate && !selectedDateSlots.length && !loading">{{ __('No available times remain for this date. Choose another highlighted day.') }}</p>
                 <x-input-error class="mt-3" :messages="$errors->get('requested_start_at')" />
-            </section>
+            </div>
 
             <noscript>
-                <div>
+                <div class="mt-5">
                     <x-input-label for="requested_start_at_fallback" :value="__('Preferred date and time')" />
-                    <x-text-input id="requested_start_at_fallback" name="requested_start_at" type="datetime-local" class="mt-2" :value="old('requested_start_at', now()->addDay()->setTime(10, 0)->format('Y-m-d\\TH:i'))" required />
+                    <x-text-input id="requested_start_at_fallback" name="requested_start_at" type="datetime-local" class="mt-2" :value="old('requested_start_at', now()->addDay()->setTime(14, 0)->format('Y-m-d\TH:i'))" required />
+                    <p class="mt-2 text-xs leading-5 text-casa-muted">{{ __('JavaScript is off, so staff will verify this requested time manually.') }}</p>
                 </div>
             </noscript>
+        </section>
 
-            <div>
-                <x-input-label for="customer_notes" :value="__('Notes')" />
-                <textarea id="customer_notes" name="customer_notes" rows="5" class="casa-input mt-2" placeholder="{{ __('Tell us anything staff should know before confirming.') }}">{{ old('customer_notes') }}</textarea>
+        <section class="casa-editorial-card p-5 sm:p-7">
+            <div class="flex items-start gap-4 border-b border-casa-border pb-5">
+                <span class="grid size-11 shrink-0 place-items-center rounded-full bg-casa-brass text-sm font-extrabold text-casa-charcoal">3</span>
+                <div>
+                    <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.14em] text-casa-cacao">{{ __('Add a note') }}</p>
+                    <h2 class="mt-1 font-editorial text-3xl font-semibold text-casa-text">{{ __('Anything we should know?') }}</h2>
+                </div>
+            </div>
+            <div class="mt-6">
+                <x-input-label for="customer_notes" :value="__('Notes for the spa team (optional)')" />
+                <textarea id="customer_notes" name="customer_notes" rows="5" class="casa-input mt-2" placeholder="{{ __('Share preferences or details that may help us prepare for your visit.') }}">{{ old('customer_notes') }}</textarea>
                 <x-input-error class="mt-2" :messages="$errors->get('customer_notes')" />
             </div>
-        </div>
-    </x-app-card>
+        </section>
+    </div>
 
-    <aside class="space-y-4">
+    <aside class="space-y-4 xl:sticky xl:top-6 xl:self-start">
+        <div class="casa-dark-panel rounded-[24px] p-6 shadow-casa-card">
+            <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.14em] text-casa-brass-light">{{ __('Your request') }}</p>
+            <h2 class="mt-3 font-editorial text-3xl font-semibold text-white">{{ __('A preferred visit, not yet final.') }}</h2>
+            <p class="mt-4 text-sm leading-7 text-white/65">{{ __('The team will review therapist and schedule availability before confirming your appointment.') }}</p>
+            <div class="casa-divider my-6"></div>
+            <dl class="space-y-4">
+                <div>
+                    <dt class="text-[0.65rem] font-extrabold uppercase tracking-[0.12em] text-white/60">{{ __('Selected time') }}</dt>
+                    <dd class="mt-1.5 text-sm font-bold text-white" x-text="selectedSlotLabel || '{{ __('No time selected') }}'"></dd>
+                </div>
+                <div>
+                    <dt class="text-[0.65rem] font-extrabold uppercase tracking-[0.12em] text-white/60">{{ __('Request status') }}</dt>
+                    <dd class="mt-1.5 text-sm font-bold text-white">{{ __('Pending until reviewed') }}</dd>
+                </div>
+            </dl>
+        </div>
+
         <x-app-card>
-            <p class="casa-section-label">{{ __('How confirmation works') }}</p>
-            <p class="mt-3 text-sm leading-6 text-casa-muted">
-                {{ __('Highlighted dates have at least one available time based on staff schedules. Your request still starts as pending until staff confirms it.') }}
-            </p>
+            <button type="submit" class="casa-button-primary w-full" x-bind:disabled="!selectedSlot">{{ __('Submit appointment request') }}</button>
+            <a href="{{ route('customer.appointments.index') }}" class="casa-button-secondary mt-3 w-full" data-prefetch>{{ __('Cancel') }}</a>
+            <p class="mt-4 text-center text-xs leading-5 text-casa-muted">{{ __('Submitting does not create an instant confirmed booking.') }}</p>
         </x-app-card>
+
         <x-app-card>
-            <p class="casa-section-label">{{ __('Selected slot') }}</p>
-            <p class="mt-3 text-lg font-bold text-casa-text" x-text="selectedSlotLabel || '{{ __('No time selected') }}'"></p>
-        </x-app-card>
-        <x-app-card data-modal-actions>
-            <div class="flex flex-col gap-3">
-                <button type="submit" class="casa-button-primary w-full" x-bind:disabled="!selectedSlot" x-bind:class="!selectedSlot ? 'opacity-60' : ''">{{ __('Submit request') }}</button>
-                @if ($modalName)
-                    <button type="button" class="casa-button-secondary w-full" x-on:click="$dispatch('close-modal', '{{ $modalName }}')">{{ __('Cancel') }}</button>
-                @else
-                    <a href="{{ route('customer.appointments.index') }}" class="casa-button-secondary w-full">{{ __('Cancel') }}</a>
-                @endif
-            </div>
+            <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.12em] text-casa-cacao">{{ __('Visit hours') }}</p>
+            <p class="mt-2 text-sm font-bold text-casa-text">{{ __('Open every day') }}</p>
+            <p class="mt-1 text-sm text-casa-muted">{{ __('1:00 PM to 12:00 MN') }}</p>
         </x-app-card>
     </aside>
 </form>

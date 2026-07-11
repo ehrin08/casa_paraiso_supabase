@@ -12,6 +12,7 @@ Application code has been scaffolded with Laravel 12, Laravel Breeze, Blade, Tai
 - Screen flow: `docs/SCREEN_FLOW.md`
 - Docker workflow: `docs/DOCKER_WORKFLOW.md`
 - Implementation roadmap: `docs/IMPLEMENTATION_ROADMAP.md`
+- Brand and UI guide: `docs/BRAND_UI_GUIDE.md`
 - Use the MVP scope, tech stack, database design, screen flow, Docker workflow, and implementation roadmap as the first-build source of truth before API design, routes, controllers, views, migrations, models, or implementation.
 
 ## Project Objectives
@@ -94,3 +95,4 @@ Current scaffold verification:
 - Check this file before making changes.
 - Read the existing code structure before introducing new conventions.
 - Preserve user-created files and avoid broad refactors unless requested.
+- Follow `docs/BRAND_UI_GUIDE.md` when adding or changing public, authentication, admin, staff, or customer interface elements.

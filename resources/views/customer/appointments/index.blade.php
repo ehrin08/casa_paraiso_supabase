@@ -1,63 +1,65 @@
 <x-app-layout>
-    @php
-        $requestAppointmentModal = 'customer-appointment-request';
-    @endphp
-
     <x-slot name="header">
         <div>
-            <p class="casa-section-label">{{ __('Customer lounge') }}</p>
-            <h1 class="mt-2 font-display text-3xl font-black text-casa-text">{{ __('My appointments') }}</h1>
+            <p class="casa-eyebrow">{{ __('Customer lounge') }}</p>
+            <h1 class="mt-3 font-editorial text-4xl font-semibold text-casa-text">{{ __('My appointments') }}</h1>
             <p class="mt-2 max-w-2xl text-sm leading-6 text-casa-muted">
-                {{ __('Request visits, check booking status, and keep your wellness history in one calm space.') }}
+                {{ __('Your requests, confirmed visits, and wellness history—kept together in one calm place.') }}
             </p>
         </div>
 
-        <button type="button" class="casa-button-primary" x-data="" x-on:click="$dispatch('open-modal', '{{ $requestAppointmentModal }}')">{{ __('Request appointment') }}</button>
+        <a href="{{ route('customer.appointments.create') }}" class="casa-button-primary" data-prefetch>
+            <x-nav-icon name="calendar" class="size-4" />
+            {{ __('Request appointment') }}
+        </a>
     </x-slot>
 
-    <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+    <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <section class="space-y-6">
-            <x-app-card class="overflow-hidden p-0">
-                <div class="casa-dark-panel p-6 sm:p-8">
-                    <p class="text-xs font-black uppercase tracking-[0.18em] text-casa-gold">{{ __('Next visit') }}</p>
-                    <h2 class="mt-3 font-display text-2xl font-black text-white">{{ __('Your appointment book is ready.') }}</h2>
-                        <p class="mt-3 max-w-xl text-sm leading-7 text-casa-bg/80">
-                        {{ __('Upcoming bookings, pending requests, and completed visits stay organized here.') }}
-                    </p>
+            <div class="casa-editorial-card overflow-hidden">
+                <div class="casa-dark-panel relative overflow-hidden p-6 sm:p-8">
+                    <svg class="absolute -end-5 -top-8 size-36 text-casa-brass/20" viewBox="0 0 120 120" fill="none" aria-hidden="true">
+                        <path d="M18 104C43 70 69 44 105 18" stroke="currentColor" stroke-width="2"/>
+                        <path d="M45 76C27 75 20 62 20 49c18 0 31 10 25 27Zm23-23C55 39 57 24 67 13c13 13 14 28 1 40Zm18-16c1-17 13-27 26-30 3 17-6 29-26 30Z" fill="currentColor"/>
+                    </svg>
+                    <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.16em] text-casa-brass-light">{{ __('Your wellness rhythm') }}</p>
+                    <h2 class="mt-3 max-w-xl font-editorial text-4xl font-semibold leading-none text-white">{{ __('Your next pause starts with a request.') }}</h2>
+                    <p class="mt-4 max-w-xl text-sm leading-7 text-white/68">{{ __('Choose a service and preferred time. The Casa Paraiso team will confirm the final schedule with care.') }}</p>
                 </div>
-                <div class="grid gap-4 p-5 sm:grid-cols-3">
-                    <div>
-                        <p class="text-xs font-black uppercase tracking-[0.12em] text-casa-muted">{{ __('Upcoming') }}</p>
-                        <p class="mt-2 font-display text-2xl font-black text-casa-text">{{ $summary['upcoming'] ?? 0 }}</p>
-                    </div>
-                    <div>
-                        <p class="text-xs font-black uppercase tracking-[0.12em] text-casa-muted">{{ __('Pending') }}</p>
-                        <p class="mt-2 font-display text-2xl font-black text-casa-text">{{ $summary['pending'] ?? 0 }}</p>
-                    </div>
-                    <div>
-                        <p class="text-xs font-black uppercase tracking-[0.12em] text-casa-muted">{{ __('Completed') }}</p>
-                        <p class="mt-2 font-display text-2xl font-black text-casa-text">{{ $summary['completed'] ?? 0 }}</p>
-                    </div>
-                </div>
-            </x-app-card>
 
-            @if ($appointments->isEmpty())
+                <dl class="grid grid-cols-3 divide-x divide-casa-border bg-casa-paper p-1">
+                    <div class="p-4 text-center sm:p-5">
+                        <dt class="text-[0.65rem] font-extrabold uppercase tracking-[0.12em] text-casa-muted">{{ __('Upcoming') }}</dt>
+                        <dd class="mt-2 text-2xl font-extrabold text-casa-palm sm:text-3xl">{{ $summary['upcoming'] ?? 0 }}</dd>
+                    </div>
+                    <div class="p-4 text-center sm:p-5">
+                        <dt class="text-[0.65rem] font-extrabold uppercase tracking-[0.12em] text-casa-muted">{{ __('Pending') }}</dt>
+                        <dd class="mt-2 text-2xl font-extrabold text-casa-cacao sm:text-3xl">{{ $summary['pending'] ?? 0 }}</dd>
+                    </div>
+                    <div class="p-4 text-center sm:p-5">
+                        <dt class="text-[0.65rem] font-extrabold uppercase tracking-[0.12em] text-casa-muted">{{ __('Completed') }}</dt>
+                        <dd class="mt-2 text-2xl font-extrabold text-casa-text sm:text-3xl">{{ $summary['completed'] ?? 0 }}</dd>
+                    </div>
+                </dl>
+            </div>
+
+            @if ($appointments->isEmpty() && ! request()->hasAny(['q', 'status']))
                 <x-empty-state
                     title="{{ __('No appointment requests yet') }}"
-                    description="{{ __('Start with a service, preferred date, and notes. Staff will confirm the final booking time.') }}"
+                    description="{{ __('Begin with a treatment and preferred time. Our team will review availability before confirming your visit.') }}"
                 >
                     <x-slot name="action">
-                        <button type="button" class="casa-button-primary" x-data="" x-on:click="$dispatch('open-modal', '{{ $requestAppointmentModal }}')">{{ __('Request appointment') }}</button>
+                        <a href="{{ route('customer.appointments.create') }}" class="casa-button-primary" data-prefetch>{{ __('Request your first visit') }}</a>
                     </x-slot>
                 </x-empty-state>
             @else
                 <x-app-card>
-                    <x-list-toolbar eyebrow="{{ __('Appointment history') }}" title="{{ __('Recent requests') }}" :count="$appointments->total()" :reset-url="route('customer.appointments.index')">
+                    <x-list-toolbar eyebrow="{{ __('Appointment history') }}" title="{{ __('Your visits') }}" :count="$appointments->total()" :reset-url="route('customer.appointments.index')">
                         <form method="GET" action="{{ route('customer.appointments.index') }}" class="casa-filter-grid sm:grid-cols-[minmax(10rem,1fr)_auto_auto]">
                             <input type="hidden" name="sort" value="{{ $sort }}">
                             <input type="hidden" name="direction" value="{{ $direction }}">
                             <input type="search" name="q" value="{{ $search }}" class="casa-input" placeholder="{{ __('Search service or number') }}" aria-label="{{ __('Search appointments') }}">
-                            <select name="status" class="casa-input">
+                            <select name="status" class="casa-input" aria-label="{{ __('Filter by status') }}">
                                 <option value="">{{ __('All statuses') }}</option>
                                 @foreach (\App\Models\Appointment::STATUSES as $option)
                                     <option value="{{ $option }}" @selected($status === $option)>{{ ucfirst(str_replace('_', ' ', $option)) }}</option>
@@ -67,78 +69,67 @@
                         </form>
                     </x-list-toolbar>
 
-                    <div class="mt-5">
-                        <x-table-shell>
-                            <thead class="bg-casa-bg text-left text-xs font-black uppercase tracking-[0.1em] text-casa-muted">
-                                <tr>
-                                    <x-sortable-th sort="number">{{ __('No.') }}</x-sortable-th>
-                                    <x-sortable-th sort="service">{{ __('Service') }}</x-sortable-th>
-                                    <x-sortable-th sort="schedule">{{ __('Schedule') }}</x-sortable-th>
-                                    <th class="px-4 py-3">{{ __('Staff') }}</th>
-                                    <x-sortable-th sort="status">{{ __('Status') }}</x-sortable-th>
-                                    <th class="px-4 py-3">{{ __('Action') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-casa-border text-sm">
-                                @foreach ($appointments as $appointment)
-                                    @php
-                                        $statusTone = match ($appointment->status) {
-                                            \App\Models\Appointment::STATUS_CONFIRMED,
-                                            \App\Models\Appointment::STATUS_COMPLETED => 'success',
-                                            \App\Models\Appointment::STATUS_CANCELLED,
-                                            \App\Models\Appointment::STATUS_NO_SHOW => 'danger',
-                                            default => 'warning',
-                                        };
-                                    @endphp
-                                    <tr class="casa-table-row">
-                                        <td class="px-4 py-4 font-semibold text-casa-text">{{ $appointment->appointment_number }}</td>
-                                        <td class="px-4 py-4 text-casa-muted">{{ $appointment->service?->name ?? __('Service') }}</td>
-                                        <td class="px-4 py-4 text-casa-muted">{{ ($appointment->scheduled_start_at ?? $appointment->requested_start_at)?->format('M d, Y g:i A') }}</td>
-                                        <td class="px-4 py-4 text-casa-muted">{{ $appointment->staffProfile?->user?->name ?? __('Pending') }}</td>
-                                        <td class="px-4 py-4"><x-status-badge :tone="$statusTone">{{ __(ucfirst(str_replace('_', ' ', $appointment->status))) }}</x-status-badge></td>
-                                        <td class="px-4 py-4">
-                                            <a href="{{ route('customer.appointments.show', $appointment) }}" class="font-bold text-casa-primary hover:text-casa-primary-dark">{{ __('Open') }}</a>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </x-table-shell>
-
-                        <div class="mt-5">
-                            {{ $appointments->links() }}
-                        </div>
+                    <div class="mt-5 space-y-3">
+                        @forelse ($appointments as $appointment)
+                            @php
+                                $statusTone = match ($appointment->status) {
+                                    \App\Models\Appointment::STATUS_CONFIRMED,
+                                    \App\Models\Appointment::STATUS_COMPLETED => 'success',
+                                    \App\Models\Appointment::STATUS_CANCELLED,
+                                    \App\Models\Appointment::STATUS_NO_SHOW => 'danger',
+                                    default => 'warning',
+                                };
+                                $visitAt = $appointment->scheduled_start_at ?? $appointment->requested_start_at;
+                            @endphp
+                            <article class="group rounded-2xl border border-casa-border bg-casa-paper p-4 transition hover:border-casa-brass/55 hover:shadow-casa-card sm:p-5">
+                                <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <x-status-badge :tone="$statusTone">{{ __(ucfirst(str_replace('_', ' ', $appointment->status))) }}</x-status-badge>
+                                            <span class="text-xs font-bold text-casa-muted">{{ $appointment->appointment_number }}</span>
+                                        </div>
+                                        <h3 class="mt-3 text-lg font-extrabold text-casa-text">{{ $appointment->service?->name ?? __('Spa service') }}</h3>
+                                        <div class="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-casa-muted">
+                                            <span>{{ $visitAt?->format('M d, Y · g:i A') ?? __('Schedule pending') }}</span>
+                                            <span>{{ $appointment->staffProfile?->user?->name ?? __('Therapist to be confirmed') }}</span>
+                                        </div>
+                                    </div>
+                                    <a href="{{ route('customer.appointments.show', $appointment) }}" class="casa-button-secondary shrink-0" data-prefetch>{{ __('View details') }}</a>
+                                </div>
+                            </article>
+                        @empty
+                            <x-empty-state title="{{ __('No appointments found') }}" description="{{ __('Try clearing your filters to see the rest of your visit history.') }}" />
+                        @endforelse
                     </div>
+
+                    @if ($appointments->hasPages())
+                        <div class="mt-5">{{ $appointments->links() }}</div>
+                    @endif
                 </x-app-card>
             @endif
         </section>
 
         <aside class="space-y-4">
-            <x-app-card>
-                <p class="casa-section-label">{{ __('Spa care') }}</p>
-                <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ __('Booking flow') }}</h2>
-                <div class="mt-5 space-y-4">
-                    <div class="flex gap-3">
-                        <span class="mt-1 grid size-8 shrink-0 place-items-center rounded-full bg-casa-primary text-xs font-black text-white">1</span>
-                        <p class="text-sm leading-6 text-casa-muted">{{ __('Send a preferred service and time.') }}</p>
-                    </div>
-                    <div class="flex gap-3">
-                        <span class="mt-1 grid size-8 shrink-0 place-items-center rounded-full bg-casa-green text-xs font-black text-white">2</span>
-                        <p class="text-sm leading-6 text-casa-muted">{{ __('Staff reviews availability.') }}</p>
-                    </div>
-                    <div class="flex gap-3">
-                        <span class="mt-1 grid size-8 shrink-0 place-items-center rounded-full bg-casa-gold text-xs font-black text-casa-wood">3</span>
-                        <p class="text-sm leading-6 text-casa-muted">{{ __('You receive the confirmed schedule.') }}</p>
-                    </div>
-                </div>
+            <x-app-card class="lg:sticky lg:top-6">
+                <p class="casa-eyebrow">{{ __('How it works') }}</p>
+                <h2 class="mt-4 font-editorial text-3xl font-semibold text-casa-text">{{ __('From request to rest.') }}</h2>
+                <ol class="mt-6 space-y-5">
+                    <li class="flex gap-3">
+                        <span class="grid size-9 shrink-0 place-items-center rounded-full bg-casa-cacao text-xs font-extrabold text-white">1</span>
+                        <span class="text-sm leading-6 text-casa-muted"><strong class="block text-casa-text">Choose</strong>{{ __('Select a treatment and preferred time.') }}</span>
+                    </li>
+                    <li class="flex gap-3">
+                        <span class="grid size-9 shrink-0 place-items-center rounded-full bg-casa-palm text-xs font-extrabold text-white">2</span>
+                        <span class="text-sm leading-6 text-casa-muted"><strong class="block text-casa-text">Review</strong>{{ __('Staff checks therapist availability.') }}</span>
+                    </li>
+                    <li class="flex gap-3">
+                        <span class="grid size-9 shrink-0 place-items-center rounded-full bg-casa-brass text-xs font-extrabold text-casa-charcoal">3</span>
+                        <span class="text-sm leading-6 text-casa-muted"><strong class="block text-casa-text">Confirm</strong>{{ __('Your final schedule appears here.') }}</span>
+                    </li>
+                </ol>
+                <div class="casa-divider my-6"></div>
+                <p class="text-sm leading-6 text-casa-muted">{{ __('Open every day, 1:00 PM to 12:00 MN.') }}</p>
             </x-app-card>
         </aside>
     </div>
-
-    <x-modal :name="$requestAppointmentModal" :show="old('_modal') === $requestAppointmentModal" maxWidth="6xl" focusable>
-        <div class="p-5">
-            @include('customer.appointments.partials.form', [
-                'modalName' => $requestAppointmentModal,
-            ])
-        </div>
-    </x-modal>
 </x-app-layout>

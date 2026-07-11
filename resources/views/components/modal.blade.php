@@ -52,6 +52,9 @@ $maxWidth = [
     x-show="show"
     class="fixed inset-0 overflow-y-auto px-4 py-6 sm:px-0 z-50"
     style="display: {{ $show ? 'block' : 'none' }};"
+    role="dialog"
+    aria-modal="true"
+    aria-label="{{ str_replace('-', ' ', ucfirst($name)) }}"
 >
     <div
         x-show="show"
@@ -64,7 +67,7 @@ $maxWidth = [
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0"
     >
-        <div class="absolute inset-0 bg-casa-charcoal opacity-70"></div>
+        <div class="absolute inset-0 bg-casa-charcoal/72 backdrop-blur-sm"></div>
     </div>
 
     <div

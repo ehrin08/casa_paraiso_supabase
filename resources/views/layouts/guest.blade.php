@@ -9,7 +9,7 @@
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=montserrat:600,700,800,900|poppins:400,500,600,700,800&display=swap" rel="stylesheet" />
+        <link href="https://fonts.bunny.net/css?family=cormorant-garamond:600,700|manrope:400,500,600,700,800&display=swap" rel="stylesheet" />
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -18,43 +18,52 @@
         <x-page-loading />
         <x-toast-stack />
 
-        <div class="grid min-h-screen bg-casa-bg lg:grid-cols-[minmax(0,1fr)_minmax(420px,520px)]">
-            <section class="casa-dark-panel relative hidden overflow-hidden px-10 py-12 lg:flex lg:flex-col lg:justify-between">
-                <div class="relative z-10">
-                    <a href="/" class="inline-flex rounded-2xl bg-white/95 p-3 shadow-casa-lift" data-prefetch>
-                        <img src="{{ asset('images/casa_paraiso_logo.jpg') }}" alt="Casa Paraiso Body and Wellness Spa" class="h-20 w-auto rounded-xl object-contain">
+        <div class="grid min-h-screen bg-casa-bg lg:grid-cols-[minmax(0,1.12fr)_minmax(430px,0.7fr)]">
+            <section class="relative hidden min-h-screen overflow-hidden bg-casa-charcoal lg:block">
+                <picture class="absolute inset-0">
+                    <source media="(max-width: 1200px)" srcset="{{ asset('images/spa/spa-auth-720.webp') }}">
+                    <img src="{{ asset('images/spa/spa-auth-1024.webp') }}" alt="A warmly lit tropical spa treatment room" class="h-full w-full object-cover" fetchpriority="high">
+                </picture>
+                <div class="absolute inset-0 bg-gradient-to-t from-casa-charcoal via-casa-charcoal/22 to-casa-charcoal/15"></div>
+
+                <div class="relative z-10 flex min-h-screen flex-col justify-between p-10 xl:p-14">
+                    <a href="/" class="inline-flex w-fit rounded-2xl bg-casa-paper p-3 shadow-casa-lift" data-prefetch>
+                        <img src="{{ asset('images/casa_paraiso_logo.jpg') }}" alt="Casa Paraiso Body and Wellness Spa" class="h-16 w-60 object-cover object-center xl:h-20 xl:w-72">
                     </a>
-                </div>
 
-                <div class="relative z-10 max-w-xl">
-                    <p class="text-xs font-black uppercase tracking-[0.18em] text-casa-gold">Tropical wellness sanctuary</p>
-                    <h1 class="mt-4 font-display text-4xl font-black leading-tight text-white">
-                        Calm booking and spa operations in one warm workspace.
-                    </h1>
-                    <p class="mt-5 max-w-md text-sm leading-7 text-casa-bg/80">
-                        Designed for reservations, customer care, staff schedules, and thoughtful wellness service management.
-                    </p>
-                </div>
-
-                <div class="relative z-10 grid grid-cols-3 gap-3 text-xs font-bold uppercase tracking-[0.12em] text-casa-bg/80">
-                    <div class="rounded-2xl border border-white/10 bg-white/[0.08] p-4">Bookings</div>
-                    <div class="rounded-2xl border border-white/10 bg-white/[0.08] p-4">Services</div>
-                    <div class="rounded-2xl border border-white/10 bg-white/[0.08] p-4">Care</div>
+                    <div class="max-w-xl pb-6">
+                        <p class="casa-eyebrow text-casa-sand before:bg-casa-brass">Tropical wellness sanctuary</p>
+                        <h1 class="mt-5 font-editorial text-5xl font-semibold leading-[0.96] text-white xl:text-6xl">
+                            Your calm place,<br>before you arrive.
+                        </h1>
+                        <p class="mt-5 max-w-md text-sm leading-7 text-white/78">
+                            Request a visit, follow its status, and keep every step of your Casa Paraiso care close at hand.
+                        </p>
+                        <div class="mt-7 flex flex-wrap gap-2 text-[0.68rem] font-extrabold uppercase tracking-[0.12em] text-white/72">
+                            <span class="rounded-full border border-white/20 bg-black/15 px-3 py-2">Bookings</span>
+                            <span class="rounded-full border border-white/20 bg-black/15 px-3 py-2">Wellness care</span>
+                            <span class="rounded-full border border-white/20 bg-black/15 px-3 py-2">Open daily</span>
+                        </div>
+                    </div>
                 </div>
             </section>
 
-            <main class="flex min-h-screen items-center justify-center px-4 py-10 sm:px-6 lg:px-10">
+            <main class="flex min-h-screen items-center justify-center px-4 py-8 sm:px-8 lg:px-10">
                 <div class="w-full max-w-md">
-                    <div class="mb-8 flex justify-center lg:hidden">
-                        <a href="/" class="inline-flex rounded-2xl bg-white p-3 shadow-casa-card" data-prefetch>
-                            <img src="{{ asset('images/casa_paraiso_logo.jpg') }}" alt="Casa Paraiso Body and Wellness Spa" class="h-16 w-auto rounded-xl object-contain">
-                        </a>
+                    <div class="mb-5 overflow-hidden rounded-[24px] bg-casa-charcoal lg:hidden">
+                        <div class="relative h-28">
+                            <img src="{{ asset('images/spa/spa-auth-720.webp') }}" alt="A warmly lit tropical spa treatment room" class="h-full w-full object-cover object-center">
+                            <div class="absolute inset-0 bg-gradient-to-r from-casa-charcoal/65 to-transparent"></div>
+                            <a href="/" class="absolute start-4 top-4 inline-flex rounded-xl bg-casa-paper p-2" data-prefetch>
+                                <img src="{{ asset('images/casa_paraiso_logo.jpg') }}" alt="Casa Paraiso Body and Wellness Spa" class="h-10 w-40 object-cover object-center">
+                            </a>
+                        </div>
                     </div>
 
-                    <div class="casa-card p-6 sm:p-8">
+                    <div class="casa-editorial-card p-6 sm:p-8">
                         <div class="mb-6">
-                            <p class="casa-section-label">{{ $eyebrow ?? __('Casa Paraiso') }}</p>
-                            <h1 class="mt-2 font-display text-2xl font-black text-casa-text">
+                            <p class="casa-eyebrow">{{ $eyebrow ?? __('Casa Paraiso') }}</p>
+                            <h1 class="mt-3 font-editorial text-4xl font-semibold leading-none text-casa-text">
                                 {{ $title ?? __('Welcome') }}
                             </h1>
                             @isset($subtitle)

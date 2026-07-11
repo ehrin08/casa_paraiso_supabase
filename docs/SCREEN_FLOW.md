@@ -4,7 +4,7 @@
 
 Define the MVP pages, role-based navigation, and main user journeys before Laravel routes, controllers, and Blade layouts are scaffolded.
 
-The interface should use separate dashboards for admin, staff, and customer. All authenticated roles use responsive sidebar navigation. Customers land on appointment-focused pages after login.
+The interface should use separate dashboards for admin, staff, and customer. Authenticated roles use a persistent sidebar on desktop. Admin and staff use a navigation drawer on smaller screens, while customers use a compact header plus bottom navigation for Appointments, Feedback, and Profile. Customers land on appointment-focused pages after login.
 
 ## Route Groups
 
@@ -26,7 +26,9 @@ Planned route prefixes:
 ## Shared Layout Rules
 
 - Use Laravel Blade server-rendered pages with Tailwind CSS.
-- Use a shared authenticated layout shell with role-specific sidebar navigation.
+- Use a shared authenticated layout shell with role-specific desktop sidebar navigation.
+- Admin and staff collapse the sidebar into a mobile drawer.
+- Customer mobile navigation uses a persistent three-item bottom bar for Appointments, Feedback, and Profile.
 - Admin and staff pages should use the persistent sidebar with module navigation, page title, search/filter area where needed, and clear primary action buttons.
 - Customer pages should stay simpler and appointment-first, with sidebar navigation focused on appointments, feedback, and profile.
 - All role dashboards should show only actions the current role is allowed to perform.
@@ -511,6 +513,7 @@ Route: `/customer/appointments/create`
 Purpose:
 
 - Let customers submit appointment requests.
+- Use the dedicated page as the primary booking experience rather than embedding the full calendar form in the appointment list.
 
 Main data:
 

@@ -12,7 +12,7 @@
         @endif
 
         @if ($title)
-            <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ $title }}</h2>
+            <h2 class="mt-2 text-xl font-extrabold text-casa-text">{{ $title }}</h2>
         @endif
 
         @if ($count !== null || $resetUrl)
