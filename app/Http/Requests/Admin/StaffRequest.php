@@ -12,6 +12,10 @@ class StaffRequest extends FormRequest
 {
     public function authorize(): bool
     {
+        if (! $this->route('staff')) {
+            return $this->user()?->isSuperAdmin() ?? false;
+        }
+
         return $this->user()?->isAdmin() ?? false;
     }
 
@@ -22,10 +26,6 @@ class StaffRequest extends FormRequest
     {
         $staffProfile = $this->route('staff');
         $staffUser = $staffProfile instanceof StaffProfile ? $staffProfile->user : null;
-        $passwordRule = $staffProfile instanceof StaffProfile
-            ? ['nullable', 'string', 'min:8', 'max:255']
-            : ['required', 'string', 'min:8', 'max:255'];
-
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => [
@@ -37,7 +37,6 @@ class StaffRequest extends FormRequest
                 Rule::unique(User::class)->ignore($staffUser?->id),
             ],
             'phone' => ['nullable', 'string', 'max:50'],
-            'password' => $passwordRule,
             'is_active' => ['sometimes', 'boolean'],
             'position' => ['nullable', 'string', 'max:255'],
             'specialization' => ['nullable', 'string', 'max:255'],

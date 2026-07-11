@@ -25,6 +25,7 @@ This design supports customer login, staff scheduling, appointment requests, man
 - Promotion suggestion status: `suggested`, `reviewed`, `applied`, `dismissed`
 - Schedule exception type: `available`, `unavailable`
 - User role: `admin`, `staff`, `customer`
+- User role also includes `super_admin`; this protected role is reserved for the configured Casa Paraiso owner email.
 
 Use string columns for these status values in migrations and validate allowed values in Laravel form requests or model rules.
 
@@ -39,8 +40,9 @@ Key columns:
 - `id`
 - `name`
 - `email` unique
+- `google_id` nullable, unique; populated on first successful Google sign-in
 - `email_verified_at` nullable
-- `password`
+- `password` nullable legacy field; password authentication is disabled
 - `role`
 - `phone` nullable
 - `is_active` boolean default true

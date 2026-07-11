@@ -45,7 +45,7 @@
                             @else
                                 <a href="{{ route('login') }}" class="hidden min-h-11 items-center px-2 text-sm font-bold text-casa-muted transition hover:text-casa-cacao sm:inline-flex">{{ __('Log in') }}</a>
                                 @if (Route::has('register'))
-                                    <a href="{{ route('register') }}" class="casa-button-primary">{{ __('Reserve') }}</a>
+                                    <a href="{{ route('login') }}" class="casa-button-primary">{{ __('Reserve') }}</a>
                                 @endif
                             @endauth
                         </nav>
@@ -70,7 +70,7 @@
                                 @auth
                                     <a href="{{ $homeUrl }}" class="casa-button-primary">{{ __('Open your workspace') }}</a>
                                 @else
-                                    <a href="{{ route('register') }}" class="casa-button-primary">{{ __('Request an appointment') }}</a>
+                                    <a href="{{ route('login') }}" class="casa-button-primary">{{ __('Request an appointment') }}</a>
                                     <a href="#treatments" class="casa-button-secondary">{{ __('Explore treatments') }}</a>
                                 @endauth
                             </div>
@@ -200,7 +200,7 @@
                             <div class="casa-divider my-7"></div>
                             <p class="font-editorial text-3xl font-semibold italic leading-tight text-casa-cacao">{{ config('casa.marketing_line') }}</p>
                             @guest
-                                <a href="{{ route('register') }}" class="casa-button-primary mt-7 w-full">{{ __('Request your visit') }}</a>
+                                <a href="{{ route('login') }}" class="casa-button-primary mt-7 w-full">{{ __('Request your visit') }}</a>
                             @endguest
                         </aside>
                     </div>

@@ -1,49 +1,24 @@
 <section>
     <header>
-        <h2 class="font-display text-lg font-black text-casa-text">
-            {{ __('Profile Information') }}
-        </h2>
-
-        <p class="mt-1 text-sm leading-6 text-casa-muted">
-            {{ __("Update your account's profile information and email address.") }}
-        </p>
+        <h2 class="font-display text-lg font-black text-casa-text">Profile information</h2>
+        <p class="mt-1 text-sm leading-6 text-casa-muted">Your Google email identifies your account and cannot be changed here.</p>
     </header>
-
-    <form id="send-verification" method="post" action="{{ route('verification.send') }}">
-        @csrf
-    </form>
-
     <form method="post" action="{{ route('profile.update') }}" class="mt-6 space-y-6">
-        @csrf
-        @method('patch')
-
+        @csrf @method('patch')
         <div>
-            <x-input-label for="name" :value="__('Name')" />
+            <x-input-label for="name" value="Name" />
             <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name" />
             <x-input-error class="mt-2" :messages="$errors->get('name')" />
         </div>
-
         <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="username" />
-            <x-input-error class="mt-2" :messages="$errors->get('email')" />
-
-            @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
-                <div>
-                    <p class="text-sm mt-2 text-casa-text">
-                        {{ __('Your email address is unverified.') }}
-
-                        <button form="send-verification" class="text-sm font-semibold text-casa-primary underline underline-offset-4 hover:text-casa-primary-dark">
-                            {{ __('Click here to re-send the verification email.') }}
-                        </button>
-                    </p>
-
-                </div>
-            @endif
+            <x-input-label for="email" value="Google email" />
+            <x-text-input id="email" type="email" class="mt-1 block w-full opacity-70" :value="$user->email" disabled />
         </div>
-
-        <div class="flex items-center gap-4">
-            <x-primary-button>{{ __('Save') }}</x-primary-button>
+        <div>
+            <x-input-label for="phone" value="Phone (optional)" />
+            <x-text-input id="phone" name="phone" type="tel" class="mt-1 block w-full" :value="old('phone', $user->phone)" autocomplete="tel" />
+            <x-input-error class="mt-2" :messages="$errors->get('phone')" />
         </div>
+        <x-primary-button>Save profile</x-primary-button>
     </form>
 </section>

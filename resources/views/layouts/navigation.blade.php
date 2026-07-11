@@ -4,6 +4,7 @@
     $isCustomer = $user->isCustomer();
 
     $roleLabel = match (true) {
+        $user->isSuperAdmin() => 'Super admin workspace',
         $user->isAdmin() => 'Admin workspace',
         $user->isStaff() => 'Staff workspace',
         default => 'Customer lounge',
@@ -48,6 +49,7 @@
 
     $accountLinks = $user->isAdmin()
         ? [
+            ...($user->isSuperAdmin() ? [['label' => 'User access', 'icon' => 'team', 'route' => 'admin.users.index', 'active' => 'admin.users.*']] : []),
             ['label' => 'Settings', 'icon' => 'settings', 'route' => 'admin.settings.index', 'active' => 'admin.settings.*'],
             ['label' => 'Profile', 'icon' => 'profile', 'route' => 'profile.edit', 'active' => 'profile.*'],
         ]

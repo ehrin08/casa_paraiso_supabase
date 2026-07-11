@@ -4,6 +4,8 @@ use App\Models\User;
 
 return [
 
+    'super_admin_email' => env('SUPER_ADMIN_EMAIL', 'ehrinjohn08@gmail.com'),
+
     /*
     |--------------------------------------------------------------------------
     | Authentication Defaults

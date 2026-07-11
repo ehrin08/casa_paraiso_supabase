@@ -11,6 +11,7 @@ Casa Paraiso should be built as a production-ready Laravel monolith that stays c
 - Database: MariaDB/MySQL
 - Database workflow: Laravel migrations and seeders
 - Package management: Composer for PHP dependencies, npm for frontend build dependencies
+- Authentication: Laravel Socialite with Google OAuth for all login-capable users
 - Primary local development: Docker with Laravel Sail services managed through direct Docker Compose commands
 - Fallback local development: XAMPP / Apache
 - Production hosting: Hostinger shared/web hosting by default

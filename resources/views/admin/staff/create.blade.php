@@ -4,7 +4,7 @@
             <p class="casa-section-label">{{ __('Staff management') }}</p>
             <h1 class="mt-2 font-display text-3xl font-black text-casa-text">{{ __('Add staff') }}</h1>
             <p class="mt-2 max-w-2xl text-sm leading-6 text-casa-muted">
-                {{ __('Create a staff login, operational profile, and service eligibility in one place.') }}
+                {{ __('Pre-authorize a Google email, operational profile, and service eligibility in one place.') }}
             </p>
         </div>
 
@@ -15,6 +15,5 @@
         'action' => route('admin.staff.store'),
         'method' => 'POST',
         'submitLabel' => __('Create staff'),
-        'passwordHelp' => __('Set a temporary password and share it through an offline handover process.'),
     ])
 </x-app-layout>

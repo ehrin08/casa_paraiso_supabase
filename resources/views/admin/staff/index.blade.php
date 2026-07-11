@@ -11,7 +11,7 @@
 
         <div class="flex flex-wrap gap-3">
             <button type="button" class="casa-button-secondary" x-data="" x-on:click="$dispatch('open-modal', '{{ $createServiceModal }}')">{{ __('Add service') }}</button>
-            <button type="button" class="casa-button-primary" x-data="" x-on:click="$dispatch('open-modal', '{{ $createStaffModal }}')">{{ __('Add staff') }}</button>
+            @if(auth()->user()->isSuperAdmin())<button type="button" class="casa-button-primary" x-data="" x-on:click="$dispatch('open-modal', '{{ $createStaffModal }}')">{{ __('Add staff') }}</button>@endif
         </div>
     </x-slot>
 
@@ -50,7 +50,7 @@
                         description="{{ __('Create staff accounts before assigning services, schedules, and appointment responsibilities.') }}"
                     >
                         <x-slot name="action">
-                            <button type="button" class="casa-button-primary" x-data="" x-on:click="$dispatch('open-modal', '{{ $createStaffModal }}')">{{ __('Add staff') }}</button>
+                            @if(auth()->user()->isSuperAdmin())<button type="button" class="casa-button-primary" x-data="" x-on:click="$dispatch('open-modal', '{{ $createStaffModal }}')">{{ __('Add staff') }}</button>@endif
                         </x-slot>
                     </x-empty-state>
                 @else
@@ -189,7 +189,7 @@
             </div>
         </x-app-card>
     </div>
-    <x-modal :name="$createStaffModal" :show="old('_modal') === $createStaffModal" maxWidth="5xl" focusable><div class="p-5">@include('admin.staff.partials.form', ['staffProfile' => $newStaffProfile, 'staffUser' => $newStaffUser, 'services' => $staffAssignableServices, 'assignedServiceIds' => [], 'action' => route('admin.staff.store'), 'method' => 'POST', 'submitLabel' => __('Create staff'), 'passwordHelp' => __('Share this temporary password only through a secure handover. Staff can change it after login.'), 'modalName' => $createStaffModal])</div></x-modal>
+    @if(auth()->user()->isSuperAdmin())<x-modal :name="$createStaffModal" :show="old('_modal') === $createStaffModal" maxWidth="5xl" focusable><div class="p-5">@include('admin.staff.partials.form', ['staffProfile' => $newStaffProfile, 'staffUser' => $newStaffUser, 'services' => $staffAssignableServices, 'assignedServiceIds' => [], 'action' => route('admin.staff.store'), 'method' => 'POST', 'submitLabel' => __('Create staff'), 'modalName' => $createStaffModal])</div></x-modal>@endif
     <x-modal :name="$createServiceModal" :show="old('_modal') === $createServiceModal" maxWidth="4xl" focusable><div class="p-5">@include('admin.services.partials.form', ['service' => $newService, 'action' => route('admin.services.store'), 'method' => 'POST', 'submitLabel' => __('Create service'), 'modalName' => $createServiceModal])</div></x-modal>
     @foreach ($staffProfiles as $staffProfile) @php $editStaffModal = 'admin-staff-edit-'.$staffProfile->id; @endphp <x-modal :name="$editStaffModal" :show="old('_modal') === $editStaffModal" maxWidth="5xl" focusable><div class="p-5">@include('admin.staff.partials.form', ['staffProfile' => $staffProfile, 'staffUser' => $staffProfile->user, 'services' => $staffAssignableServices, 'assignedServiceIds' => $staffProfile->services->pluck('id')->all(), 'action' => route('admin.staff.update', $staffProfile), 'method' => 'PATCH', 'submitLabel' => __('Save staff'), 'passwordHelp' => __('Leave blank to keep the current password.'), 'modalName' => $editStaffModal])</div></x-modal> @endforeach
     @foreach ($serviceCatalog as $service) @php $editServiceModal = 'admin-service-edit-'.$service->id; @endphp <x-modal :name="$editServiceModal" :show="old('_modal') === $editServiceModal" maxWidth="4xl" focusable><div class="p-5">@include('admin.services.partials.form', ['service' => $service, 'action' => route('admin.services.update', $service), 'method' => 'PATCH', 'submitLabel' => __('Save service'), 'modalName' => $editServiceModal])</div></x-modal> @endforeach

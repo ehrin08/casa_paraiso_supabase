@@ -10,7 +10,7 @@
         <x-app-card data-modal-actions>
             <div class="border-b border-casa-border pb-5">
                 <p class="casa-section-label">{{ __('Account') }}</p>
-                <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ __('Login details') }}</h2>
+                <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ __('Google account details') }}</h2>
             </div>
 
             <div class="mt-5 grid gap-5">
@@ -23,7 +23,8 @@
                 <div class="grid gap-5 sm:grid-cols-2">
                     <div>
                         <x-input-label for="email" :value="__('Email')" />
-                        <x-text-input id="email" name="email" type="email" class="mt-2" :value="old('email', $staffUser->email)" required />
+                        <x-text-input id="email" name="email" type="email" class="mt-2" :value="old('email', $staffUser->email)" required :disabled="$method !== 'POST'" />
+                        @if($method !== 'POST')<input type="hidden" name="email" value="{{ $staffUser->email }}"><p class="mt-2 text-xs text-casa-muted">Google email changes are managed in User access.</p>@endif
                         <x-input-error class="mt-2" :messages="$errors->get('email')" />
                     </div>
 
@@ -32,13 +33,6 @@
                         <x-text-input id="phone" name="phone" type="text" class="mt-2" :value="old('phone', $staffUser->phone)" />
                         <x-input-error class="mt-2" :messages="$errors->get('phone')" />
                     </div>
-                </div>
-
-                <div>
-                    <x-input-label for="password" :value="$method === 'POST' ? __('Temporary password') : __('New password')" />
-                    <x-text-input id="password" name="password" type="password" class="mt-2" :required="$method === 'POST'" autocomplete="new-password" />
-                    <p class="mt-2 text-sm leading-6 text-casa-muted">{{ $passwordHelp }}</p>
-                    <x-input-error class="mt-2" :messages="$errors->get('password')" />
                 </div>
 
                 <label class="flex items-start gap-3 rounded-2xl border border-casa-border bg-casa-bg p-4">

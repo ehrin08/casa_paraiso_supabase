@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Auth;
 
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -10,31 +9,9 @@ class RegistrationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_registration_screen_can_be_rendered(): void
+    public function test_registration_redirects_to_google_login_and_post_is_unavailable(): void
     {
-        $response = $this->get('/register');
-
-        $response->assertStatus(200);
-    }
-
-    public function test_new_users_can_register(): void
-    {
-        $response = $this->post('/register', [
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'phone' => '09171234567',
-            'password' => 'password',
-            'password_confirmation' => 'password',
-        ]);
-
-        $this->assertAuthenticated();
-        $response->assertRedirect(route('customer.appointments.index', absolute: false));
-
-        $this->assertDatabaseHas('users', [
-            'email' => 'test@example.com',
-            'phone' => '09171234567',
-            'role' => User::ROLE_CUSTOMER,
-            'is_active' => true,
-        ]);
+        $this->get('/register')->assertRedirect(route('login', absolute: false));
+        $this->post('/register', [])->assertMethodNotAllowed();
     }
 }

@@ -80,6 +80,7 @@ class StaffController extends Controller
 
     public function create(): View
     {
+        abort_unless(request()->user()->isSuperAdmin(), 403);
         return view('admin.staff.create', [
             'staffProfile' => new StaffProfile(['is_bookable' => true]),
             'staffUser' => new User(['is_active' => true]),
@@ -90,6 +91,7 @@ class StaffController extends Controller
 
     public function store(StaffRequest $request): RedirectResponse
     {
+        abort_unless($request->user()->isSuperAdmin(), 403);
         $data = $request->validated();
 
         $staffProfile = DB::transaction(function () use ($data, $request): StaffProfile {
@@ -97,7 +99,6 @@ class StaffController extends Controller
                 'name' => $data['name'],
                 'email' => $data['email'],
                 'phone' => $data['phone'] ?? null,
-                'password' => $data['password'],
                 'role' => User::ROLE_STAFF,
                 'is_active' => $request->boolean('is_active'),
             ]);
@@ -158,14 +159,9 @@ class StaffController extends Controller
         DB::transaction(function () use ($data, $request, $staff): void {
             $userData = [
                 'name' => $data['name'],
-                'email' => $data['email'],
                 'phone' => $data['phone'] ?? null,
                 'is_active' => $request->boolean('is_active'),
             ];
-
-            if (! empty($data['password'])) {
-                $userData['password'] = $data['password'];
-            }
 
             $staff->user->update($userData);
 

@@ -15,11 +15,14 @@ class User extends Authenticatable
 
     public const ROLE_ADMIN = 'admin';
 
+    public const ROLE_SUPER_ADMIN = 'super_admin';
+
     public const ROLE_STAFF = 'staff';
 
     public const ROLE_CUSTOMER = 'customer';
 
     public const ROLES = [
+        self::ROLE_SUPER_ADMIN,
         self::ROLE_ADMIN,
         self::ROLE_STAFF,
         self::ROLE_CUSTOMER,
@@ -33,6 +36,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'google_id',
         'phone',
         'password',
         'role',
@@ -65,7 +69,13 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return $this->role === self::ROLE_ADMIN;
+        return in_array($this->role, [self::ROLE_SUPER_ADMIN, self::ROLE_ADMIN], true);
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === self::ROLE_SUPER_ADMIN
+            && strtolower($this->email) === strtolower(config('auth.super_admin_email'));
     }
 
     public function isStaff(): bool
@@ -81,7 +91,7 @@ class User extends Authenticatable
     public function homeRouteName(): string
     {
         return match ($this->role) {
-            self::ROLE_ADMIN => 'admin.dashboard',
+            self::ROLE_SUPER_ADMIN, self::ROLE_ADMIN => 'admin.dashboard',
             self::ROLE_STAFF => 'staff.dashboard',
             default => 'customer.appointments.index',
         };

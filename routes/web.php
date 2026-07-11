@@ -12,10 +12,12 @@ use App\Http\Controllers\Admin\StaffScheduleExceptionController as AdminStaffSch
 use App\Http\Controllers\Admin\StaffController as AdminStaffController;
 use App\Http\Controllers\Admin\StaffWeeklyScheduleController as AdminStaffWeeklyScheduleController;
 use App\Http\Controllers\Admin\TransactionController as AdminTransactionController;
+use App\Http\Controllers\Admin\UserManagementController as AdminUserManagementController;
 use App\Http\Controllers\Customer\AppointmentController as CustomerAppointmentController;
 use App\Http\Controllers\Customer\AppointmentCalendarController as CustomerAppointmentCalendarController;
 use App\Http\Controllers\Customer\FeedbackController as CustomerFeedbackController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Auth\GoogleDeletionController;
 use App\Http\Controllers\Staff\AppointmentController as StaffAppointmentController;
 use App\Http\Controllers\Staff\AppointmentCalendarController as StaffAppointmentCalendarController;
 use App\Http\Controllers\Staff\CustomerController as StaffCustomerController;
@@ -37,9 +39,11 @@ Route::middleware(['auth', 'active', 'verified'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/profile/delete/google', [GoogleDeletionController::class, 'redirect'])->name('profile.deletion.google');
+    Route::get('/profile/delete/google/callback', [GoogleDeletionController::class, 'callback'])->name('profile.deletion.google.callback');
 });
 
-Route::middleware(['auth', 'active', 'verified', 'role:admin'])
+Route::middleware(['auth', 'active', 'verified', 'role:super_admin,admin'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
@@ -80,6 +84,13 @@ Route::middleware(['auth', 'active', 'verified', 'role:admin'])
                 ['label' => 'Defaults', 'value' => 'Operating values'],
             ],
         ])->name('settings.index');
+    });
+
+Route::middleware(['auth', 'active', 'verified', 'super_admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::resource('users', AdminUserManagementController::class)->only(['index', 'store', 'update']);
     });
 
 Route::middleware(['auth', 'active', 'verified', 'role:staff'])

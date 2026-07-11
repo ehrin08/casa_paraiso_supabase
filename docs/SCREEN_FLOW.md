@@ -85,7 +85,7 @@ Access: guest users.
 
 Purpose:
 
-- Authenticate admin, staff, and customer users.
+- Authenticate every role through Google OAuth. Unknown verified Google accounts become customers automatically; privileged emails must be pre-authorized.
 
 Post-login redirect:
 
@@ -99,7 +99,7 @@ Access: guest users.
 
 Purpose:
 
-- Allow customers to create accounts.
+- Redirect to the unified Google sign-in screen. There is no manual registration form.
 
 Rules:
 

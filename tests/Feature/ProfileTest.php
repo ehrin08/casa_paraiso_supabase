@@ -10,90 +10,29 @@ class ProfileTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_profile_page_is_displayed(): void
+    public function test_google_email_is_not_editable_but_name_and_phone_are(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->customer()->create(['email' => 'linked@example.com', 'google_id' => 'google-1']);
 
-        $response = $this
-            ->actingAs($user)
-            ->get('/profile');
+        $this->actingAs($user)->patch('/profile', [
+            'name' => 'Updated Name',
+            'phone' => '09171234567',
+            'email' => 'ignored@example.com',
+        ])->assertRedirect('/profile');
 
-        $response->assertOk();
+        $this->assertDatabaseHas('users', ['id' => $user->id, 'name' => 'Updated Name', 'phone' => '09171234567', 'email' => 'linked@example.com']);
     }
 
-    public function test_profile_information_can_be_updated(): void
+    public function test_privileged_users_cannot_delete_their_own_account(): void
     {
-        $user = User::factory()->create();
-
-        $response = $this
-            ->actingAs($user)
-            ->patch('/profile', [
-                'name' => 'Test User',
-                'email' => 'test@example.com',
-            ]);
-
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertRedirect('/profile');
-
-        $user->refresh();
-
-        $this->assertSame('Test User', $user->name);
-        $this->assertSame('test@example.com', $user->email);
-        $this->assertNull($user->email_verified_at);
+        $admin = User::factory()->admin()->create(['google_id' => 'google-admin']);
+        $this->actingAs($admin)->withSession(['google_reauthenticated_for_deletion' => $admin->id])->delete('/profile')->assertForbidden();
+        $this->assertDatabaseHas('users', ['id' => $admin->id]);
     }
 
-    public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged(): void
+    public function test_customer_deletion_requires_google_reauthentication_marker(): void
     {
-        $user = User::factory()->create();
-
-        $response = $this
-            ->actingAs($user)
-            ->patch('/profile', [
-                'name' => 'Test User',
-                'email' => $user->email,
-            ]);
-
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertRedirect('/profile');
-
-        $this->assertNotNull($user->refresh()->email_verified_at);
-    }
-
-    public function test_user_can_delete_their_account(): void
-    {
-        $user = User::factory()->create();
-
-        $response = $this
-            ->actingAs($user)
-            ->delete('/profile', [
-                'password' => 'password',
-            ]);
-
-        $response
-            ->assertSessionHasNoErrors()
-            ->assertRedirect('/');
-
-        $this->assertGuest();
-        $this->assertNull($user->fresh());
-    }
-
-    public function test_correct_password_must_be_provided_to_delete_account(): void
-    {
-        $user = User::factory()->create();
-
-        $response = $this
-            ->actingAs($user)
-            ->from('/profile')
-            ->delete('/profile', [
-                'password' => 'wrong-password',
-            ]);
-
-        $response
-            ->assertSessionHasErrorsIn('userDeletion', 'password')
-            ->assertRedirect('/profile');
-
-        $this->assertNotNull($user->fresh());
+        $customer = User::factory()->customer()->create(['google_id' => 'google-customer']);
+        $this->actingAs($customer)->delete('/profile')->assertForbidden();
     }
 }
