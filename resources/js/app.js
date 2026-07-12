@@ -588,6 +588,9 @@ window.adminAppointmentForm = (config) => ({
     serviceId: config.initialServiceId || '',
     scheduledStart: config.initialScheduledStart || '',
     staffId: config.initialStaffId || '',
+    persistedServiceId: config.persistedServiceId || '',
+    persistedScheduledStart: config.persistedScheduledStart || '',
+    persistedStaffId: config.persistedStaffId || '',
     availableStaffIds: null,
     loadingTherapists: false,
     therapistError: '',
@@ -617,7 +620,9 @@ window.adminAppointmentForm = (config) => ({
         }).then((response) => {
             this.availableStaffIds = (response.data.therapists || []).map((staff) => String(staff.id));
 
-            if (this.staffId && !this.availableStaffIds.includes(String(this.staffId))) {
+            if (this.staffId
+                && !this.availableStaffIds.includes(String(this.staffId))
+                && !this.canPreservePersistedStaff(this.staffId)) {
                 this.staffId = '';
             }
         }).catch(() => {
@@ -629,7 +634,16 @@ window.adminAppointmentForm = (config) => ({
     },
 
     staffIsAvailable(id) {
-        return this.availableStaffIds === null || this.availableStaffIds.includes(String(id));
+        return this.availableStaffIds === null
+            || this.availableStaffIds.includes(String(id))
+            || this.canPreservePersistedStaff(id);
+    },
+
+    canPreservePersistedStaff(id) {
+        return Boolean(this.appointmentId)
+            && String(id) === String(this.persistedStaffId)
+            && String(this.serviceId) === String(this.persistedServiceId)
+            && String(this.scheduledStart) === String(this.persistedScheduledStart);
     },
 });
 

@@ -29,6 +29,12 @@ class Transaction extends Model
         self::PAYMENT_VOID,
     ];
 
+    public const PAYMENT_RECEIVED_STATUSES = [
+        self::PAYMENT_PARTIAL,
+        self::PAYMENT_PAID,
+        self::PAYMENT_REFUNDED,
+    ];
+
     public const METHOD_CASH = 'Cash';
 
     public const METHOD_GCASH = 'GCash';
@@ -67,7 +73,7 @@ class Transaction extends Model
 
     public function customerProfile()
     {
-        return $this->belongsTo(CustomerProfile::class);
+        return $this->belongsTo(CustomerProfile::class)->withTrashed();
     }
 
     public function appointment()

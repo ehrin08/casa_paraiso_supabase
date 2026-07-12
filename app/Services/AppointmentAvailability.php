@@ -13,8 +13,7 @@ class AppointmentAvailability
     public function __construct(
         private readonly AppointmentWorkflow $workflow,
         private readonly ScheduleWindowResolver $scheduleWindows,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array{
@@ -89,8 +88,8 @@ class AppointmentAvailability
     }
 
     /**
-     * @param Collection<int, StaffProfile> $staffProfiles
-     * @param Collection<int, Collection<int, Appointment>> $confirmedByStaff
+     * @param  Collection<int, StaffProfile>  $staffProfiles
+     * @param  Collection<int, Collection<int, Appointment>>  $confirmedByStaff
      * @return array<int, array{starts_at: string, ends_at: string, time: string, label: string, staff_count: int}>
      */
     private function slotsForDate(Service $service, Collection $staffProfiles, Collection $confirmedByStaff, Carbon $day): array

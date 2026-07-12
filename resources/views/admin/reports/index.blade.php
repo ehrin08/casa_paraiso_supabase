@@ -19,7 +19,7 @@
             <x-metric-card label="Feedback" :value="$summary['feedback']" meta="Submitted reviews" tone="charcoal" />
         </section>
 
-        <x-app-card x-data="{ open: @js(request()->query() !== []) }">
+        <x-app-card :x-data="'{ open: '.(request()->query() !== [] ? 'true' : 'false').' }'">
             <div class="flex flex-col gap-3 border-b border-casa-border pb-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <p class="casa-section-label">{{ __('Filters') }}</p>
@@ -31,6 +31,22 @@
                     </span>
                 </button>
             </div>
+
+            @php
+                $statusOptions = match ($type) {
+                    'appointments' => \App\Models\Appointment::STATUSES,
+                    'promotions' => \App\Models\PromotionSuggestion::STATUSES,
+                    'customers' => ['active', 'inactive'],
+                    default => [],
+                };
+                $dateContext = match ($type) {
+                    'appointments' => __('Scheduled date when assigned; requested date otherwise.'),
+                    'transactions' => __('Date payment was received.'),
+                    'customers' => __('Date the customer profile was created.'),
+                    'promotions' => __('Date the suggestion was generated.'),
+                    'feedback' => __('Date feedback was submitted.'),
+                };
+            @endphp
 
             <form method="GET" action="{{ route('admin.reports.index') }}" class="mt-5 grid gap-4 lg:grid-cols-6" x-show="open">
                 <input type="hidden" name="sort" value="{{ $filters['sort'] ?? '' }}">
@@ -55,15 +71,18 @@
                     <x-input-label for="date_to" :value="__('To')" />
                     <x-text-input id="date_to" name="date_to" type="date" class="mt-2" :value="$filters['date_to'] ?? null" />
                 </div>
+                @if ($statusOptions !== [])
                 <div>
                     <x-input-label for="status" :value="__('Status')" />
                     <select id="status" name="status" class="casa-input mt-2">
                         <option value="">{{ __('Any') }}</option>
-                        @foreach (array_unique([...(\App\Models\Appointment::STATUSES), ...(\App\Models\PromotionSuggestion::STATUSES)]) as $option)
+                        @foreach ($statusOptions as $option)
                             <option value="{{ $option }}" @selected(($filters['status'] ?? '') === $option)>{{ ucfirst(str_replace('_', ' ', $option)) }}</option>
                         @endforeach
                     </select>
                 </div>
+                @endif
+                @if ($type === 'transactions')
                 <div>
                     <x-input-label for="payment_status" :value="__('Payment')" />
                     <select id="payment_status" name="payment_status" class="casa-input mt-2">
@@ -73,6 +92,8 @@
                         @endforeach
                     </select>
                 </div>
+                @endif
+                @if ($type === 'feedback')
                 <div>
                     <x-input-label for="sentiment_label" :value="__('Sentiment')" />
                     <select id="sentiment_label" name="sentiment_label" class="casa-input mt-2">
@@ -82,6 +103,8 @@
                         @endforeach
                     </select>
                 </div>
+                @endif
+                <p class="text-xs leading-5 text-casa-muted lg:col-span-6">{{ $dateContext }}</p>
                 <div class="lg:col-span-6">
                     <button type="submit" class="casa-button-secondary">{{ __('Apply filters') }}</button>
                 </div>
@@ -106,12 +129,17 @@
                                     <x-sortable-th sort="service">{{ __('Service') }}</x-sortable-th>
                                     <x-sortable-th sort="amount">{{ __('Amount') }}</x-sortable-th>
                                     <x-sortable-th sort="status">{{ __('Status') }}</x-sortable-th>
+                                    <x-sortable-th sort="paid_at">{{ __('Paid at') }}</x-sortable-th>
                                 @elseif ($type === 'customers')
                                     <x-sortable-th sort="code">{{ __('Code') }}</x-sortable-th>
                                     <x-sortable-th sort="name">{{ __('Customer') }}</x-sortable-th>
                                     <th class="px-4 py-3">{{ __('Email') }}</th>
+                                    <x-sortable-th sort="joined">{{ __('Joined') }}</x-sortable-th>
+                                    <x-sortable-th sort="status">{{ __('Status') }}</x-sortable-th>
                                     <x-sortable-th sort="appointments">{{ __('Appointments') }}</x-sortable-th>
+                                    <x-sortable-th sort="transactions">{{ __('Transactions') }}</x-sortable-th>
                                     <x-sortable-th sort="feedback">{{ __('Feedback') }}</x-sortable-th>
+                                    <x-sortable-th sort="promotions">{{ __('Promotions') }}</x-sortable-th>
                                 @elseif ($type === 'promotions')
                                     <x-sortable-th sort="customer">{{ __('Customer') }}</x-sortable-th>
                                     <x-sortable-th sort="segment">{{ __('Segment') }}</x-sortable-th>
@@ -128,7 +156,7 @@
                                     <x-sortable-th sort="number">{{ __('No.') }}</x-sortable-th>
                                     <x-sortable-th sort="customer">{{ __('Customer') }}</x-sortable-th>
                                     <x-sortable-th sort="service">{{ __('Service') }}</x-sortable-th>
-                                    <x-sortable-th sort="schedule">{{ __('Schedule') }}</x-sortable-th>
+                                    <x-sortable-th sort="schedule">{{ __('Appointment date') }}</x-sortable-th>
                                     <x-sortable-th sort="status">{{ __('Status') }}</x-sortable-th>
                                 @endif
                             </tr>
@@ -142,12 +170,17 @@
                                         <td class="px-4 py-4 text-casa-muted">{{ $record->service?->name }}</td>
                                         <td class="px-4 py-4 font-semibold text-casa-text">PHP {{ number_format((float) $record->amount, 2) }}</td>
                                         <td class="px-4 py-4"><x-status-badge>{{ ucfirst($record->payment_status) }}</x-status-badge></td>
+                                        <td class="px-4 py-4 text-casa-muted">{{ $record->paid_at?->format('M d, Y g:i A') ?: __('Not paid') }}</td>
                                     @elseif ($type === 'customers')
                                         <td class="px-4 py-4 font-semibold text-casa-text">{{ $record->customer_code }}</td>
                                         <td class="px-4 py-4 text-casa-muted">{{ $record->user?->name }}</td>
                                         <td class="px-4 py-4 text-casa-muted">{{ $record->user?->email }}</td>
+                                        <td class="px-4 py-4 text-casa-muted">{{ $record->created_at?->format('M d, Y') }}</td>
+                                        <td class="px-4 py-4"><x-status-badge :tone="$record->user?->is_active ? 'success' : 'dark'">{{ $record->user?->is_active ? __('Active') : __('Inactive') }}</x-status-badge></td>
                                         <td class="px-4 py-4 text-casa-muted">{{ trans_choice(':count appointment|:count appointments', $record->appointments_count) }}</td>
+                                        <td class="px-4 py-4 text-casa-muted">{{ trans_choice(':count transaction|:count transactions', $record->transactions_count) }}</td>
                                         <td class="px-4 py-4 text-casa-muted">{{ trans_choice(':count feedback|:count feedback', $record->feedback_count) }}</td>
+                                        <td class="px-4 py-4 text-casa-muted">{{ trans_choice(':count promotion|:count promotions', $record->promotion_suggestions_count) }}</td>
                                     @elseif ($type === 'promotions')
                                         <td class="px-4 py-4 font-semibold text-casa-text">{{ $record->customerProfile?->user?->name }}</td>
                                         <td class="px-4 py-4 text-casa-muted">{{ $record->rfmSegment?->name }}</td>

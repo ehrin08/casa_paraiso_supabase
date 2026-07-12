@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AdminAppointmentStoreRequest;
+use App\Http\Requests\AdminAppointmentUpdateRequest;
 use App\Http\Requests\AppointmentRequest;
 use App\Models\Appointment;
 use App\Models\CustomerProfile;
@@ -66,7 +68,7 @@ class AppointmentController extends Controller
         ])));
     }
 
-    public function store(AppointmentRequest $request, AppointmentWorkflow $workflow): RedirectResponse
+    public function store(AdminAppointmentStoreRequest $request, AppointmentWorkflow $workflow): RedirectResponse
     {
         $appointment = $this->persistAppointment(new Appointment, $request, $workflow);
 
@@ -112,7 +114,7 @@ class AppointmentController extends Controller
         return view('admin.appointments.edit', $this->formData($appointment));
     }
 
-    public function update(AppointmentRequest $request, Appointment $appointment, AppointmentWorkflow $workflow): RedirectResponse
+    public function update(AdminAppointmentUpdateRequest $request, Appointment $appointment, AppointmentWorkflow $workflow): RedirectResponse
     {
         $this->persistAppointment($appointment, $request, $workflow);
 
@@ -125,42 +127,88 @@ class AppointmentController extends Controller
     {
         $data = $request->validated();
         $service = Service::query()->findOrFail($data['service_id']);
-        $status = $data['status'] ?? $appointment->status ?: Appointment::STATUS_PENDING;
+        $status = $data['status'];
         $requestedStart = Carbon::parse($data['requested_start_at']);
         $scheduledStart = ! empty($data['scheduled_start_at']) ? Carbon::parse($data['scheduled_start_at']) : null;
-        $staffProfile = ! empty($data['staff_profile_id']) ? StaffProfile::query()->with('user')->findOrFail($data['staff_profile_id']) : null;
-        $preferredStaffProfile = ! empty($data['preferred_staff_profile_id'])
-            ? StaffProfile::query()->with(['user', 'services'])->findOrFail($data['preferred_staff_profile_id'])
+        $staffProfile = ! empty($data['staff_profile_id'])
+            ? StaffProfile::withTrashed()->with('user')->findOrFail($data['staff_profile_id'])
             : null;
+        $preferredStaffProfile = ! empty($data['preferred_staff_profile_id'])
+            ? StaffProfile::withTrashed()->with(['user', 'services'])->findOrFail($data['preferred_staff_profile_id'])
+            : null;
+        $isNew = ! $appointment->exists;
+        $originalStatus = $appointment->status;
+        $originalCustomerProfileId = $appointment->customer_profile_id;
+        $originalServiceId = $appointment->service_id;
+        $originalStaffProfileId = $appointment->staff_profile_id;
+        $originalPreferredStaffProfileId = $appointment->preferred_staff_profile_id;
+        $originalRequestedStart = $appointment->requested_start_at?->copy();
+        $originalScheduledStart = $appointment->scheduled_start_at?->copy();
 
-        if ($preferredStaffProfile && ! $workflow->isStaffEligibleForService($preferredStaffProfile, $service)) {
+        $workflow->assertTransitionAllowed($appointment, $status);
+
+        $preferenceChanged = $isNew
+            || (int) $appointment->preferred_staff_profile_id !== (int) $preferredStaffProfile?->id;
+
+        if ($preferredStaffProfile && $preferenceChanged && ! $workflow->isStaffEligibleForService($preferredStaffProfile, $service)) {
             throw ValidationException::withMessages([
                 'preferred_staff_profile_id' => __('The preferred therapist must be active, bookable, and eligible for this service.'),
             ]);
         }
 
-        if (! in_array($status, Appointment::STATUSES, true)) {
-            $status = Appointment::STATUS_PENDING;
+        $requestChanged = $isNew
+            || (int) $originalServiceId !== (int) $service->id
+            || ! $originalRequestedStart?->equalTo($requestedStart);
+
+        if ($isNew || ($status === Appointment::STATUS_PENDING && $requestChanged)) {
+            $workflow->assertBookableStart($requestedStart, $service, 'requested_start_at');
         }
 
         if ($status === Appointment::STATUS_PENDING) {
             $staffProfile = null;
             $scheduledStart = null;
-            $scheduledEnd = null;
-        } elseif ($status === Appointment::STATUS_CONFIRMED) {
+        }
+
+        if ($status === Appointment::STATUS_CONFIRMED) {
             if (! $staffProfile || ! $scheduledStart) {
                 throw ValidationException::withMessages([
                     'scheduled_start_at' => __('Confirmed appointments require staff and scheduled time.'),
                 ]);
             }
+        }
 
-        } else {
-            $scheduledEnd = $scheduledStart ? $workflow->scheduledEnd($scheduledStart, $service) : null;
+        $scheduledEnd = $scheduledStart ? $workflow->scheduledEnd($scheduledStart, $service) : null;
+        $scheduledStartChanged = ($originalScheduledStart === null) !== ($scheduledStart === null)
+            || ($originalScheduledStart && $scheduledStart && ! $originalScheduledStart->equalTo($scheduledStart));
+        $scheduleChanged = $isNew
+            || (int) $originalServiceId !== (int) $service->id
+            || (int) $originalStaffProfileId !== (int) $staffProfile?->id
+            || $scheduledStartChanged;
+
+        $terminalRecordChanged = (int) $originalCustomerProfileId !== (int) $data['customer_profile_id']
+            || (int) $originalServiceId !== (int) $service->id
+            || (int) $originalStaffProfileId !== (int) $staffProfile?->id
+            || (int) $originalPreferredStaffProfileId !== (int) $preferredStaffProfile?->id
+            || ! $originalRequestedStart?->equalTo($requestedStart)
+            || $scheduledStartChanged;
+
+        if (in_array($originalStatus, [Appointment::STATUS_COMPLETED, Appointment::STATUS_CANCELLED, Appointment::STATUS_NO_SHOW], true)
+            && $terminalRecordChanged) {
+            throw ValidationException::withMessages([
+                'status' => __('Completed, cancelled, and no-show appointment details are historical. Only notes may be edited.'),
+            ]);
+        }
+
+        if ($originalStatus === Appointment::STATUS_CONFIRMED
+            && in_array($status, [Appointment::STATUS_COMPLETED, Appointment::STATUS_NO_SHOW, Appointment::STATUS_CANCELLED], true)
+            && $scheduleChanged) {
+            throw ValidationException::withMessages([
+                'status' => __('Save schedule or therapist changes before recording the appointment outcome.'),
+            ]);
         }
 
         $appointment->fill([
-            'appointment_number' => $appointment->appointment_number ?: $workflow->nextAppointmentNumber(),
-            'customer_profile_id' => $data['customer_profile_id'] ?? $appointment->customer_profile_id,
+            'customer_profile_id' => $data['customer_profile_id'],
             'service_id' => $service->id,
             'staff_profile_id' => $staffProfile?->id,
             'preferred_staff_profile_id' => $preferredStaffProfile?->id,
@@ -173,13 +221,11 @@ class AppointmentController extends Controller
             'updated_by' => $request->user()->id,
         ]);
 
-        if (! $appointment->customer_profile_id) {
-            throw ValidationException::withMessages([
-                'customer_profile_id' => __('Select a customer for this appointment.'),
-            ]);
-        }
-
         if ($status === Appointment::STATUS_CONFIRMED) {
+            if (! $scheduleChanged) {
+                return $workflow->changeStatus($appointment, $status, $request->user()->id, $data['reason'] ?? null);
+            }
+
             return $workflow->schedule(
                 $appointment,
                 $staffProfile,
@@ -190,10 +236,15 @@ class AppointmentController extends Controller
             );
         }
 
-        $appointment->save();
-        $workflow->changeStatus($appointment, $status, $request->user()->id, $data['reason'] ?? null);
+        if ($isNew) {
+            return $workflow->createPending(
+                $appointment->getAttributes(),
+                $request->user()->id,
+                $data['reason'] ?? null,
+            );
+        }
 
-        return $appointment;
+        return $workflow->changeStatus($appointment, $status, $request->user()->id, $data['reason'] ?? null);
     }
 
     public function availableTherapists(Request $request, AppointmentWorkflow $workflow): JsonResponse
@@ -203,9 +254,17 @@ class AppointmentController extends Controller
             'starts_at' => ['required', 'date'],
             'appointment_id' => ['nullable', 'integer', 'exists:appointments,id'],
         ]);
-        $service = Service::query()->where('is_active', true)->findOrFail($data['service_id']);
-        $start = Carbon::parse($data['starts_at']);
         $appointment = ! empty($data['appointment_id']) ? Appointment::query()->findOrFail($data['appointment_id']) : null;
+        $service = Service::query()->findOrFail($data['service_id']);
+
+        if (! $service->is_active && (int) $appointment?->service_id !== (int) $service->id) {
+            throw ValidationException::withMessages([
+                'service_id' => __('Select an active service.'),
+            ]);
+        }
+
+        $start = Carbon::parse($data['starts_at']);
+        $workflow->assertBookableStart($start, $service, 'starts_at');
 
         $therapists = StaffProfile::query()
             ->with(['user', 'services', 'weeklySchedules', 'scheduleExceptions'])
@@ -230,11 +289,34 @@ class AppointmentController extends Controller
      */
     private function formData(Appointment $appointment): array
     {
+        $customers = CustomerProfile::query()->with('user')->get();
+        $services = Service::query()->where('is_active', true)->orderBy('name')->get();
+        $staffProfiles = StaffProfile::query()
+            ->with(['user', 'services'])
+            ->where('is_bookable', true)
+            ->whereHas('user', fn ($query) => $query->where('is_active', true))
+            ->get();
+
+        if ($appointment->customerProfile && ! $customers->contains('id', $appointment->customerProfile->id)) {
+            $customers->push($appointment->customerProfile);
+        }
+
+        if ($appointment->service && ! $services->contains('id', $appointment->service->id)) {
+            $services->push($appointment->service);
+        }
+
+        foreach ([$appointment->staffProfile, $appointment->preferredStaffProfile] as $historicalStaff) {
+            if ($historicalStaff && ! $staffProfiles->contains('id', $historicalStaff->id)) {
+                $historicalStaff->loadMissing(['user', 'services']);
+                $staffProfiles->push($historicalStaff);
+            }
+        }
+
         return [
             'appointment' => $appointment,
-            'customers' => CustomerProfile::query()->with('user')->get()->sortBy('user.name'),
-            'services' => Service::query()->where('is_active', true)->orderBy('name')->get(),
-            'staffProfiles' => StaffProfile::query()->with(['user', 'services'])->where('is_bookable', true)->get()->sortBy('user.name'),
+            'customers' => $customers->sortBy('user.name')->values(),
+            'services' => $services->sortBy('name')->values(),
+            'staffProfiles' => $staffProfiles->sortBy('user.name')->values(),
         ];
     }
 }

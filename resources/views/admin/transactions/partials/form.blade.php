@@ -76,6 +76,7 @@
                             <option value="{{ $option }}" @selected(old('payment_status', $transaction->payment_status) === $option)>{{ ucfirst($option) }}</option>
                         @endforeach
                     </select>
+                    <x-input-error class="mt-2" :messages="$errors->get('payment_status')" />
                 </div>
 
                 <div>
@@ -86,6 +87,7 @@
                             <option value="{{ $option }}" @selected(old('payment_method', $transaction->payment_method) === $option)>{{ $option }}</option>
                         @endforeach
                     </select>
+                    <x-input-error class="mt-2" :messages="$errors->get('payment_method')" />
                 </div>
             </div>
 

@@ -10,6 +10,8 @@
 
         <div class="flex flex-wrap gap-3">
             <a href="{{ route('admin.reports.index') }}" class="casa-button-secondary">{{ __('Reports') }}</a>
+            <a href="{{ route('admin.rfm-segments.index') }}" class="casa-button-secondary">{{ __('RFM segments') }}</a>
+            <a href="{{ route('admin.promotion-rules.index') }}" class="casa-button-secondary">{{ __('Promotion rules') }}</a>
             <x-confirm-action
                 :action="route('admin.promotions.generate')"
                 label="{{ __('Generate suggestions') }}"

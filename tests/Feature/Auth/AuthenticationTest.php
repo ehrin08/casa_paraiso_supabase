@@ -57,7 +57,7 @@ class AuthenticationTest extends TestCase
 
     private function mockGoogle(string $id, string $name, string $email, bool $verified = true): void
     {
-        $googleUser = new GoogleUser();
+        $googleUser = new GoogleUser;
         $googleUser->id = $id;
         $googleUser->name = $name;
         $googleUser->email = $email;

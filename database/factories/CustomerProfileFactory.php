@@ -18,7 +18,7 @@ class CustomerProfileFactory extends Factory
             'customer_code' => 'CP-'.fake()->unique()->numerify('#####'),
             'birth_date' => fake()->optional()->dateTimeBetween('-65 years', '-18 years'),
             'address' => fake()->optional()->address(),
-            'contact_preference' => fake()->randomElement(['SMS', 'Email', 'Phone']),
+            'contact_preference' => fake()->randomElement(array_keys(CustomerProfile::CONTACT_PREFERENCES)),
             'notes' => fake()->optional()->sentence(),
             'first_visit_at' => fake()->optional()->dateTimeBetween('-1 year', 'now'),
         ];

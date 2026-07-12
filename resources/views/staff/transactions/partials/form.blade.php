@@ -36,6 +36,7 @@
                 <div>
                     <x-input-label for="paid_at" :value="__('Paid date')" />
                     <x-text-input id="paid_at" name="paid_at" type="datetime-local" class="mt-2" :value="old('paid_at', optional($transaction->paid_at)->format('Y-m-d\\TH:i'))" />
+                    <x-input-error class="mt-2" :messages="$errors->get('paid_at')" />
                 </div>
             </div>
 
@@ -47,6 +48,7 @@
                             <option value="{{ $option }}" @selected(old('payment_status', $transaction->payment_status) === $option)>{{ ucfirst($option) }}</option>
                         @endforeach
                     </select>
+                    <x-input-error class="mt-2" :messages="$errors->get('payment_status')" />
                 </div>
 
                 <div>
@@ -57,12 +59,14 @@
                             <option value="{{ $option }}" @selected(old('payment_method', $transaction->payment_method) === $option)>{{ $option }}</option>
                         @endforeach
                     </select>
+                    <x-input-error class="mt-2" :messages="$errors->get('payment_method')" />
                 </div>
             </div>
 
             <div>
                 <x-input-label for="notes" :value="__('Notes')" />
                 <textarea id="notes" name="notes" rows="4" class="casa-input mt-2">{{ old('notes', $transaction->notes) }}</textarea>
+                <x-input-error class="mt-2" :messages="$errors->get('notes')" />
             </div>
         </div>
     </x-app-card>

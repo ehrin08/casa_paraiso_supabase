@@ -100,20 +100,28 @@ class PromotionController extends Controller
     {
         $data = $request->validated();
         $status = $data['status'];
+        $previousStatus = $promotion->status;
+        $statusChanged = $previousStatus !== $status;
 
         $promotion->fill([
             'status' => $status,
-            'reviewed_by' => $request->user()->id,
-            'reviewed_at' => $promotion->reviewed_at ?: now(),
-            'notes' => $data['notes'] ?? $promotion->notes,
+            'notes' => $data['notes'] ?? null,
         ]);
 
-        if ($status === PromotionSuggestion::STATUS_APPLIED) {
+        if ($status !== PromotionSuggestion::STATUS_SUGGESTED && ! $promotion->reviewed_at) {
+            $promotion->reviewed_by = $request->user()->id;
+            $promotion->reviewed_at = now();
+        }
+
+        if ($statusChanged && $status === PromotionSuggestion::STATUS_APPLIED) {
             $promotion->applied_at = now();
             $promotion->dismissed_at = null;
-        } elseif ($status === PromotionSuggestion::STATUS_DISMISSED) {
+        } elseif ($statusChanged && $status === PromotionSuggestion::STATUS_DISMISSED) {
             $promotion->dismissed_at = now();
             $promotion->applied_at = null;
+        } elseif ($statusChanged) {
+            $promotion->applied_at = null;
+            $promotion->dismissed_at = null;
         }
 
         $promotion->save();

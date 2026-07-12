@@ -3,7 +3,7 @@
         <div>
             <p class="casa-section-label">Google account</p>
             <h1 class="mt-2 font-display text-3xl font-black text-casa-text">Profile</h1>
-            <p class="mt-2 max-w-2xl text-sm leading-6 text-casa-muted">Keep your contact name and phone current. Your verified email is managed by Google.</p>
+            <p class="mt-2 max-w-2xl text-sm leading-6 text-casa-muted">Keep your contact details current. Your verified email is managed by Google.</p>
         </div>
     </x-slot>
 

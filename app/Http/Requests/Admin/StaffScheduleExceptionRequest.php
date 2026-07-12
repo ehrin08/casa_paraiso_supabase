@@ -45,11 +45,13 @@ class StaffScheduleExceptionRequest extends FormRequest
 
                 if ($type === StaffScheduleException::TYPE_AVAILABLE && (empty($startTime) || empty($endTime))) {
                     $validator->errors()->add('start_time', 'Available exceptions require start and end times.');
+
                     return;
                 }
 
                 if ((empty($startTime) && ! empty($endTime)) || (! empty($startTime) && empty($endTime))) {
                     $validator->errors()->add('start_time', 'Provide both start and end times, or leave both blank for a full-day unavailable exception.');
+
                     return;
                 }
 
@@ -67,11 +69,13 @@ class StaffScheduleExceptionRequest extends FormRequest
 
                 if ($startMinutes < $openingMinutes) {
                     $validator->errors()->add('start_time', 'Schedule exceptions must begin within business hours at 1:00 PM or later.');
+
                     return;
                 }
 
                 if ($endsNextDay && $endTime !== '00:00') {
                     $validator->errors()->add('end_time', 'A next-day exception must end at 12:00 midnight.');
+
                     return;
                 }
 

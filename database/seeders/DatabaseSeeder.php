@@ -2,14 +2,14 @@
 
 namespace Database\Seeders;
 
+use App\Models\Appointment;
+use App\Models\Feedback;
 use App\Models\PromotionRule;
 use App\Models\PromotionSuggestion;
 use App\Models\RfmSegment;
 use App\Models\Service;
 use App\Models\StaffProfile;
 use App\Models\StaffWeeklySchedule;
-use App\Models\Appointment;
-use App\Models\Feedback;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;

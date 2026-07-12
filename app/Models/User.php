@@ -99,12 +99,12 @@ class User extends Authenticatable
 
     public function staffProfile()
     {
-        return $this->hasOne(StaffProfile::class);
+        return $this->hasOne(StaffProfile::class)->withTrashed();
     }
 
     public function customerProfile()
     {
-        return $this->hasOne(CustomerProfile::class);
+        return $this->hasOne(CustomerProfile::class)->withTrashed();
     }
 
     public function recordedTransactions()

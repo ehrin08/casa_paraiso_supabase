@@ -8,6 +8,7 @@ use App\Models\PromotionRule;
 use App\Models\PromotionSuggestion;
 use App\Models\RfmSegment;
 use App\Models\Transaction;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -25,7 +26,8 @@ class RfmPromotionGenerator
 
         return $customers
             ->map(fn (CustomerProfile $customer) => $this->generateForCustomer($customer))
-            ->filter();
+            ->filter(fn (?PromotionSuggestion $suggestion) => $suggestion?->wasRecentlyCreated === true)
+            ->values();
     }
 
     public function generateForCustomer(CustomerProfile $customer): ?PromotionSuggestion
@@ -47,7 +49,30 @@ class RfmPromotionGenerator
             return null;
         }
 
-        return PromotionSuggestion::query()->create([
+        $generationKey = $this->generationKey($customer, $rule, $metrics);
+        $existing = $this->existingSuggestion($customer, $rule, $metrics);
+
+        if ($existing) {
+            if (! $existing->generation_key) {
+                try {
+                    $existing->update(['generation_key' => $generationKey]);
+                } catch (QueryException $exception) {
+                    if (! $this->isGenerationKeyCollision($exception)) {
+                        throw $exception;
+                    }
+
+                    return PromotionSuggestion::query()
+                        ->where('generation_key', $generationKey)
+                        ->firstOrFail();
+                }
+            }
+
+            return $existing;
+        }
+
+        return PromotionSuggestion::query()->firstOrCreate([
+            'generation_key' => $generationKey,
+        ], [
             'customer_profile_id' => $customer->id,
             'rfm_segment_id' => $segment->id,
             'promotion_rule_id' => $rule->id,
@@ -72,14 +97,16 @@ class RfmPromotionGenerator
         $latestPaidAt = (clone $paidTransactions)->max('paid_at');
 
         return [
-            'recency_days' => $latestPaidAt ? (int) now()->diffInDays(Carbon::parse($latestPaidAt)) : null,
+            'recency_days' => $latestPaidAt
+                ? (int) max(0, Carbon::parse($latestPaidAt)->diffInDays(now()))
+                : null,
             'frequency_count' => (clone $paidTransactions)->count(),
             'monetary_total' => (float) (clone $paidTransactions)->sum('amount'),
         ];
     }
 
     /**
-     * @param array{recency_days: int|null, frequency_count: int, monetary_total: float} $metrics
+     * @param  array{recency_days: int|null, frequency_count: int, monetary_total: float}  $metrics
      */
     private function matchingSegment(array $metrics): ?RfmSegment
     {
@@ -91,11 +118,22 @@ class RfmPromotionGenerator
             ->first(function (RfmSegment $segment) use ($metrics): bool {
                 $recency = $metrics['recency_days'];
 
-                if ($segment->recency_min_days !== null && ($recency === null || $recency < $segment->recency_min_days)) {
+                if ($recency === null) {
+                    $explicitlyIncludesZeroVisits = $metrics['frequency_count'] === 0
+                        && $segment->frequency_min !== null
+                        && $segment->frequency_min <= 0
+                        && ($segment->frequency_max === null || $segment->frequency_max >= 0);
+
+                    if (! $explicitlyIncludesZeroVisits) {
+                        return false;
+                    }
+                }
+
+                if ($recency !== null && $segment->recency_min_days !== null && $recency < $segment->recency_min_days) {
                     return false;
                 }
 
-                if ($segment->recency_max_days !== null && ($recency === null || $recency > $segment->recency_max_days)) {
+                if ($recency !== null && $segment->recency_max_days !== null && $recency > $segment->recency_max_days) {
                     return false;
                 }
 
@@ -117,5 +155,47 @@ class RfmPromotionGenerator
 
                 return true;
             });
+    }
+
+    /**
+     * @param  array{recency_days: int|null, frequency_count: int, monetary_total: float}  $metrics
+     */
+    private function existingSuggestion(CustomerProfile $customer, PromotionRule $rule, array $metrics): ?PromotionSuggestion
+    {
+        return PromotionSuggestion::query()
+            ->where('customer_profile_id', $customer->id)
+            ->where('promotion_rule_id', $rule->id)
+            ->when(
+                $metrics['recency_days'] === null,
+                fn ($query) => $query->whereNull('recency_days'),
+                fn ($query) => $query->where('recency_days', $metrics['recency_days']),
+            )
+            ->where('frequency_count', $metrics['frequency_count'])
+            ->where('monetary_total', number_format($metrics['monetary_total'], 2, '.', ''))
+            ->oldest('id')
+            ->first();
+    }
+
+    /**
+     * @param  array{recency_days: int|null, frequency_count: int, monetary_total: float}  $metrics
+     */
+    private function generationKey(CustomerProfile $customer, PromotionRule $rule, array $metrics): string
+    {
+        return hash('sha256', implode('|', [
+            $customer->id,
+            $rule->id,
+            $metrics['recency_days'] ?? 'none',
+            $metrics['frequency_count'],
+            number_format($metrics['monetary_total'], 2, '.', ''),
+        ]));
+    }
+
+    private function isGenerationKeyCollision(QueryException $exception): bool
+    {
+        $sqlState = (string) ($exception->errorInfo[0] ?? $exception->getCode());
+        $message = strtolower($exception->getMessage());
+
+        return in_array($sqlState, ['23000', '23505'], true)
+            && str_contains($message, 'generation_key');
     }
 }

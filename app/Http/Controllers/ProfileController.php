@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\CustomerProfile;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
 
@@ -26,9 +29,22 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $data = $request->validated();
+        $user = $request->user();
 
-        $request->user()->save();
+        DB::transaction(function () use ($data, $user): void {
+            $user->update([
+                'name' => $data['name'],
+                'phone' => $data['phone'] ?? null,
+            ]);
+
+            if ($user->isCustomer()) {
+                CustomerProfile::provisionFor($user)->update([
+                    'address' => $data['address'] ?? null,
+                    'contact_preference' => $data['contact_preference'] ?? null,
+                ]);
+            }
+        });
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
@@ -40,15 +56,55 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
-        abort_unless($user->isCustomer() && $request->session()->pull('google_reauthenticated_for_deletion') === $user->id, 403);
+        abort_unless($user->isCustomer() && $this->consumeValidDeletionConfirmation($request, $user), 403);
+
+        DB::transaction(function () use ($user): void {
+            $lockedUser = User::query()->lockForUpdate()->findOrFail($user->id);
+
+            abort_unless($lockedUser->isCustomer(), 403);
+
+            $profile = CustomerProfile::withTrashed()
+                ->where('user_id', $lockedUser->id)
+                ->lockForUpdate()
+                ->first();
+
+            $profile?->anonymize();
+
+            $lockedUser->forceFill([
+                'name' => 'Deleted customer',
+                'email' => "deleted-customer-{$lockedUser->id}@accounts.invalid",
+                'google_id' => null,
+                'phone' => null,
+                'password' => null,
+                'email_verified_at' => null,
+                'is_active' => false,
+                'remember_token' => null,
+            ])->save();
+        });
 
         Auth::logout();
-
-        $user->delete();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
         return Redirect::to('/');
+    }
+
+    private function consumeValidDeletionConfirmation(Request $request, User $user): bool
+    {
+        $confirmation = $request->session()->pull('google_reauthenticated_for_deletion');
+
+        if (! is_array($confirmation)) {
+            return false;
+        }
+
+        $confirmedAt = filter_var($confirmation['confirmed_at'] ?? null, FILTER_VALIDATE_INT);
+        $ttl = max(1, (int) config('auth.profile_deletion_reauth_ttl', 600));
+        $now = now()->timestamp;
+
+        return (int) ($confirmation['user_id'] ?? 0) === $user->id
+            && $confirmedAt !== false
+            && $confirmedAt <= $now
+            && $confirmedAt >= $now - $ttl;
     }
 }

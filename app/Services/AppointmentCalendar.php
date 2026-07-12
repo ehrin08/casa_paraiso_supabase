@@ -11,12 +11,10 @@ use Illuminate\Support\Collection;
 
 class AppointmentCalendar
 {
-    public function __construct(private readonly ScheduleWindowResolver $scheduleWindows)
-    {
-    }
+    public function __construct(private readonly ScheduleWindowResolver $scheduleWindows) {}
 
     /**
-     * @param array{staff_profile_id?: int|null, service_id?: int|null, status?: string|null} $filters
+     * @param  array{staff_profile_id?: int|null, service_id?: int|null, status?: string|null}  $filters
      * @return array<string, mixed>
      */
     public function admin(Carbon $start, Carbon $end, string $mode, array $filters = []): array
@@ -128,7 +126,7 @@ class AppointmentCalendar
     }
 
     /**
-     * @param Collection<int, StaffProfile> $staffProfiles
+     * @param  Collection<int, StaffProfile>  $staffProfiles
      * @return Collection<int, array<string, mixed>>
      */
     private function availabilityEvents(Collection $staffProfiles, Carbon $start, Carbon $end): Collection
@@ -184,7 +182,7 @@ class AppointmentCalendar
     }
 
     /**
-     * @param Collection<int, StaffProfile> $staffProfiles
+     * @param  Collection<int, StaffProfile>  $staffProfiles
      * @return Collection<int, array<string, mixed>>
      */
     private function bookingBlockers(Collection $staffProfiles, Carbon $start, Carbon $end): Collection
@@ -206,7 +204,7 @@ class AppointmentCalendar
     }
 
     /**
-     * @param array{start: Carbon, end: Carbon} $interval
+     * @param  array{start: Carbon, end: Carbon}  $interval
      * @return array<string, mixed>
      */
     private function availabilityEvent(
@@ -292,8 +290,8 @@ class AppointmentCalendar
     }
 
     /**
-     * @param Collection<int, array<string, mixed>> $resources
-     * @param Collection<int, array<string, mixed>> $events
+     * @param  Collection<int, array<string, mixed>>  $resources
+     * @param  Collection<int, array<string, mixed>>  $events
      * @return array<string, mixed>
      */
     private function payload(Carbon $start, Carbon $end, Collection $resources, Collection $events, string $mode): array

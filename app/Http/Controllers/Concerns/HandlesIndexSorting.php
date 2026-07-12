@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 trait HandlesIndexSorting
 {
     /**
-     * @param array<string, string> $allowedSorts
+     * @param  array<string, string>  $allowedSorts
      */
     protected function indexSort(Request $request, array $allowedSorts, string $default): string
     {

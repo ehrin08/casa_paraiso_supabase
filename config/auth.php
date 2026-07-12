@@ -6,6 +6,8 @@ return [
 
     'super_admin_email' => env('SUPER_ADMIN_EMAIL', 'ehrinjohn08@gmail.com'),
 
+    'profile_deletion_reauth_ttl' => (int) env('PROFILE_DELETION_REAUTH_TTL', 600),
+
     /*
     |--------------------------------------------------------------------------
     | Authentication Defaults

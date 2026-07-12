@@ -3,9 +3,12 @@
 namespace App\Services;
 
 use App\Models\Transaction;
+use Illuminate\Database\QueryException;
 
 class TransactionNumber
 {
+    public const MAX_SAVE_ATTEMPTS = 3;
+
     public function next(): string
     {
         $prefix = 'TRX-'.now()->format('Ymd').'-';
@@ -17,5 +20,41 @@ class TransactionNumber
         } while (Transaction::query()->where('transaction_number', $number)->exists());
 
         return $number;
+    }
+
+    /**
+     * Persist a new transaction while retrying only transaction-number collisions.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    public function create(array $attributes): Transaction
+    {
+        $lastException = null;
+
+        for ($attempt = 1; $attempt <= self::MAX_SAVE_ATTEMPTS; $attempt++) {
+            try {
+                return Transaction::query()->create([
+                    ...$attributes,
+                    'transaction_number' => $this->next(),
+                ]);
+            } catch (QueryException $exception) {
+                if (! $this->isTransactionNumberCollision($exception)) {
+                    throw $exception;
+                }
+
+                $lastException = $exception;
+            }
+        }
+
+        throw $lastException;
+    }
+
+    private function isTransactionNumberCollision(QueryException $exception): bool
+    {
+        $sqlState = (string) ($exception->errorInfo[0] ?? $exception->getCode());
+        $message = strtolower($exception->getMessage());
+
+        return in_array($sqlState, ['23000', '23505'], true)
+            && str_contains($message, 'transaction_number');
     }
 }

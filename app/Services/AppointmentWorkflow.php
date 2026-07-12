@@ -7,31 +7,59 @@ use App\Models\AppointmentStatusLog;
 use App\Models\Service;
 use App\Models\StaffProfile;
 use Carbon\CarbonInterface;
+use Closure;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class AppointmentWorkflow
 {
-    public function __construct(private readonly ScheduleWindowResolver $scheduleWindows)
-    {
-    }
+    private const NUMBER_ALLOCATION_ATTEMPTS = 5;
+
+    public function __construct(
+        private readonly ScheduleWindowResolver $scheduleWindows,
+        private readonly AppointmentNumberGenerator $numberGenerator,
+    ) {}
 
     public function nextAppointmentNumber(): string
     {
-        $prefix = 'APT-'.now()->format('Ymd').'-';
-        $sequence = 1;
-
-        do {
-            $number = $prefix.str_pad((string) $sequence, 4, '0', STR_PAD_LEFT);
-            $sequence++;
-        } while (Appointment::query()->where('appointment_number', $number)->exists());
-
-        return $number;
+        return $this->numberGenerator->next();
     }
 
     public function scheduledEnd(CarbonInterface $start, Service $service): CarbonInterface
     {
         return $start->copy()->addMinutes($service->duration_minutes);
+    }
+
+    public function assertBookableStart(
+        CarbonInterface $start,
+        Service $service,
+        string $field = 'scheduled_start_at',
+        bool $mustBeFuture = true,
+    ): void {
+        $timezone = (string) config('casa.business_hours.timezone', config('app.timezone'));
+        $candidate = Carbon::instance($start)->setTimezone($timezone);
+        $interval = (int) config('casa.business_hours.slot_interval_minutes', 30);
+        $messages = [];
+
+        if ($mustBeFuture && $candidate->lte(now($timezone))) {
+            $messages[] = __('Choose a future appointment time.');
+        }
+
+        if ($interval < 1 || $candidate->minute % $interval !== 0 || $candidate->second !== 0) {
+            $messages[] = __('Appointment times must start on a :minutes-minute interval.', [
+                'minutes' => max(1, $interval),
+            ]);
+        }
+
+        if (! $this->scheduleWindows->withinBusinessHours($candidate, $this->scheduledEnd($candidate, $service))) {
+            $messages[] = __('The full service must fit inside business hours (1:00 PM to 12:00 midnight).');
+        }
+
+        if ($messages !== []) {
+            throw ValidationException::withMessages([$field => $messages]);
+        }
     }
 
     public function isStaffEligibleForService(StaffProfile $staffProfile, Service $service): bool
@@ -40,7 +68,8 @@ class AppointmentWorkflow
             ? $staffProfile->services->contains('id', $service->id)
             : $staffProfile->services()->whereKey($service->id)->exists();
 
-        return $staffProfile->is_bookable
+        return ! $staffProfile->trashed()
+            && $staffProfile->is_bookable
             && $staffProfile->user?->is_active
             && $performsService;
     }
@@ -80,6 +109,26 @@ class AppointmentWorkflow
             ->exists();
     }
 
+    /**
+     * Persist a new pending request with collision-safe number allocation.
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    public function createPending(array $attributes, ?int $changedBy = null, ?string $reason = null): Appointment
+    {
+        return $this->withAppointmentNumberRetry(function (string $number) use ($attributes, $changedBy, $reason): Appointment {
+            return DB::transaction(function () use ($attributes, $changedBy, $reason, $number): Appointment {
+                $appointment = new Appointment;
+                $appointment->fill([
+                    ...$attributes,
+                    'appointment_number' => $number,
+                ]);
+
+                return $this->applyStatus($appointment, Appointment::STATUS_PENDING, $changedBy, $reason);
+            }, 3);
+        });
+    }
+
     public function schedule(
         Appointment $appointment,
         StaffProfile $staffProfile,
@@ -87,6 +136,76 @@ class AppointmentWorkflow
         CarbonInterface $start,
         ?int $changedBy = null,
         ?string $reason = null,
+    ): Appointment {
+        $this->assertBookableStart($start, $service);
+
+        if ($appointment->exists) {
+            return $this->scheduleTransaction($appointment, $staffProfile, $service, $start, $changedBy, $reason);
+        }
+
+        $attributes = $appointment->getAttributes();
+        unset(
+            $attributes[$appointment->getKeyName()],
+            $attributes['appointment_number'],
+            $attributes['status'],
+            $attributes['confirmed_at'],
+            $attributes['completed_at'],
+            $attributes['cancelled_at'],
+            $attributes['cancelled_by'],
+        );
+
+        return $this->withAppointmentNumberRetry(function (string $number) use ($attributes, $staffProfile, $service, $start, $changedBy, $reason): Appointment {
+            $candidate = new Appointment;
+            $candidate->fill([
+                ...$attributes,
+                'appointment_number' => $number,
+            ]);
+
+            return $this->scheduleTransaction($candidate, $staffProfile, $service, $start, $changedBy, $reason);
+        });
+    }
+
+    public function changeStatus(Appointment $appointment, string $status, ?int $changedBy = null, ?string $reason = null): Appointment
+    {
+        $dirtyAttributes = $appointment->getDirty();
+        unset($dirtyAttributes['status']);
+
+        return DB::transaction(function () use ($appointment, $status, $changedBy, $reason, $dirtyAttributes): Appointment {
+            $target = $appointment->exists
+                ? Appointment::query()->lockForUpdate()->findOrFail($appointment->id)
+                : $appointment;
+
+            if ($appointment->exists) {
+                $target->fill($dirtyAttributes);
+            }
+
+            return $this->applyStatus($target, $status, $changedBy, $reason);
+        }, 3);
+    }
+
+    public function assertTransitionAllowed(Appointment $appointment, string $status): void
+    {
+        $allowed = $appointment->exists
+            ? (Appointment::STATUS_TRANSITIONS[$appointment->status] ?? [])
+            : Appointment::CREATION_STATUSES;
+
+        if (! in_array($status, $allowed, true)) {
+            throw ValidationException::withMessages([
+                'status' => __('An appointment cannot move from :from to :to.', [
+                    'from' => $appointment->status ?: __('a new record'),
+                    'to' => $status,
+                ]),
+            ]);
+        }
+    }
+
+    private function scheduleTransaction(
+        Appointment $appointment,
+        StaffProfile $staffProfile,
+        Service $service,
+        CarbonInterface $start,
+        ?int $changedBy,
+        ?string $reason,
     ): Appointment {
         $dirtyAttributes = $appointment->getDirty();
 
@@ -119,35 +238,66 @@ class AppointmentWorkflow
                 'scheduled_end_at' => $end,
                 'updated_by' => $changedBy,
             ]);
-            $target->save();
 
-            return $this->changeStatus($target, Appointment::STATUS_CONFIRMED, $changedBy, $reason);
-        });
+            return $this->applyStatus($target, Appointment::STATUS_CONFIRMED, $changedBy, $reason);
+        }, 3);
     }
 
-    public function changeStatus(Appointment $appointment, string $status, ?int $changedBy = null, ?string $reason = null): Appointment
+    private function applyStatus(Appointment $appointment, string $status, ?int $changedBy, ?string $reason): Appointment
     {
+        $this->assertTransitionAllowed($appointment, $status);
+
+        if (in_array($status, [Appointment::STATUS_COMPLETED, Appointment::STATUS_NO_SHOW], true)
+            && (! $appointment->staff_profile_id || ! $appointment->scheduled_start_at || ! $appointment->scheduled_end_at)) {
+            throw ValidationException::withMessages([
+                'status' => __('Completed and no-show outcomes require a confirmed therapist and schedule.'),
+            ]);
+        }
+
         $fromStatus = $appointment->status;
+        $now = now();
+        $metadata = match ($status) {
+            Appointment::STATUS_PENDING => [
+                'staff_profile_id' => null,
+                'scheduled_start_at' => null,
+                'scheduled_end_at' => null,
+                'confirmed_at' => null,
+                'completed_at' => null,
+                'cancelled_at' => null,
+                'cancelled_by' => null,
+            ],
+            Appointment::STATUS_CONFIRMED => [
+                'confirmed_at' => $appointment->confirmed_at ?? $now,
+                'completed_at' => null,
+                'cancelled_at' => null,
+                'cancelled_by' => null,
+            ],
+            Appointment::STATUS_COMPLETED => [
+                'completed_at' => $appointment->completed_at ?? $now,
+                'cancelled_at' => null,
+                'cancelled_by' => null,
+            ],
+            Appointment::STATUS_CANCELLED => [
+                'staff_profile_id' => $fromStatus === Appointment::STATUS_PENDING ? null : $appointment->staff_profile_id,
+                'scheduled_start_at' => $fromStatus === Appointment::STATUS_PENDING ? null : $appointment->scheduled_start_at,
+                'scheduled_end_at' => $fromStatus === Appointment::STATUS_PENDING ? null : $appointment->scheduled_end_at,
+                'confirmed_at' => $fromStatus === Appointment::STATUS_PENDING ? null : $appointment->confirmed_at,
+                'completed_at' => null,
+                'cancelled_at' => $appointment->cancelled_at ?? $now,
+                'cancelled_by' => $appointment->cancelled_by ?? $changedBy,
+            ],
+            Appointment::STATUS_NO_SHOW => [
+                'completed_at' => null,
+                'cancelled_at' => null,
+                'cancelled_by' => null,
+            ],
+        };
 
         $appointment->forceFill([
+            ...$metadata,
             'status' => $status,
             'updated_by' => $changedBy,
-        ]);
-
-        if ($status === Appointment::STATUS_CONFIRMED) {
-            $appointment->confirmed_at ??= now();
-        }
-
-        if ($status === Appointment::STATUS_COMPLETED) {
-            $appointment->completed_at ??= now();
-        }
-
-        if ($status === Appointment::STATUS_CANCELLED) {
-            $appointment->cancelled_at ??= now();
-            $appointment->cancelled_by ??= $changedBy;
-        }
-
-        $appointment->save();
+        ])->save();
 
         if ($fromStatus !== $status) {
             AppointmentStatusLog::query()->create([
@@ -162,4 +312,31 @@ class AppointmentWorkflow
         return $appointment;
     }
 
+    /**
+     * @param  Closure(string): Appointment  $callback
+     */
+    private function withAppointmentNumberRetry(Closure $callback): Appointment
+    {
+        for ($attempt = 1; $attempt <= self::NUMBER_ALLOCATION_ATTEMPTS; $attempt++) {
+            try {
+                return $callback($this->nextAppointmentNumber());
+            } catch (QueryException $exception) {
+                if (! $this->isAppointmentNumberCollision($exception)) {
+                    throw $exception;
+                }
+            }
+        }
+
+        throw ValidationException::withMessages([
+            'appointment_number' => __('The appointment number could not be allocated. Please submit the appointment again.'),
+        ]);
+    }
+
+    private function isAppointmentNumberCollision(QueryException $exception): bool
+    {
+        $message = strtolower($exception->getMessage());
+
+        return str_contains($message, 'appointment_number')
+            && (str_contains($message, 'unique') || str_contains($message, 'duplicate'));
+    }
 }

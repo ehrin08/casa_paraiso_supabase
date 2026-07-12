@@ -30,6 +30,7 @@ class PromotionSuggestion extends Model
         'customer_profile_id',
         'rfm_segment_id',
         'promotion_rule_id',
+        'generation_key',
         'recency_days',
         'frequency_count',
         'monetary_total',
@@ -56,7 +57,7 @@ class PromotionSuggestion extends Model
 
     public function customerProfile()
     {
-        return $this->belongsTo(CustomerProfile::class);
+        return $this->belongsTo(CustomerProfile::class)->withTrashed();
     }
 
     public function rfmSegment()
@@ -66,7 +67,7 @@ class PromotionSuggestion extends Model
 
     public function promotionRule()
     {
-        return $this->belongsTo(PromotionRule::class);
+        return $this->belongsTo(PromotionRule::class)->withTrashed();
     }
 
     public function reviewer()

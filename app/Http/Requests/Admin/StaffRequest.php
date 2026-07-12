@@ -26,6 +26,10 @@ class StaffRequest extends FormRequest
     {
         $staffProfile = $this->route('staff');
         $staffUser = $staffProfile instanceof StaffProfile ? $staffProfile->user : null;
+        $assignedServiceIds = $staffProfile instanceof StaffProfile
+            ? $staffProfile->services()->pluck('services.id')->all()
+            : [];
+
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => [
@@ -46,7 +50,13 @@ class StaffRequest extends FormRequest
             'service_ids' => ['nullable', 'array'],
             'service_ids.*' => [
                 'integer',
-                Rule::exists('services', 'id')->where('is_active', true),
+                Rule::exists('services', 'id')->where(function ($query) use ($assignedServiceIds): void {
+                    $query->where('is_active', true);
+
+                    if ($assignedServiceIds !== []) {
+                        $query->orWhereIn('id', $assignedServiceIds);
+                    }
+                }),
             ],
         ];
     }

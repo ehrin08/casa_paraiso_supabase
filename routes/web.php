@@ -1,25 +1,27 @@
 <?php
 
-use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
-use App\Http\Controllers\Admin\AppointmentController as AdminAppointmentController;
 use App\Http\Controllers\Admin\AppointmentCalendarController as AdminAppointmentCalendarController;
+use App\Http\Controllers\Admin\AppointmentController as AdminAppointmentController;
 use App\Http\Controllers\Admin\CustomerController as AdminCustomerController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
 use App\Http\Controllers\Admin\PromotionController as AdminPromotionController;
+use App\Http\Controllers\Admin\PromotionRuleController as AdminPromotionRuleController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
+use App\Http\Controllers\Admin\RfmSegmentController as AdminRfmSegmentController;
 use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
-use App\Http\Controllers\Admin\StaffScheduleExceptionController as AdminStaffScheduleExceptionController;
 use App\Http\Controllers\Admin\StaffController as AdminStaffController;
+use App\Http\Controllers\Admin\StaffScheduleExceptionController as AdminStaffScheduleExceptionController;
 use App\Http\Controllers\Admin\StaffWeeklyScheduleController as AdminStaffWeeklyScheduleController;
 use App\Http\Controllers\Admin\TransactionController as AdminTransactionController;
 use App\Http\Controllers\Admin\UserManagementController as AdminUserManagementController;
-use App\Http\Controllers\Customer\AppointmentController as CustomerAppointmentController;
+use App\Http\Controllers\Auth\GoogleDeletionController;
 use App\Http\Controllers\Customer\AppointmentCalendarController as CustomerAppointmentCalendarController;
+use App\Http\Controllers\Customer\AppointmentController as CustomerAppointmentController;
 use App\Http\Controllers\Customer\FeedbackController as CustomerFeedbackController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\Auth\GoogleDeletionController;
-use App\Http\Controllers\Staff\AppointmentController as StaffAppointmentController;
 use App\Http\Controllers\Staff\AppointmentCalendarController as StaffAppointmentCalendarController;
+use App\Http\Controllers\Staff\AppointmentController as StaffAppointmentController;
 use App\Http\Controllers\Staff\CustomerController as StaffCustomerController;
 use App\Http\Controllers\Staff\DashboardController as StaffDashboardController;
 use App\Http\Controllers\Staff\FeedbackController as StaffFeedbackController;
@@ -66,6 +68,14 @@ Route::middleware(['auth', 'active', 'verified', 'role:super_admin,admin'])
         Route::patch('/services/{service}/toggle', [AdminServiceController::class, 'toggle'])->name('services.toggle');
         Route::resource('services', AdminServiceController::class)->except('destroy');
         Route::resource('transactions', AdminTransactionController::class)->except('destroy');
+        Route::patch('/rfm-segments/{rfmSegment}/toggle', [AdminRfmSegmentController::class, 'toggle'])->name('rfm-segments.toggle');
+        Route::resource('rfm-segments', AdminRfmSegmentController::class)
+            ->parameters(['rfm-segments' => 'rfmSegment'])
+            ->only(['index', 'create', 'store', 'edit', 'update']);
+        Route::patch('/promotion-rules/{promotionRule}/toggle', [AdminPromotionRuleController::class, 'toggle'])->name('promotion-rules.toggle');
+        Route::resource('promotion-rules', AdminPromotionRuleController::class)
+            ->parameters(['promotion-rules' => 'promotionRule'])
+            ->only(['index', 'create', 'store', 'edit', 'update']);
         Route::post('/promotions/generate', [AdminPromotionController::class, 'generate'])->name('promotions.generate');
         Route::resource('promotions', AdminPromotionController::class)->only(['index', 'show', 'update']);
         Route::resource('feedback', AdminFeedbackController::class)->only(['index', 'show']);

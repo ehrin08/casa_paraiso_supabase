@@ -152,20 +152,24 @@ class TransactionController extends Controller
             throw ValidationException::withMessages(['appointment_id' => __('Select one of your confirmed or completed appointments.')]);
         }
 
-        $transaction->fill([
-            'transaction_number' => $transaction->transaction_number ?: $numbers->next(),
+        $paymentReceived = in_array($data['payment_status'], Transaction::PAYMENT_RECEIVED_STATUSES, true);
+        $attributes = [
             'customer_profile_id' => $appointment->customer_profile_id,
             'appointment_id' => $appointment->id,
             'service_id' => $appointment->service_id,
             'amount' => $data['amount'],
             'payment_status' => $data['payment_status'],
-            'payment_method' => $data['payment_method'] ?? null,
-            'paid_at' => ! empty($data['paid_at'])
-                ? Carbon::parse($data['paid_at'])
-                : ($data['payment_status'] === Transaction::PAYMENT_PAID ? now() : null),
+            'payment_method' => $paymentReceived ? $data['payment_method'] : null,
+            'paid_at' => $paymentReceived ? Carbon::parse($data['paid_at']) : null,
             'recorded_by' => $transaction->recorded_by ?: $request->user()->id,
             'notes' => $data['notes'] ?? null,
-        ])->save();
+        ];
+
+        if (! $transaction->exists) {
+            return $numbers->create($attributes);
+        }
+
+        $transaction->update($attributes);
 
         return $transaction;
     }

@@ -169,3 +169,51 @@ php artisan optimize
 ```
 
 `php artisan optimize` caches Laravel configuration, events, routes, and Blade views. Run it on the Linux hosting environment, not during normal Windows/XAMPP development. Re-run it after deploying application, route, configuration, or view changes.
+
+## CRUD Remediation Verification And Recovery
+
+Use the following sequence after deploying CRUD remediation code.
+
+The remediation adds `2026_07_12_020000_add_generation_key_to_promotion_suggestions.php`. This nullable unique key makes promotion generation idempotent without rewriting historical suggestions. Treat it as an approval-gated schema change in every non-testing environment.
+
+1. Create a database export before applying migrations or data repairs.
+2. Obtain explicit approval for the exact migration or repair operation.
+3. Apply migrations with `php artisan migrate --force` only in the intended environment.
+4. Run the read-only integrity audit:
+
+```powershell
+docker compose exec -T laravel.test php artisan casa:audit-crud-integrity
+```
+
+5. Run the isolated Feature suite configured by `phpunit.xml` (the 2026-07-12 remediation baseline is 104 tests and 828 assertions):
+
+```powershell
+docker compose exec -T laravel.test php artisan test --testsuite=Feature
+```
+
+6. Run the remaining quality gates:
+
+```powershell
+docker compose exec -T laravel.test ./vendor/bin/pint --test
+docker compose exec -T laravel.test composer validate
+docker compose exec -T laravel.test php artisan view:cache
+docker compose exec -T laravel.test npm run build
+```
+
+7. Verify the admin, staff, and customer workspaces in signed-in browser sessions, then inspect the browser console and `storage/logs/laravel.log` for new errors.
+
+`composer validate` currently succeeds with an advisory that `laravel/socialite` is pinned to exact version `5.28`. Changing that dependency policy requires a separate Composer lockfile review and is not part of the CRUD remediation.
+
+The integrity audit reports orphaned operational relationships and inconsistent status metadata. It never modifies records. A non-zero exit code means the reported records require review before deployment.
+
+For current orphaned appointment findings and the approval-gated repair sequence, see `docs/CRUD_DATA_REPAIR_PLAN.md`.
+
+The approved local repair was completed on 2026-07-12 using `casa:repair-approved-appointment-references --execute`. The command performs a safe dry run unless `--execute` is supplied and refuses to proceed if appointment status, therapist eligibility, schedule coverage, overlap, or deleted-reference conditions have changed.
+
+### Rollback
+
+- Keep the pre-change database export until post-deployment verification is complete.
+- Roll back application files to the previous known-good release before restoring data.
+- Restore the database export through the matching local database tool or Hostinger hPanel/phpMyAdmin.
+- Do not run a broad production `migrate:rollback` without confirming every migration in the batch is safe to reverse.
+- After restoration, run `php artisan optimize:clear`, then repeat the read-only integrity audit and browser smoke test.

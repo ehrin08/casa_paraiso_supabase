@@ -20,7 +20,7 @@
                     ['label' => 'Customers', 'icon' => 'customers', 'route' => 'admin.customers.index', 'active' => 'admin.customers.*'],
                     ['label' => 'Team & Services', 'icon' => 'team', 'route' => 'admin.staff.index', 'active' => ['admin.staff.*', 'admin.services.*']],
                     ['label' => 'Payments', 'icon' => 'payments', 'route' => 'admin.transactions.index', 'active' => 'admin.transactions.*'],
-                    ['label' => 'Insights', 'icon' => 'insights', 'route' => 'admin.promotions.index', 'active' => ['admin.promotions.*', 'admin.feedback.*', 'admin.reports.*']],
+                    ['label' => 'Insights', 'icon' => 'insights', 'route' => 'admin.promotions.index', 'active' => ['admin.promotions.*', 'admin.rfm-segments.*', 'admin.promotion-rules.*', 'admin.feedback.*', 'admin.reports.*']],
                 ],
             ],
         ],

@@ -132,8 +132,8 @@ class ScheduleWindowResolver
     }
 
     /**
-     * @param array{start: Carbon, end: Carbon} $interval
-     * @param array{start: Carbon, end: Carbon} $boundary
+     * @param  array{start: Carbon, end: Carbon}  $interval
+     * @param  array{start: Carbon, end: Carbon}  $boundary
      * @return array{start: Carbon, end: Carbon}|null
      */
     private function clamp(array $interval, array $boundary): ?array
@@ -145,7 +145,7 @@ class ScheduleWindowResolver
     }
 
     /**
-     * @param Collection<int, array{start: Carbon, end: Carbon}> $windows
+     * @param  Collection<int, array{start: Carbon, end: Carbon}>  $windows
      * @return Collection<int, array{start: Carbon, end: Carbon}>
      */
     private function merge(Collection $windows): Collection
@@ -157,6 +157,7 @@ class ScheduleWindowResolver
 
             if ($lastIndex === null || $merged[$lastIndex]['end']->lt($window['start'])) {
                 $merged->push(['start' => $window['start']->copy(), 'end' => $window['end']->copy()]);
+
                 continue;
             }
 
@@ -172,8 +173,8 @@ class ScheduleWindowResolver
     }
 
     /**
-     * @param Collection<int, array{start: Carbon, end: Carbon}> $windows
-     * @param array{start: Carbon, end: Carbon} $blocked
+     * @param  Collection<int, array{start: Carbon, end: Carbon}>  $windows
+     * @param  array{start: Carbon, end: Carbon}  $blocked
      * @return Collection<int, array{start: Carbon, end: Carbon}>
      */
     private function subtract(Collection $windows, array $blocked): Collection
@@ -183,6 +184,7 @@ class ScheduleWindowResolver
         foreach ($windows as $window) {
             if ($blocked['start']->gte($window['end']) || $blocked['end']->lte($window['start'])) {
                 $remaining->push($window);
+
                 continue;
             }
 

@@ -83,6 +83,40 @@
                 </x-app-card>
             @elseif ($appointment->status === \App\Models\Appointment::STATUS_CONFIRMED)
                 <x-app-card>
+                    <p class="casa-section-label">{{ __('Schedule') }}</p>
+                    <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ __('Reschedule appointment') }}</h2>
+                    <p class="mt-2 text-sm leading-6 text-casa-muted">{{ __('Choose another future time inside your working hours. Availability and booking overlaps are checked again when you save.') }}</p>
+                    @php
+                        $rescheduleAppointmentFormId = 'reschedule-appointment-'.$appointment->id;
+                    @endphp
+                    <form id="{{ $rescheduleAppointmentFormId }}" method="POST" action="{{ route('staff.appointments.update', $appointment) }}" class="mt-5 space-y-4">
+                        @csrf
+                        @method('PATCH')
+                        <input type="hidden" name="status" value="{{ \App\Models\Appointment::STATUS_CONFIRMED }}">
+                        <div>
+                            <x-input-label for="rescheduled_start_at_{{ $appointment->id }}" :value="__('New scheduled time')" />
+                            <x-text-input
+                                id="rescheduled_start_at_{{ $appointment->id }}"
+                                name="scheduled_start_at"
+                                type="datetime-local"
+                                class="mt-2"
+                                :value="old('scheduled_start_at', $appointment->scheduled_start_at?->format('Y-m-d\\TH:i'))"
+                                required
+                            />
+                            <x-input-error class="mt-2" :messages="$errors->get('scheduled_start_at')" />
+                        </div>
+                        <x-confirm-submit
+                            :form="$rescheduleAppointmentFormId"
+                            label="{{ __('Save new schedule') }}"
+                            confirm-title="{{ __('Reschedule this appointment?') }}"
+                            confirm-message="{{ __('The therapist schedule and confirmed bookings will be checked again before the new time is saved.') }}"
+                            confirm-button="{{ __('Reschedule appointment') }}"
+                            button-class="casa-button-secondary w-full"
+                        />
+                    </form>
+                </x-app-card>
+
+                <x-app-card>
                     <p class="casa-section-label">{{ __('Service actions') }}</p>
                     <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ __('Update outcome') }}</h2>
                     <div class="mt-5 space-y-3">

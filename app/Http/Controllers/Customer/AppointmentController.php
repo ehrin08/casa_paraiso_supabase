@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\AppointmentRequest;
+use App\Http\Requests\CustomerAppointmentStoreRequest;
 use App\Models\Appointment;
 use App\Models\Service;
 use App\Models\StaffProfile;
@@ -76,7 +76,7 @@ class AppointmentController extends Controller
         );
     }
 
-    public function store(AppointmentRequest $request, AppointmentWorkflow $workflow, AppointmentAvailability $availability): RedirectResponse
+    public function store(CustomerAppointmentStoreRequest $request, AppointmentWorkflow $workflow, AppointmentAvailability $availability): RedirectResponse
     {
         $customerProfile = $request->user()->customerProfile;
 
@@ -86,6 +86,8 @@ class AppointmentController extends Controller
         $service = Service::query()->findOrFail($data['service_id']);
         $requestedStart = Carbon::parse($data['requested_start_at']);
         $preferredStaffProfileId = ! empty($data['preferred_staff_profile_id']) ? (int) $data['preferred_staff_profile_id'] : null;
+
+        $workflow->assertBookableStart($requestedStart, $service, 'requested_start_at');
 
         if (! $availability->hasAvailableSlot($service, $requestedStart, $preferredStaffProfileId)) {
             throw ValidationException::withMessages([
@@ -102,16 +104,14 @@ class AppointmentController extends Controller
 
         }
 
-        $appointment = Appointment::query()->create([
-            'appointment_number' => $workflow->nextAppointmentNumber(),
+        $appointment = $workflow->createPending([
             'customer_profile_id' => $customerProfile->id,
             'service_id' => $service->id,
             'preferred_staff_profile_id' => $preferredStaffProfileId,
             'requested_start_at' => $requestedStart,
-            'status' => Appointment::STATUS_PENDING,
             'customer_notes' => filled($data['customer_notes'] ?? null) ? trim((string) $data['customer_notes']) : null,
             'created_by' => $request->user()->id,
-        ]);
+        ], $request->user()->id);
 
         return redirect()
             ->route('customer.appointments.show', $appointment)

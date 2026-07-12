@@ -47,7 +47,7 @@ class Feedback extends Model
 
     public function customerProfile()
     {
-        return $this->belongsTo(CustomerProfile::class);
+        return $this->belongsTo(CustomerProfile::class)->withTrashed();
     }
 
     public function appointment()

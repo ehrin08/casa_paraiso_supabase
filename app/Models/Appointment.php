@@ -29,6 +29,38 @@ class Appointment extends Model
         self::STATUS_NO_SHOW,
     ];
 
+    /**
+     * Statuses that may be selected when creating an appointment internally.
+     * Terminal outcomes require an existing confirmed schedule.
+     */
+    public const CREATION_STATUSES = [
+        self::STATUS_PENDING,
+        self::STATUS_CONFIRMED,
+    ];
+
+    /**
+     * Explicit lifecycle matrix. Repeating the current status permits ordinary
+     * record edits without reopening a terminal appointment.
+     *
+     * @var array<string, array<int, string>>
+     */
+    public const STATUS_TRANSITIONS = [
+        self::STATUS_PENDING => [
+            self::STATUS_PENDING,
+            self::STATUS_CONFIRMED,
+            self::STATUS_CANCELLED,
+        ],
+        self::STATUS_CONFIRMED => [
+            self::STATUS_CONFIRMED,
+            self::STATUS_COMPLETED,
+            self::STATUS_CANCELLED,
+            self::STATUS_NO_SHOW,
+        ],
+        self::STATUS_COMPLETED => [self::STATUS_COMPLETED],
+        self::STATUS_CANCELLED => [self::STATUS_CANCELLED],
+        self::STATUS_NO_SHOW => [self::STATUS_NO_SHOW],
+    ];
+
     protected $fillable = [
         'appointment_number',
         'customer_profile_id',
@@ -63,22 +95,34 @@ class Appointment extends Model
 
     public function customerProfile()
     {
-        return $this->belongsTo(CustomerProfile::class);
+        return $this->belongsTo(CustomerProfile::class)->withTrashed();
     }
 
     public function service()
     {
-        return $this->belongsTo(Service::class);
+        return $this->belongsTo(Service::class)->withTrashed();
     }
 
     public function staffProfile()
     {
-        return $this->belongsTo(StaffProfile::class);
+        return $this->belongsTo(StaffProfile::class)->withTrashed();
     }
 
     public function preferredStaffProfile()
     {
-        return $this->belongsTo(StaffProfile::class, 'preferred_staff_profile_id');
+        return $this->belongsTo(StaffProfile::class, 'preferred_staff_profile_id')->withTrashed();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function allowedTargetStatuses(): array
+    {
+        if (! $this->exists) {
+            return self::CREATION_STATUSES;
+        }
+
+        return self::STATUS_TRANSITIONS[$this->status] ?? [];
     }
 
     public function transactions()

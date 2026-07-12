@@ -3,30 +3,62 @@
 namespace App\Http\Requests;
 
 use App\Models\Appointment;
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Exists;
 
-class AppointmentRequest extends FormRequest
+abstract class AppointmentRequest extends FormRequest
 {
     public function authorize(): bool
     {
         return $this->user() !== null;
     }
 
+    protected function activeServiceRule(): Exists
+    {
+        return Rule::exists('services', 'id')
+            ->where('is_active', true)
+            ->whereNull('deleted_at');
+    }
+
+    protected function serviceRuleForUpdate(Appointment $appointment): Exists
+    {
+        return Rule::exists('services', 'id')
+            ->whereNull('deleted_at')
+            ->where(fn ($query) => $query
+                ->where('is_active', true)
+                ->orWhere('id', $appointment->service_id));
+    }
+
+    protected function customerProfileRuleForUpdate(Appointment $appointment): Exists
+    {
+        return Rule::exists('customer_profiles', 'id')
+            ->where(fn ($query) => $query
+                ->whereNull('deleted_at')
+                ->orWhere('id', $appointment->customer_profile_id));
+    }
+
+    protected function activeStaffProfileRule(): Exists
+    {
+        return Rule::exists('staff_profiles', 'id')->whereNull('deleted_at');
+    }
+
+    protected function staffProfileRuleForUpdate(Appointment $appointment, string $column): Exists
+    {
+        $currentId = $appointment->getAttribute($column);
+
+        return Rule::exists('staff_profiles', 'id')
+            ->where(fn ($query) => $query
+                ->whereNull('deleted_at')
+                ->when($currentId, fn ($query) => $query->orWhere('id', $currentId)));
+    }
+
     /**
-     * @return array<string, ValidationRule|array<mixed>|string>
+     * @return array<string, array<int, mixed>>
      */
-    public function rules(): array
+    protected function noteRules(): array
     {
         return [
-            'customer_profile_id' => ['nullable', 'integer', Rule::exists('customer_profiles', 'id')],
-            'service_id' => ['required', 'integer', Rule::exists('services', 'id')->where('is_active', true)],
-            'staff_profile_id' => ['nullable', 'integer', Rule::exists('staff_profiles', 'id')],
-            'preferred_staff_profile_id' => ['nullable', 'integer', Rule::exists('staff_profiles', 'id')],
-            'requested_start_at' => ['required', 'date', 'after:now'],
-            'scheduled_start_at' => ['nullable', 'date'],
-            'status' => ['nullable', Rule::in(Appointment::STATUSES)],
             'customer_notes' => ['nullable', 'string', 'max:5000'],
             'internal_notes' => ['nullable', 'string', 'max:5000'],
             'reason' => ['nullable', 'string', 'max:500'],

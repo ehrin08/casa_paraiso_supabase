@@ -19,6 +19,23 @@
             <x-text-input id="phone" name="phone" type="tel" class="mt-1 block w-full" :value="old('phone', $user->phone)" autocomplete="tel" />
             <x-input-error class="mt-2" :messages="$errors->get('phone')" />
         </div>
+        @if ($user->isCustomer())
+            <div>
+                <x-input-label for="address" value="Address (optional)" />
+                <textarea id="address" name="address" rows="4" class="casa-input mt-1 block w-full" autocomplete="street-address">{{ old('address', $user->customerProfile?->address) }}</textarea>
+                <x-input-error class="mt-2" :messages="$errors->get('address')" />
+            </div>
+            <div>
+                <x-input-label for="contact_preference" value="Preferred contact method (optional)" />
+                <select id="contact_preference" name="contact_preference" class="casa-input mt-1 block w-full">
+                    <option value="">No preference</option>
+                    @foreach (\App\Models\CustomerProfile::CONTACT_PREFERENCES as $value => $label)
+                        <option value="{{ $value }}" @selected(old('contact_preference', strtolower((string) $user->customerProfile?->contact_preference)) === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                <x-input-error class="mt-2" :messages="$errors->get('contact_preference')" />
+            </div>
+        @endif
         <x-primary-button>Save profile</x-primary-button>
     </form>
 </section>

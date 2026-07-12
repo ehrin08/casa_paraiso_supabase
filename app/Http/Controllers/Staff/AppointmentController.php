@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Staff;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\AppointmentRequest;
+use App\Http\Requests\StaffAppointmentUpdateRequest;
 use App\Models\Appointment;
 use App\Models\Transaction;
 use App\Services\AppointmentWorkflow;
@@ -45,7 +45,7 @@ class AppointmentController extends Controller
         ]);
     }
 
-    public function update(AppointmentRequest $request, Appointment $appointment, AppointmentWorkflow $workflow): RedirectResponse
+    public function update(StaffAppointmentUpdateRequest $request, Appointment $appointment, AppointmentWorkflow $workflow): RedirectResponse
     {
         $this->authorizeOperationalAccess($request, $appointment);
 
@@ -54,19 +54,30 @@ class AppointmentController extends Controller
         $status = $data['status'] ?? $appointment->status;
 
         if ($status === Appointment::STATUS_CONFIRMED) {
-            $scheduledStart = ! empty($data['scheduled_start_at'])
-                ? Carbon::parse($data['scheduled_start_at'])
-                : Carbon::parse($appointment->requested_start_at);
-            $scheduledEnd = $workflow->scheduledEnd($scheduledStart, $appointment->service);
+            abort_unless($staffProfile, 403);
 
-            if (! $staffProfile || ! $workflow->isStaffAvailable($staffProfile, $appointment->service, $scheduledStart, $scheduledEnd, $appointment)) {
-                return back()->withErrors(['scheduled_start_at' => __('Your schedule cannot accept this appointment time.')]);
-            }
+            $scheduledStart = Carbon::parse($data['scheduled_start_at']);
+            $scheduleChanged = $appointment->status !== Appointment::STATUS_CONFIRMED
+                || (int) $appointment->staff_profile_id !== (int) $staffProfile->id
+                || ! $appointment->scheduled_start_at?->equalTo($scheduledStart);
 
             $appointment->fill([
                 'internal_notes' => $data['internal_notes'] ?? $appointment->internal_notes,
                 'updated_by' => $request->user()->id,
             ]);
+
+            if (! $scheduleChanged) {
+                $workflow->changeStatus(
+                    $appointment,
+                    Appointment::STATUS_CONFIRMED,
+                    $request->user()->id,
+                    $data['reason'] ?? null,
+                );
+
+                return redirect()
+                    ->route('staff.appointments.show', $appointment)
+                    ->with('status', 'appointment-updated');
+            }
 
             $workflow->schedule(
                 $appointment,
@@ -86,6 +97,11 @@ class AppointmentController extends Controller
             && (int) $appointment->staff_profile_id !== (int) $staffProfile?->id) {
             abort(403);
         }
+
+        $appointment->fill([
+            'internal_notes' => $data['internal_notes'] ?? $appointment->internal_notes,
+            'updated_by' => $request->user()->id,
+        ]);
 
         $workflow->changeStatus($appointment, $status, $request->user()->id, $data['reason'] ?? null);
 

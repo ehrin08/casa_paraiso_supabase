@@ -93,7 +93,6 @@ class FeedbackController extends Controller
         $data = $request->validated();
         $customerProfile = $request->user()->customerProfile;
         $appointment = Appointment::query()
-            ->with('feedback')
             ->where('customer_profile_id', $customerProfile?->id ?? 0)
             ->whereKey($data['appointment_id'])
             ->firstOrFail();
@@ -102,15 +101,12 @@ class FeedbackController extends Controller
             throw ValidationException::withMessages(['appointment_id' => __('Feedback is available only for completed appointments.')]);
         }
 
-        if ($appointment->feedback) {
-            throw ValidationException::withMessages(['appointment_id' => __('Feedback was already submitted for this appointment.')]);
-        }
-
         $sentiment = $classifier->classify((int) $data['rating'], $data['comment'] ?? null);
 
-        Feedback::query()->create([
-            'customer_profile_id' => $customerProfile->id,
+        $feedback = Feedback::query()->firstOrCreate([
             'appointment_id' => $appointment->id,
+        ], [
+            'customer_profile_id' => $customerProfile->id,
             'service_id' => $appointment->service_id,
             'rating' => $data['rating'],
             'comment' => $data['comment'] ?? null,
@@ -118,6 +114,10 @@ class FeedbackController extends Controller
             'sentiment_score' => $sentiment['score'],
             'submitted_at' => now(),
         ]);
+
+        if (! $feedback->wasRecentlyCreated) {
+            throw ValidationException::withMessages(['appointment_id' => __('Feedback was already submitted for this appointment.')]);
+        }
 
         return redirect()
             ->route('customer.feedback.index')

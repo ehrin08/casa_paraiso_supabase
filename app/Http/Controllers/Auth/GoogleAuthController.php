@@ -51,7 +51,7 @@ class GoogleAuthController extends Controller
                     throw new \DomainException('This Google identity is already linked to another account.');
                 }
 
-                $user = $byGoogleId ?? $byEmail ?? new User();
+                $user = $byGoogleId ?? $byEmail ?? new User;
 
                 if ($user->exists && ! $user->is_active) {
                     throw new \DomainException('This account is inactive. Please contact the super administrator.');
@@ -74,7 +74,7 @@ class GoogleAuthController extends Controller
                 $user->save();
 
                 if ($user->isCustomer()) {
-                    $this->ensureCustomerProfile($user);
+                    CustomerProfile::provisionFor($user);
                 }
 
                 return $user;
@@ -87,23 +87,5 @@ class GoogleAuthController extends Controller
         request()->session()->regenerate();
 
         return redirect()->intended(route($user->homeRouteName()));
-    }
-
-    private function ensureCustomerProfile(User $user): CustomerProfile
-    {
-        $profile = CustomerProfile::withTrashed()->firstOrNew(['user_id' => $user->id]);
-
-        if (! $profile->customer_code) {
-            do {
-                $code = 'CP-'.strtoupper(Str::random(8));
-            } while (CustomerProfile::withTrashed()->where('customer_code', $code)->exists());
-
-            $profile->customer_code = $code;
-        }
-
-        $profile->save();
-        $profile->restore();
-
-        return $profile;
     }
 }

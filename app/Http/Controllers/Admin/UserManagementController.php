@@ -2,13 +2,15 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exceptions\StaffScheduleConflictException;
 use App\Http\Controllers\Controller;
 use App\Models\CustomerProfile;
+use App\Models\StaffProfile;
 use App\Models\User;
+use App\Services\StaffScheduleConflictGuard;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -39,20 +41,40 @@ class UserManagementController extends Controller
         return back()->with('status', 'user-created');
     }
 
-    public function update(Request $request, User $user): RedirectResponse
+    public function update(Request $request, User $user, StaffScheduleConflictGuard $guard): RedirectResponse
     {
         abort_if($user->isSuperAdmin(), 403, 'The protected super administrator cannot be changed.');
         $data = $this->validated($request, $user);
 
-        DB::transaction(function () use ($data, $user): void {
-            $user->update([
-                'name' => $data['name'],
-                'email' => strtolower($data['email']),
-                'role' => $data['role'],
-                'is_active' => (bool) ($data['is_active'] ?? false),
-            ]);
-            $this->syncRoleProfile($user);
-        });
+        try {
+            DB::transaction(function () use ($data, $guard, $user): void {
+                // Appointment confirmation and staff administration both lock the
+                // staff profile first. Keep the same order here so eligibility
+                // changes cannot race a confirmation or deadlock another editor.
+                $staffProfile = StaffProfile::withTrashed()
+                    ->where('user_id', $user->id)
+                    ->lockForUpdate()
+                    ->first();
+                $managedUser = User::query()->lockForUpdate()->findOrFail($user->id);
+                $newActive = (bool) ($data['is_active'] ?? false);
+                $removesStaffRole = $managedUser->isStaff() && $data['role'] !== User::ROLE_STAFF;
+                $deactivatesStaff = $staffProfile && $managedUser->is_active && ! $newActive;
+
+                if ($staffProfile && ($removesStaffRole || $deactivatesStaff)) {
+                    $guard->assertCanMakeUnavailable($staffProfile);
+                }
+
+                $managedUser->update([
+                    'name' => $data['name'],
+                    'email' => strtolower($data['email']),
+                    'role' => $data['role'],
+                    'is_active' => $newActive,
+                ]);
+                $this->syncRoleProfile($managedUser);
+            });
+        } catch (StaffScheduleConflictException $exception) {
+            return $this->eligibilityConflictRedirect($exception);
+        }
 
         return back()->with('status', 'user-updated');
     }
@@ -61,7 +83,19 @@ class UserManagementController extends Controller
     {
         return $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'lowercase', 'email', 'max:255', Rule::unique(User::class)->ignore($user?->id), Rule::notIn([strtolower(config('auth.super_admin_email'))])],
+            'email' => [
+                'required',
+                'lowercase',
+                'email',
+                'max:255',
+                Rule::unique(User::class)->ignore($user?->id),
+                Rule::notIn([strtolower(config('auth.super_admin_email'))]),
+                function (string $attribute, mixed $value, \Closure $fail) use ($user): void {
+                    if ($user?->google_id && strcasecmp(trim((string) $value), $user->email) !== 0) {
+                        $fail('A Google-linked email is managed by Google and cannot be changed here.');
+                    }
+                },
+            ],
             'role' => ['required', Rule::in([User::ROLE_ADMIN, User::ROLE_STAFF, User::ROLE_CUSTOMER])],
             'is_active' => ['sometimes', 'boolean'],
         ]);
@@ -70,27 +104,29 @@ class UserManagementController extends Controller
     private function syncRoleProfile(User $user): void
     {
         if ($user->isStaff()) {
-            $user->staffProfile()->withTrashed()->firstOrCreate([], ['is_bookable' => true])->restore();
-        } elseif ($user->staffProfile()->withTrashed()->exists()) {
-            $user->staffProfile()->withTrashed()->first()->delete();
+            $profile = $user->staffProfile()->firstOrCreate([], ['is_bookable' => true]);
+
+            if ($profile->trashed()) {
+                $profile->restore();
+            }
+        } elseif ($user->staffProfile()->exists()) {
+            $user->staffProfile()->first()->delete();
         }
 
         if ($user->isCustomer()) {
-            $profile = CustomerProfile::withTrashed()->firstOrNew(['user_id' => $user->id]);
-            $profile->customer_code ??= $this->customerCode();
-            $profile->save();
-            $profile->restore();
-        } elseif ($user->customerProfile()->withTrashed()->exists()) {
-            $user->customerProfile()->withTrashed()->first()->delete();
+            CustomerProfile::provisionFor($user);
+        } elseif ($user->customerProfile()->exists()) {
+            $user->customerProfile()->first()->delete();
         }
     }
 
-    private function customerCode(): string
+    private function eligibilityConflictRedirect(StaffScheduleConflictException $exception): RedirectResponse
     {
-        do {
-            $code = 'CP-'.strtoupper(Str::random(8));
-        } while (CustomerProfile::withTrashed()->where('customer_code', $code)->exists());
-
-        return $code;
+        return back()->withErrors([
+            'staff_eligibility' => __('Change blocked because this therapist has a future confirmed appointment. Reschedule or cancel the affected visit first.'),
+        ])->with('eligibility_conflicts', collect($exception->conflicts)->map(fn (array $conflict) => [
+            ...$conflict,
+            'url' => route('admin.appointments.show', $conflict['id']),
+        ])->all())->withInput();
     }
 }

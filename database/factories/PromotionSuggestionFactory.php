@@ -20,6 +20,7 @@ class PromotionSuggestionFactory extends Factory
             'customer_profile_id' => CustomerProfile::factory(),
             'rfm_segment_id' => RfmSegment::factory(),
             'promotion_rule_id' => PromotionRule::factory(),
+            'generation_key' => null,
             'recency_days' => fake()->numberBetween(1, 180),
             'frequency_count' => fake()->numberBetween(1, 12),
             'monetary_total' => fake()->randomFloat(2, 600, 15000),

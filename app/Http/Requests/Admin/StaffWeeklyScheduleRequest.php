@@ -46,16 +46,19 @@ class StaffWeeklyScheduleRequest extends FormRequest
 
                 if ($startMinutes < $openingMinutes) {
                     $validator->errors()->add('start_time', 'Therapist availability must begin within business hours at 1:00 PM or later.');
+
                     return;
                 }
 
                 if ($endsNextDay && $this->input('end_time') !== '00:00') {
                     $validator->errors()->add('end_time', 'A next-day shift must end at 12:00 midnight.');
+
                     return;
                 }
 
                 if ($endMinutes <= $startMinutes) {
                     $validator->errors()->add('end_time', 'The end time must be after the start time.');
+
                     return;
                 }
 

@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exceptions\StaffScheduleConflictException;
 use App\Http\Controllers\Concerns\HandlesIndexSorting;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StaffRequest;
 use App\Models\Service;
 use App\Models\StaffProfile;
 use App\Models\User;
+use App\Services\StaffScheduleConflictGuard;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -81,6 +83,7 @@ class StaffController extends Controller
     public function create(): View
     {
         abort_unless(request()->user()->isSuperAdmin(), 403);
+
         return view('admin.staff.create', [
             'staffProfile' => new StaffProfile(['is_bookable' => true]),
             'staffUser' => new User(['is_active' => true]),
@@ -147,45 +150,84 @@ class StaffController extends Controller
         return view('admin.staff.edit', [
             'staffProfile' => $staff,
             'staffUser' => $staff->user,
-            'services' => $this->activeServices(),
+            'services' => $this->activeServices($staff),
             'assignedServiceIds' => $staff->services->pluck('id')->all(),
         ]);
     }
 
-    public function update(StaffRequest $request, StaffProfile $staff): RedirectResponse
+    public function update(StaffRequest $request, StaffProfile $staff, StaffScheduleConflictGuard $guard): RedirectResponse
     {
         $data = $request->validated();
 
-        DB::transaction(function () use ($data, $request, $staff): void {
-            $userData = [
-                'name' => $data['name'],
-                'phone' => $data['phone'] ?? null,
-                'is_active' => $request->boolean('is_active'),
-            ];
+        try {
+            DB::transaction(function () use ($data, $guard, $request, $staff): void {
+                $managedStaff = StaffProfile::query()->lockForUpdate()->findOrFail($staff->id);
+                $staffUser = $managedStaff->user()->lockForUpdate()->firstOrFail();
+                $newActive = $request->boolean('is_active');
+                $newBookable = $request->boolean('is_bookable');
+                $serviceIds = collect($data['service_ids'] ?? [])->map(fn ($id) => (int) $id)->unique()->values();
+                $removedServiceIds = $managedStaff->services()
+                    ->pluck('services.id')
+                    ->map(fn ($id) => (int) $id)
+                    ->diff($serviceIds)
+                    ->values()
+                    ->all();
 
-            $staff->user->update($userData);
+                if (($staffUser->is_active && ! $newActive) || ($managedStaff->is_bookable && ! $newBookable)) {
+                    $guard->assertCanMakeUnavailable($managedStaff);
+                } else {
+                    $guard->assertCanRemoveServices($managedStaff, $removedServiceIds);
+                }
 
-            $staff->update([
-                'position' => $data['position'] ?? null,
-                'specialization' => $data['specialization'] ?? null,
-                'bio' => $data['bio'] ?? null,
-                'hire_date' => $data['hire_date'] ?? null,
-                'is_bookable' => $request->boolean('is_bookable'),
-            ]);
+                $staffUser->update([
+                    'name' => $data['name'],
+                    'phone' => $data['phone'] ?? null,
+                    'is_active' => $newActive,
+                ]);
 
-            $staff->services()->sync($data['service_ids'] ?? []);
-        });
+                $managedStaff->update([
+                    'position' => $data['position'] ?? null,
+                    'specialization' => $data['specialization'] ?? null,
+                    'bio' => $data['bio'] ?? null,
+                    'hire_date' => $data['hire_date'] ?? null,
+                    'is_bookable' => $newBookable,
+                ]);
+
+                $managedStaff->services()->sync($serviceIds->all());
+            });
+        } catch (StaffScheduleConflictException $exception) {
+            return $this->eligibilityConflictRedirect($exception);
+        }
 
         return redirect()
             ->route('admin.staff.show', $staff)
             ->with('status', 'staff-updated');
     }
 
-    private function activeServices()
+    private function activeServices(?StaffProfile $staff = null)
     {
+        $assignedServiceIds = $staff?->services()->pluck('services.id')->all() ?? [];
+
         return Service::query()
-            ->where('is_active', true)
+            ->where(function ($query) use ($assignedServiceIds): void {
+                $query->where('is_active', true);
+
+                if ($assignedServiceIds !== []) {
+                    $query->orWhereIn('id', $assignedServiceIds);
+                }
+            })
+            ->orderByDesc('is_active')
             ->orderBy('name')
             ->get();
+    }
+
+    private function eligibilityConflictRedirect(StaffScheduleConflictException $exception): RedirectResponse
+    {
+        return back()->withErrors([
+            'staff_eligibility' => __('Change blocked because it would make a therapist ineligible for a future confirmed appointment. Reschedule or cancel the affected visit first.'),
+        ])->with('eligibility_conflicts', collect($exception->conflicts)->map(fn (array $conflict) => [
+            ...$conflict,
+            'url' => route('admin.appointments.show', $conflict['id']),
+        ])->all())->withInput();
     }
 }

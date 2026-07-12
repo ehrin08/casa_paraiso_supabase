@@ -6,6 +6,19 @@
     @endif
     @if ($modalName)<input type="hidden" name="_modal" value="{{ $modalName }}">@endif
 
+    @if (session('eligibility_conflicts'))
+        <div class="rounded-2xl border border-red-200 bg-red-50 p-5 lg:col-span-2" role="alert">
+            <p class="text-sm font-extrabold text-red-800">{{ __('Resolve these confirmed appointments before changing therapist eligibility') }}</p>
+            <div class="mt-3 flex flex-wrap gap-2">
+                @foreach (session('eligibility_conflicts') as $conflict)
+                    <a href="{{ $conflict['url'] }}" class="rounded-full border border-red-200 bg-white px-3 py-2 text-xs font-extrabold text-red-800 hover:border-red-400">
+                        {{ $conflict['number'] }} · {{ \Illuminate\Support\Carbon::parse($conflict['starts_at'])->format('M d, g:i A') }}
+                    </a>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     <div class="space-y-6">
         <x-app-card data-modal-actions>
             <div class="border-b border-casa-border pb-5">
@@ -98,7 +111,7 @@
             <p class="casa-section-label">{{ __('Service eligibility') }}</p>
             <h2 class="mt-2 font-display text-xl font-black text-casa-text">{{ __('Assigned treatments') }}</h2>
             <p class="mt-3 text-sm leading-6 text-casa-muted">
-                {{ __('Only active services are assignable in this phase. These assignments will drive pending appointment visibility for staff.') }}
+                {{ __('Active services are assignable. An inactive service already assigned to this therapist remains available here so existing bookings can be preserved safely.') }}
             </p>
 
             <div class="mt-5 space-y-3">
@@ -109,7 +122,10 @@
                     <label class="flex items-start gap-3 rounded-2xl border border-casa-border bg-casa-bg p-4">
                         <input type="checkbox" name="service_ids[]" value="{{ $service->id }}" @checked(in_array($service->id, $selectedServiceIds, true)) class="mt-1 rounded border-casa-border text-casa-primary shadow-sm focus:ring-casa-gold">
                         <span>
-                            <span class="block text-sm font-bold text-casa-text">{{ $service->name }}</span>
+                            <span class="block text-sm font-bold text-casa-text">
+                                {{ $service->name }}
+                                @if (! $service->is_active)<span class="text-casa-muted">{{ __('(Inactive)') }}</span>@endif
+                            </span>
                             <span class="mt-1 block text-sm leading-6 text-casa-muted">
                                 {{ $service->duration_minutes }} {{ __('min') }} - PHP {{ number_format((float) $service->price, 2) }}
                             </span>

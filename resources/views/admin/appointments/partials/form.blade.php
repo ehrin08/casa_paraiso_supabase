@@ -12,7 +12,10 @@
         appointmentId: @js($appointment->id),
         initialServiceId: @js((string) old('service_id', $appointment->service_id)),
         initialScheduledStart: @js($initialScheduledStart),
-        initialStaffId: @js((string) old('staff_profile_id', $appointment->staff_profile_id))
+        initialStaffId: @js((string) old('staff_profile_id', $appointment->staff_profile_id)),
+        persistedServiceId: @js($appointment->exists ? (string) $appointment->service_id : ''),
+        persistedScheduledStart: @js($appointment->exists ? optional($appointment->scheduled_start_at)->format('Y-m-d\TH:i') : ''),
+        persistedStaffId: @js($appointment->exists ? (string) $appointment->staff_profile_id : '')
     })"
     x-init="init()"
 >
@@ -99,7 +102,7 @@
             <div>
                 <x-input-label for="status" :value="__('Status')" />
                 <select id="status" name="status" class="casa-input mt-2">
-                    @foreach (\App\Models\Appointment::STATUSES as $option)
+                    @foreach ($appointment->allowedTargetStatuses() as $option)
                         <option value="{{ $option }}" @selected(old('status', $appointment->status) === $option)>{{ ucfirst(str_replace('_', ' ', $option)) }}</option>
                     @endforeach
                 </select>

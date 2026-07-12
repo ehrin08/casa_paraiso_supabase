@@ -37,7 +37,10 @@ class GoogleDeletionController extends Controller
             return redirect()->route('profile.edit')->withErrors(['google' => 'Please confirm with the Google account linked to this profile.']);
         }
 
-        request()->session()->put('google_reauthenticated_for_deletion', request()->user()->id);
+        request()->session()->put('google_reauthenticated_for_deletion', [
+            'user_id' => request()->user()->id,
+            'confirmed_at' => now()->timestamp,
+        ]);
 
         return redirect()->route('profile.edit')->with('deletion_confirmed', true);
     }
