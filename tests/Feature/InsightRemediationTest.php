@@ -11,7 +11,6 @@ use App\Models\RfmSegment;
 use App\Models\Service;
 use App\Models\Transaction;
 use App\Models\User;
-use App\Services\RfmPromotionGenerator;
 use App\Services\SentimentClassifier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -77,157 +76,55 @@ class InsightRemediationTest extends TestCase
         $this->assertDatabaseCount('feedback', 1);
     }
 
-    public function test_zero_visit_generation_is_idempotent_for_the_same_metrics_and_rule(): void
+    public function test_zero_visit_customer_does_not_receive_a_reward_before_the_first_paid_visit(): void
     {
         $customer = CustomerProfile::factory()->create();
-        $segment = RfmSegment::factory()->create([
-            'name' => 'New customer',
-            'recency_min_days' => null,
-            'recency_max_days' => 30,
-            'frequency_min' => 0,
-            'frequency_max' => 0,
-            'monetary_min' => 0,
-            'monetary_max' => 0,
-            'is_active' => true,
-        ]);
-        $rule = PromotionRule::factory()->for($segment, 'rfmSegment')->create([
-            'suggested_offer' => 'Welcome add-on',
-            'is_active' => true,
-        ]);
-        $generator = app(RfmPromotionGenerator::class);
 
-        $first = $generator->generate($customer);
-        $second = $generator->generate($customer);
-
-        $this->assertCount(1, $first);
-        $this->assertCount(0, $second);
-        $this->assertDatabaseCount('promotion_suggestions', 1);
-        $this->assertDatabaseHas('promotion_suggestions', [
+        $this->assertDatabaseMissing('promotion_suggestions', [
             'customer_profile_id' => $customer->id,
-            'rfm_segment_id' => $segment->id,
-            'promotion_rule_id' => $rule->id,
-            'recency_days' => null,
-            'frequency_count' => 0,
-            'monetary_total' => '0.00',
-            'suggested_offer' => 'Welcome add-on',
         ]);
-        $this->assertNotNull(PromotionSuggestion::query()->sole()->generation_key);
     }
 
-    public function test_promotion_status_timestamps_change_only_on_real_transitions_and_notes_can_be_cleared(): void
+    public function test_admin_can_dismiss_an_available_customer_reward_but_not_a_used_one(): void
     {
         $admin = User::factory()->admin()->create();
-        $appliedAt = Carbon::parse('2026-07-01 10:00:00');
-        $suggestion = PromotionSuggestion::factory()->create([
-            'status' => PromotionSuggestion::STATUS_APPLIED,
-            'reviewed_by' => $admin->id,
-            'reviewed_at' => $appliedAt,
-            'applied_at' => $appliedAt,
-            'dismissed_at' => null,
-            'notes' => 'Keep me for now.',
-        ]);
+        $suggestion = PromotionSuggestion::factory()->create(['expires_at' => now()->addDays(30)]);
+        $used = PromotionSuggestion::factory()->create(['status' => PromotionSuggestion::STATUS_APPLIED, 'applied_at' => now()]);
 
         Carbon::setTestNow('2026-07-12 12:00:00');
 
         $this->actingAs($admin)
-            ->patch(route('admin.promotions.update', $suggestion, false), [
-                'status' => PromotionSuggestion::STATUS_APPLIED,
-                'notes' => 'Still applied.',
-            ])
-            ->assertRedirect(route('admin.promotions.show', $suggestion, false));
-
-        $this->assertTrue($suggestion->fresh()->applied_at->equalTo($appliedAt));
-
-        $this->actingAs($admin)
-            ->patch(route('admin.promotions.update', $suggestion, false), [
-                'status' => PromotionSuggestion::STATUS_DISMISSED,
-                'notes' => 'Dismissed.',
-            ])
+            ->patch(route('admin.promotions.dismiss', $suggestion, false))
             ->assertRedirect();
 
         $suggestion->refresh();
-        $this->assertNull($suggestion->applied_at);
+        $this->assertSame(PromotionSuggestion::STATUS_DISMISSED, $suggestion->status);
         $this->assertTrue($suggestion->dismissed_at->equalTo(now()));
 
         $this->actingAs($admin)
-            ->patch(route('admin.promotions.update', $suggestion, false), [
-                'status' => PromotionSuggestion::STATUS_REVIEWED,
-                'notes' => '',
-            ])
-            ->assertRedirect();
-
-        $suggestion->refresh();
-        $this->assertNull($suggestion->applied_at);
-        $this->assertNull($suggestion->dismissed_at);
-        $this->assertNull($suggestion->notes);
-
+            ->patch(route('admin.promotions.dismiss', $used, false))
+            ->assertSessionHasErrors('promotion');
     }
 
-    public function test_admin_can_manage_segments_and_rules_with_validation_and_role_enforcement(): void
+    public function test_admin_can_manage_fixed_customer_rewards_with_role_enforcement(): void
     {
         $admin = User::factory()->admin()->create();
         $customer = User::factory()->customer()->create();
 
         $this->actingAs($customer)
-            ->get(route('admin.rfm-segments.index', absolute: false))
+            ->get(route('admin.promotions.index', absolute: false))
             ->assertForbidden();
 
+        $groups = RfmSegment::query()->whereNotNull('preset_key')->get()->mapWithKeys(fn ($segment) => [$segment->preset_key => ['addon_code' => 'hot-compress', 'is_active' => 1]])->all();
+
         $this->actingAs($admin)
-            ->from(route('admin.rfm-segments.create', absolute: false))
-            ->post(route('admin.rfm-segments.store', absolute: false), [
-                'name' => 'Invalid range',
-                'frequency_min' => 5,
-                'frequency_max' => 2,
-                'is_active' => 1,
+            ->patch(route('admin.promotions.settings.update', absolute: false), [
+                'promotion_voucher_validity_days' => 60,
+                'groups' => $groups,
             ])
-            ->assertRedirect(route('admin.rfm-segments.create', absolute: false))
-            ->assertSessionHasErrors('frequency_max');
-
-        $this->actingAs($admin)
-            ->post(route('admin.rfm-segments.store', absolute: false), [
-                'name' => 'First-time visitor',
-                'description' => 'No completed paid visits.',
-                'frequency_min' => 0,
-                'frequency_max' => 0,
-                'monetary_min' => 0,
-                'monetary_max' => 0,
-                'is_active' => 1,
-            ])
-            ->assertRedirect(route('admin.rfm-segments.index', absolute: false));
-
-        $segment = RfmSegment::query()->sole();
-
-        $this->actingAs($admin)
-            ->post(route('admin.promotion-rules.store', absolute: false), [
-                'rfm_segment_id' => $segment->id,
-                'name' => 'Welcome rule',
-                'suggested_offer' => 'Free welcome add-on',
-                'is_active' => 1,
-            ])
-            ->assertRedirect(route('admin.promotion-rules.index', absolute: false));
-
-        $rule = PromotionRule::query()->sole();
-
-        $this->actingAs($admin)
-            ->patch(route('admin.promotion-rules.update', $rule, false), [
-                'rfm_segment_id' => $segment->id,
-                'name' => 'Welcome rule updated',
-                'suggested_offer' => 'Free tea service',
-                'is_active' => 1,
-            ])
-            ->assertRedirect(route('admin.promotion-rules.index', absolute: false));
-
-        $this->actingAs($admin)
-            ->patch(route('admin.promotion-rules.toggle', $rule, false))
             ->assertRedirect();
 
-        $this->assertFalse($rule->fresh()->is_active);
-
-        $this->actingAs($admin)
-            ->patch(route('admin.rfm-segments.toggle', $segment, false))
-            ->assertRedirect();
-
-        $this->assertFalse($segment->fresh()->is_active);
+        $this->assertDatabaseHas('rfm_segments', ['preset_key' => 'high_value', 'addon_code' => 'hot-compress', 'is_active' => true]);
     }
 
     public function test_report_dates_use_displayed_business_fields_and_customer_filters_show_all_metrics(): void
@@ -320,7 +217,7 @@ class InsightRemediationTest extends TestCase
             ->assertSee('1 appointment')
             ->assertSee('1 transaction')
             ->assertSee('1 feedback')
-            ->assertSee('1 promotion');
+            ->assertSee('1 reward');
 
         $this->actingAs($admin)
             ->get(route('admin.reports.index', [

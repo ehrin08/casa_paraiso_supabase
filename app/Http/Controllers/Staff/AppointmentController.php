@@ -28,7 +28,7 @@ class AppointmentController extends Controller
     {
         $this->authorizeOperationalAccess($request, $appointment);
 
-        $appointment->load(['customerProfile.user', 'service', 'staffProfile.user', 'preferredStaffProfile.user', 'transactions', 'feedback']);
+        $appointment->load(['customerProfile.user', 'service', 'staffProfile.user', 'preferredStaffProfile.user', 'promotionSuggestion', 'addons', 'transactions', 'feedback']);
 
         return view('staff.appointments.show', [
             'appointment' => $appointment,
@@ -36,7 +36,7 @@ class AppointmentController extends Controller
                 'appointment_id' => $appointment->id,
                 'customer_profile_id' => $appointment->customer_profile_id,
                 'service_id' => $appointment->service_id,
-                'amount' => $appointment->service?->price,
+                'amount' => $appointment->expectedAmount(),
                 'payment_status' => Transaction::PAYMENT_PAID,
                 'payment_method' => Transaction::METHOD_CASH,
                 'paid_at' => now(),

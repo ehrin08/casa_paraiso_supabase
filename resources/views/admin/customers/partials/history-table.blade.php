@@ -33,8 +33,8 @@
                             @else
                                 <td class="px-4 py-4 font-semibold text-casa-text">{{ $record->rfmSegment?->name ?: __('Unsegmented') }}</td>
                                 <td class="px-4 py-4 text-casa-muted">{{ $record->suggested_offer }}</td>
-                                <td class="px-4 py-4 text-casa-muted">R{{ $record->recency_days ?? 'N/A' }} F{{ $record->frequency_count ?? 0 }} M{{ number_format((float) $record->monetary_total, 2) }}</td>
-                                <td class="px-4 py-4"><x-status-badge>{{ ucfirst($record->status) }}</x-status-badge></td>
+                                <td class="px-4 py-4 text-casa-muted">{{ __(':days days · :visits paid visits · PHP :total', ['days' => $record->recency_days ?? __('N/A'), 'visits' => $record->frequency_count ?? 0, 'total' => number_format((float) $record->monetary_total, 2)]) }}</td>
+                                <td class="px-4 py-4"><x-status-badge>{{ ucfirst($record->lifecycle()) }}</x-status-badge></td>
                             @endif
                         </tr>
                     @endforeach

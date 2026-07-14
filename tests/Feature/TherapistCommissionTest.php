@@ -91,6 +91,34 @@ class TherapistCommissionTest extends TestCase
         $this->actingAs(User::factory()->receptionist()->create())->get(route('staff.commissions.show', $commission, false))->assertForbidden();
     }
 
+    public function test_therapist_dashboard_and_history_reflect_only_own_commissions(): void
+    {
+        [$transaction, $staff] = $this->paidCompletedTransaction(1000);
+        app(TherapistCommissionSynchronizer::class)->synchronize($transaction);
+        TherapistCommission::factory()->for($staff)->create([
+            'status' => TherapistCommission::STATUS_PAID,
+            'commission_amount' => 50,
+            'paid_at' => now(),
+        ]);
+
+        [$otherTransaction] = $this->paidCompletedTransaction(2000);
+        app(TherapistCommissionSynchronizer::class)->synchronize($otherTransaction);
+
+        $this->actingAs($staff->user)
+            ->get(route('staff.dashboard', absolute: false))
+            ->assertOk()
+            ->assertSeeInOrder(['Pending commission', 'PHP 220.00'])
+            ->assertSeeInOrder(['Paid commission', 'PHP 50.00'])
+            ->assertSeeInOrder(['Net commission', 'PHP 270.00'])
+            ->assertSee('View commission history');
+
+        $this->actingAs($staff->user)
+            ->get(route('staff.commissions.index', absolute: false))
+            ->assertOk()
+            ->assertSee($transaction->transaction_number)
+            ->assertDontSee($otherTransaction->transaction_number);
+    }
+
     public function test_primary_transaction_reference_is_unique_while_adjustments_can_repeat(): void
     {
         [$transaction, $staff] = $this->paidCompletedTransaction(1000);

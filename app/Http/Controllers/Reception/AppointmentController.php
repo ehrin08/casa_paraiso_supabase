@@ -61,7 +61,7 @@ class AppointmentController extends Controller
 
     public function show(Appointment $appointment): View
     {
-        $appointment->load(['customerProfile.user', 'service', 'staffProfile.user', 'preferredStaffProfile.user', 'transactions.recorder', 'statusLogs.changedBy']);
+        $appointment->load(['customerProfile.user', 'service', 'staffProfile.user', 'preferredStaffProfile.user', 'promotionSuggestion', 'addons', 'transactions.recorder', 'statusLogs.changedBy']);
 
         return view('reception.appointments.show', [
             'appointment' => $appointment,
@@ -69,7 +69,7 @@ class AppointmentController extends Controller
                 'appointment_id' => $appointment->id,
                 'customer_profile_id' => $appointment->customer_profile_id,
                 'service_id' => $appointment->service_id,
-                'amount' => $appointment->service?->price,
+                'amount' => $appointment->expectedAmount(),
                 'payment_status' => Transaction::PAYMENT_PAID,
                 'payment_method' => ApplicationSetting::current()->default_payment_method,
                 'paid_at' => now(),
@@ -80,7 +80,7 @@ class AppointmentController extends Controller
 
     public function edit(Appointment $appointment): View
     {
-        $appointment->load(['customerProfile.user', 'service', 'staffProfile.user', 'preferredStaffProfile.user']);
+        $appointment->load(['customerProfile.user', 'service', 'staffProfile.user', 'preferredStaffProfile.user', 'promotionSuggestion', 'addons']);
 
         return view('reception.appointments.form', ['appointment' => $appointment, ...$this->selectors($appointment)]);
     }
@@ -113,15 +113,17 @@ class AppointmentController extends Controller
 
     public function availableTherapists(Request $request, AppointmentWorkflow $workflow): JsonResponse
     {
-        $data = $request->validate(['service_id' => ['required', 'integer', 'exists:services,id'], 'starts_at' => ['required', 'date'], 'appointment_id' => ['nullable', 'integer', 'exists:appointments,id']]);
+        $data = $request->validate(['service_id' => ['required', 'integer', 'exists:services,id'], 'starts_at' => ['required', 'date'], 'appointment_id' => ['nullable', 'integer', 'exists:appointments,id'], 'addon_codes' => ['nullable', 'array'], 'addon_codes.*' => ['required', 'string', 'distinct']]);
         $appointment = ! empty($data['appointment_id']) ? Appointment::query()->findOrFail($data['appointment_id']) : null;
         $service = Service::query()->findOrFail($data['service_id']);
         $start = Carbon::parse($data['starts_at']);
-        $workflow->assertBookableStart($start, $service, 'starts_at');
+        $addonCodes = $data['addon_codes'] ?? [];
+        $workflow->assertBookableStart($start, $service, 'starts_at', true, $addonCodes);
+        $end = $workflow->scheduledEnd($start, $service, $addonCodes);
         $therapists = StaffProfile::query()->with(['user', 'services', 'weeklySchedules', 'scheduleExceptions'])
             ->where('is_bookable', true)->whereHas('user', fn ($query) => $query->where('is_active', true))
             ->whereHas('services', fn ($query) => $query->whereKey($service->id))->get()
-            ->filter(fn (StaffProfile $staff) => $workflow->isStaffAvailable($staff, $service, $start, null, $appointment))
+            ->filter(fn (StaffProfile $staff) => $workflow->isStaffAvailable($staff, $service, $start, $end, $appointment))
             ->sortBy('user.name')->values()->map(fn (StaffProfile $staff) => ['id' => $staff->id, 'name' => $staff->user?->name, 'specialization' => $staff->specialization]);
 
         return response()->json(['therapists' => $therapists]);
@@ -138,6 +140,7 @@ class AppointmentController extends Controller
             'customers' => CustomerProfile::query()->with('user')->get()->sortBy('user.name')->values(),
             'services' => $services,
             'staffProfiles' => StaffProfile::query()->with(['user', 'services'])->where('is_bookable', true)->whereHas('user', fn ($query) => $query->where('is_active', true))->get()->sortBy('user.name')->values(),
+            'addons' => collect(config('casa.addons', [])),
         ];
     }
 }

@@ -44,7 +44,7 @@
     <aside class="space-y-4">
         <x-app-card data-modal-actions>
             <p class="casa-section-label">{{ __('Sentiment') }}</p>
-            <p class="mt-3 text-sm leading-6 text-casa-muted">{{ __('The system assigns a simple positive, neutral, or negative label from the rating and comment keywords.') }}</p>
+            <p class="mt-3 text-sm leading-6 text-casa-muted">{{ __('The system assigns a simple positive, neutral, or negative label from the rating and English, Tagalog, or mixed Taglish comment keywords.') }}</p>
         </x-app-card>
         <x-app-card>
             <div class="flex flex-col gap-3">

@@ -15,5 +15,6 @@
         'action' => route('admin.services.update', $service),
         'method' => 'PATCH',
         'submitLabel' => __('Save changes'),
+        'cancelUrl' => route('admin.services.show', $service),
     ])
 </x-app-layout>

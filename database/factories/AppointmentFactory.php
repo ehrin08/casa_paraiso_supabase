@@ -24,6 +24,7 @@ class AppointmentFactory extends Factory
             'service_id' => Service::factory(),
             'staff_profile_id' => StaffProfile::factory(),
             'preferred_staff_profile_id' => null,
+            'promotion_suggestion_id' => null,
             'requested_start_at' => $requestedStart,
             'scheduled_start_at' => $requestedStart,
             'scheduled_end_at' => (clone $requestedStart)->modify('+1 hour'),

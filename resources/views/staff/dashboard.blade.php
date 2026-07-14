@@ -8,6 +8,7 @@
 
         <div class="flex flex-wrap gap-3">
             <a href="{{ route('staff.customers.index') }}" class="casa-button-secondary">{{ __('Customer lookup') }}</a>
+            <a href="{{ route('staff.commissions.index') }}" class="casa-button-secondary">{{ __('My commissions') }}</a>
             <a href="{{ route('staff.appointments.index') }}" class="casa-button-primary">{{ __('Open schedule') }}</a>
         </div>
     </x-slot>
@@ -18,6 +19,26 @@
             <x-metric-card label="Upcoming" :value="$summary['upcoming'] ?? 0" meta="Confirmed visits on your schedule" tone="gold" />
             <x-metric-card label="Completed" :value="$summary['completedToday'] ?? 0" meta="Services finished today" tone="brown" />
         </section>
+
+        <x-app-card>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <p class="casa-section-label">{{ __('My earnings') }}</p>
+                    <h2 class="mt-2 text-xl font-extrabold text-casa-text">{{ __('Commission overview') }}</h2>
+                    <p class="mt-2 text-sm text-casa-muted">{{ __('Your personal earnings from fully paid completed services.') }}</p>
+                </div>
+                <a href="{{ route('staff.commissions.index') }}" class="casa-button-secondary">{{ __('View commission history') }}</a>
+            </div>
+
+            <x-stat-strip
+                class="mt-5"
+                :items="[
+                    ['label' => __('Pending commission'), 'value' => 'PHP '.number_format((float) $commissionTotals['pending'], 2), 'meta' => __('Awaiting settlement'), 'tone' => 'gold'],
+                    ['label' => __('Paid commission'), 'value' => 'PHP '.number_format((float) $commissionTotals['paid'], 2), 'meta' => __('Externally recorded payouts'), 'tone' => 'green'],
+                    ['label' => __('Net commission'), 'value' => 'PHP '.number_format((float) $commissionTotals['net'], 2), 'meta' => __('Earnings and adjustments'), 'tone' => 'brown'],
+                ]"
+            />
+        </x-app-card>
 
         <section class="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]">
             <x-app-card>

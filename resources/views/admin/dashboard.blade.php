@@ -4,7 +4,7 @@
             <p class="casa-eyebrow">{{ __('Admin workspace') }}</p>
             <h1 class="mt-2 font-display text-3xl font-black text-casa-text">{{ __('Dashboard') }}</h1>
             <p class="mt-2 max-w-2xl text-sm leading-6 text-casa-muted">
-                {{ __('A calm management overview for bookings, revenue, feedback, and promotion reviews.') }}
+                {{ __('A calm management overview for bookings, revenue, feedback, and customer rewards.') }}
             </p>
         </div>
 
@@ -71,15 +71,15 @@
             <aside class="casa-dark-panel rounded-[24px] p-6 shadow-casa-card">
                 <p class="text-[0.68rem] font-extrabold uppercase tracking-[0.16em] text-casa-brass-light">{{ __('Management focus') }}</p>
                 <h2 class="mt-4 text-2xl font-extrabold text-white">{{ __('Keep today moving.') }}</h2>
-                <p class="mt-4 text-sm leading-7 text-white/65">{{ __('Keep confirmed visits moving, then move through payments, feedback, and promotion decisions.') }}</p>
+                <p class="mt-4 text-sm leading-7 text-white/65">{{ __('Keep confirmed visits moving, then move through payments, feedback, and customer care.') }}</p>
                 <div class="casa-divider my-6"></div>
                 <div class="space-y-2">
                     <a href="{{ route('admin.appointments.index') }}" class="flex min-h-11 items-center justify-between rounded-xl border border-white/10 bg-white/[0.06] px-4 text-sm font-bold text-white transition hover:bg-white/10">
                         <span>{{ __('Upcoming visits') }}</span><span class="text-casa-brass-light">{{ $summary['upcomingAppointments'] ?? 0 }}</span>
                     </a>
                     <a href="{{ route('admin.promotions.index') }}" class="flex min-h-11 items-center justify-between rounded-xl border border-white/10 bg-white/[0.06] px-4 text-sm font-bold text-white transition hover:bg-white/10">
-                        <span>{{ __('Promotion reviews') }}</span><span class="text-casa-brass-light">{{ $summary['promotionReviews'] ?? 0 }}</span>
-                        <span class="sr-only">{{ trans_choice(':count promotion review waiting|:count promotion reviews waiting', $summary['promotionReviews'] ?? 0) }}</span>
+                        <span>{{ __('Available rewards') }}</span><span class="text-casa-brass-light">{{ $summary['availableRewards'] ?? 0 }}</span>
+                        <span class="sr-only">{{ trans_choice(':count customer reward available|:count customer rewards available', $summary['availableRewards'] ?? 0) }}</span>
                     </a>
                     <a href="{{ route('admin.reports.index') }}" class="flex min-h-11 items-center justify-between rounded-xl border border-white/10 bg-white/[0.06] px-4 text-sm font-bold text-white transition hover:bg-white/10">
                         <span>{{ __('Reports & exports') }}</span><span aria-hidden="true">→</span>

@@ -1,5 +1,5 @@
 <x-app-layout>
-    @php $completionModal = 'admin-appointment-completion-'.$appointment->id; $recordPaymentModal = 'admin-appointment-payment-'.$appointment->id; $editAppointmentModal = 'admin-appointment-edit-'.$appointment->id; @endphp
+    @php $completionModal = 'admin-appointment-completion-'.$appointment->id; @endphp
     <x-slot name="header">
         <div>
             <p class="casa-section-label">{{ __('Appointment detail') }}</p>
@@ -14,9 +14,9 @@
                 <button type="button" class="casa-button-primary" x-data="" x-on:click="$dispatch('open-modal', '{{ $completionModal }}')">{{ __('Finish service') }}</button>
             @endif
             @if ($appointment->status !== \App\Models\Appointment::STATUS_CONFIRMED)
-                <button type="button" class="casa-button-secondary" x-data="" x-on:click="$dispatch('open-modal', '{{ $recordPaymentModal }}')">{{ __('Record payment') }}</button>
+                <a href="{{ route('admin.transactions.create', ['appointment_id' => $appointment]) }}" class="casa-button-secondary">{{ __('Record payment') }}</a>
             @endif
-            <button type="button" class="casa-button-primary" x-data="" x-on:click="$dispatch('open-modal', '{{ $editAppointmentModal }}')">{{ __('Edit') }}</button>
+            <a href="{{ route('admin.appointments.edit', $appointment) }}" class="casa-button-primary">{{ __('Edit') }}</a>
         </div>
     </x-slot>
 
@@ -50,6 +50,18 @@
                         @if ($appointment->preferred_staff_profile_id && $appointment->staff_profile_id && $appointment->preferred_staff_profile_id !== $appointment->staff_profile_id)
                             <p class="mt-2 text-xs font-bold text-casa-cacao">{{ __('The confirmed therapist differs from the customer preference.') }}</p>
                         @endif
+                    </div>
+                    <div class="rounded-2xl bg-casa-brass/10 p-4 sm:col-span-2">
+                        <dt class="text-xs font-black uppercase tracking-[0.12em] text-casa-cacao">{{ __('RFM add-on voucher') }}</dt>
+                        <dd class="mt-2 font-semibold text-casa-text">{{ $appointment->promotionSuggestion?->addonName() ?: __('None') }}</dd>
+                        @if ($appointment->promotionSuggestion)
+                            <p class="mt-1 text-xs leading-5 text-casa-muted">{{ __('Prepare this complimentary add-on; keep the package price unchanged.') }}</p>
+                        @endif
+                    </div>
+                    <div class="rounded-2xl bg-casa-bg p-4 sm:col-span-2">
+                        <dt class="text-xs font-black uppercase tracking-[0.12em] text-casa-muted">{{ __('Paid add-ons') }}</dt>
+                        <dd class="mt-2 font-semibold text-casa-text">{{ $appointment->addons->isNotEmpty() ? $appointment->addons->pluck('addon_name')->join(', ') : __('None') }}</dd>
+                        @if ($appointment->addons->isNotEmpty())<p class="mt-1 text-xs leading-5 text-casa-muted">PHP {{ number_format($appointment->paidAddonTotal(), 2) }} · {{ __('Expected total: PHP :amount', ['amount' => number_format($appointment->expectedAmount(), 2)]) }}</p>@endif
                     </div>
                 </dl>
             </x-app-card>
@@ -109,7 +121,5 @@
         </aside>
     </div>
 
-    <x-modal :name="$editAppointmentModal" :show="old('_modal') === $editAppointmentModal" maxWidth="5xl" focusable><div class="p-5">@include('admin.appointments.partials.form', ['appointment' => $appointment, 'action' => route('admin.appointments.update', $appointment), 'method' => 'PATCH', 'submitLabel' => __('Save appointment'), 'modalName' => $editAppointmentModal])</div></x-modal>
     <x-modal :name="$completionModal" :show="old('_modal') === $completionModal" maxWidth="5xl" focusable><div class="p-5">@include('admin.appointments.partials.completion-form', ['appointment' => $appointment, 'modalName' => $completionModal])</div></x-modal>
-    <x-modal :name="$recordPaymentModal" :show="old('_modal') === $recordPaymentModal" maxWidth="5xl" focusable><div class="p-5">@include('admin.transactions.partials.form', ['transaction' => $transaction, 'appointments' => $transactionAppointments, 'action' => route('admin.transactions.store'), 'method' => 'POST', 'submitLabel' => __('Create transaction'), 'modalName' => $recordPaymentModal])</div></x-modal>
 </x-app-layout>

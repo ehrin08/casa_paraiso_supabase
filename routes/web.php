@@ -7,9 +7,7 @@ use App\Http\Controllers\Admin\CustomerController as AdminCustomerController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\FeedbackController as AdminFeedbackController;
 use App\Http\Controllers\Admin\PromotionController as AdminPromotionController;
-use App\Http\Controllers\Admin\PromotionRuleController as AdminPromotionRuleController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
-use App\Http\Controllers\Admin\RfmSegmentController as AdminRfmSegmentController;
 use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
 use App\Http\Controllers\Admin\SettingController as AdminSettingController;
 use App\Http\Controllers\Admin\StaffController as AdminStaffController;
@@ -86,16 +84,9 @@ Route::middleware(['auth', 'active', 'verified', 'role:super_admin,admin'])
         Route::get('/commissions', [AdminCommissionController::class, 'index'])->name('commissions.index');
         Route::get('/commissions/{commission}', [AdminCommissionController::class, 'show'])->name('commissions.show');
         Route::patch('/commissions/{commission}/pay', [AdminCommissionController::class, 'pay'])->name('commissions.pay');
-        Route::patch('/rfm-segments/{rfmSegment}/toggle', [AdminRfmSegmentController::class, 'toggle'])->name('rfm-segments.toggle');
-        Route::resource('rfm-segments', AdminRfmSegmentController::class)
-            ->parameters(['rfm-segments' => 'rfmSegment'])
-            ->only(['index', 'create', 'store', 'edit', 'update']);
-        Route::patch('/promotion-rules/{promotionRule}/toggle', [AdminPromotionRuleController::class, 'toggle'])->name('promotion-rules.toggle');
-        Route::resource('promotion-rules', AdminPromotionRuleController::class)
-            ->parameters(['promotion-rules' => 'promotionRule'])
-            ->only(['index', 'create', 'store', 'edit', 'update']);
-        Route::post('/promotions/generate', [AdminPromotionController::class, 'generate'])->name('promotions.generate');
-        Route::resource('promotions', AdminPromotionController::class)->only(['index', 'show', 'update']);
+        Route::patch('/promotions/settings', [AdminPromotionController::class, 'updateSettings'])->name('promotions.settings.update');
+        Route::patch('/promotions/{promotion}/dismiss', [AdminPromotionController::class, 'dismiss'])->name('promotions.dismiss');
+        Route::resource('promotions', AdminPromotionController::class)->only(['index', 'show']);
         Route::resource('feedback', AdminFeedbackController::class)->only(['index', 'show']);
         Route::get('/reports/export', [AdminReportController::class, 'export'])->name('reports.export');
         Route::get('/reports', [AdminReportController::class, 'index'])->name('reports.index');

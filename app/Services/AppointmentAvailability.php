@@ -23,7 +23,8 @@ class AppointmentAvailability
      *     dates: array<string, array<int, array{starts_at: string, ends_at: string, time: string, label: string, staff_count: int}>>
      * }
      */
-    public function month(Service $service, string $month, ?int $preferredStaffProfileId = null): array
+    /** @param array<int, string> $addonCodes */
+    public function month(Service $service, string $month, ?int $preferredStaffProfileId = null, array $addonCodes = []): array
     {
         $monthStart = Carbon::createFromFormat('Y-m', $month)->startOfMonth();
         $monthEnd = $monthStart->copy()->endOfMonth();
@@ -48,7 +49,7 @@ class AppointmentAvailability
             ->groupBy('staff_profile_id');
 
         for ($day = $monthStart->copy(); $day->lte($monthEnd); $day->addDay()) {
-            $daySlots = $this->slotsForDate($service, $staffProfiles, $confirmedByStaff, $day);
+            $daySlots = $this->slotsForDate($service, $staffProfiles, $confirmedByStaff, $day, $addonCodes);
 
             if ($daySlots !== []) {
                 $dates[$day->toDateString()] = $daySlots;
@@ -63,14 +64,15 @@ class AppointmentAvailability
         ];
     }
 
-    public function hasAvailableSlot(Service $service, Carbon $start, ?int $preferredStaffProfileId = null): bool
+    /** @param array<int, string> $addonCodes */
+    public function hasAvailableSlot(Service $service, Carbon $start, ?int $preferredStaffProfileId = null, array $addonCodes = []): bool
     {
         if ($start->lte(now())) {
             return false;
         }
 
         return $this->eligibleStaff($service, $preferredStaffProfileId)
-            ->contains(fn (StaffProfile $staffProfile) => $this->workflow->isStaffAvailable($staffProfile, $service, $start));
+            ->contains(fn (StaffProfile $staffProfile) => $this->workflow->isStaffAvailable($staffProfile, $service, $start, null, null, $addonCodes));
     }
 
     /**
@@ -92,7 +94,7 @@ class AppointmentAvailability
      * @param  Collection<int, Collection<int, Appointment>>  $confirmedByStaff
      * @return array<int, array{starts_at: string, ends_at: string, time: string, label: string, staff_count: int}>
      */
-    private function slotsForDate(Service $service, Collection $staffProfiles, Collection $confirmedByStaff, Carbon $day): array
+    private function slotsForDate(Service $service, Collection $staffProfiles, Collection $confirmedByStaff, Carbon $day, array $addonCodes): array
     {
         $slots = [];
         $business = $this->scheduleWindows->businessWindow($day);
@@ -100,7 +102,7 @@ class AppointmentAvailability
         $interval = (int) config('casa.business_hours.slot_interval_minutes', 30);
 
         while ($slot->lt($business['end'])) {
-            $slotEnd = $this->workflow->scheduledEnd($slot, $service);
+            $slotEnd = $this->workflow->scheduledEnd($slot, $service, $addonCodes);
 
             if ($slotEnd->gt($business['end'])) {
                 break;

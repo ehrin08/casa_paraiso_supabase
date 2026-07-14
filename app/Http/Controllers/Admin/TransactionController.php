@@ -54,12 +54,6 @@ class TransactionController extends Controller
             ->paginate((int) config('casa.pagination.per_page', 15))
             ->withQueryString();
 
-        $formData = $this->formData(new Transaction([
-            'payment_status' => Transaction::PAYMENT_PAID,
-            'payment_method' => ApplicationSetting::current()->default_payment_method,
-            'paid_at' => now(),
-        ]));
-
         return view('admin.transactions.index', [
             'transactions' => $transactions,
             'status' => $status,
@@ -71,7 +65,6 @@ class TransactionController extends Controller
                 'unpaid' => Transaction::query()->whereIn('payment_status', [Transaction::PAYMENT_UNPAID, Transaction::PAYMENT_PARTIAL])->sum('amount'),
                 'count' => Transaction::query()->count(),
             ],
-            ...$formData,
         ]);
     }
 
@@ -84,13 +77,13 @@ class TransactionController extends Controller
         ]);
 
         if ($request->integer('appointment_id')) {
-            $appointment = Appointment::query()->with(['service', 'customerProfile.user'])->find($request->integer('appointment_id'));
+            $appointment = Appointment::query()->with(['service', 'addons', 'customerProfile.user'])->find($request->integer('appointment_id'));
 
             if ($appointment) {
                 $transaction->appointment_id = $appointment->id;
                 $transaction->customer_profile_id = $appointment->customer_profile_id;
                 $transaction->service_id = $appointment->service_id;
-                $transaction->amount = $appointment->service?->price;
+                $transaction->amount = $appointment->expectedAmount();
             }
         }
 
@@ -139,7 +132,7 @@ class TransactionController extends Controller
             'customers' => CustomerProfile::query()->with('user')->get()->sortBy('user.name'),
             'services' => Service::query()->orderBy('name')->get(),
             'appointments' => Appointment::query()
-                ->with(['customerProfile.user', 'service'])
+                ->with(['customerProfile.user', 'service', 'addons'])
                 ->whereIn('status', [Appointment::STATUS_CONFIRMED, Appointment::STATUS_COMPLETED])
                 ->latest('scheduled_start_at')
                 ->get(),

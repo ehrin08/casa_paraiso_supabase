@@ -64,13 +64,14 @@ class AuditCrudIntegrity extends Command
                             ->where('status', PromotionSuggestion::STATUS_DISMISSED)
                             ->where(fn ($query) => $query->whereNull('dismissed_at')->orWhereNotNull('applied_at')))
                         ->orWhere(fn ($query) => $query
-                            ->whereIn('status', [PromotionSuggestion::STATUS_SUGGESTED, PromotionSuggestion::STATUS_REVIEWED])
+                            ->where('status', PromotionSuggestion::STATUS_SUGGESTED)
                             ->where(fn ($query) => $query->whereNotNull('applied_at')->orWhereNotNull('dismissed_at')));
                 }),
-            'Duplicate open promotion suggestions' => DB::table('promotion_suggestions')
+            'Multiple available customer rewards for one customer' => DB::table('promotion_suggestions')
                 ->select('customer_profile_id')
-                ->whereIn('status', [PromotionSuggestion::STATUS_SUGGESTED, PromotionSuggestion::STATUS_REVIEWED])
-                ->groupBy('customer_profile_id', 'promotion_rule_id', 'suggested_offer')
+                ->where('status', PromotionSuggestion::STATUS_SUGGESTED)
+                ->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+                ->groupBy('customer_profile_id')
                 ->havingRaw('COUNT(*) > 1'),
         ];
 

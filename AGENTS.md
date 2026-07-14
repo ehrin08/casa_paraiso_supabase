@@ -57,7 +57,9 @@ Design and develop a centralized Spa Appointment and Management System for Casa 
 
 ## Database Deployment Notes
 
-- Database safety approval gate: do not reset, reseed, migrate, import, truncate, delete, update, insert, or otherwise modify database schema or data unless the user explicitly approves the specific operation first. Read-only database inspection is allowed.
+- Database operations are allowed as part of normal development work, including migrations, seeders, imports, and targeted data repairs.
+- Preserve existing accounts. Never use `migrate:fresh`, `db:wipe`, table drops, truncation, or bulk delete/reseed operations that erase records from `users`, `customer_profiles`, `staff_profiles`, or authentication-support tables. Prefer additive migrations and idempotent seeders.
+- Before a schema or bulk data command, verify that it will not erase existing accounts. If an account-preserving approach is not available, stop and ask the user before proceeding.
 - Hostinger databases should be managed through hPanel and phpMyAdmin unless a later hosting plan provides a better workflow.
 - Keep production database credentials outside committed source files.
 - Separate local database configuration from production database configuration.
@@ -106,7 +108,8 @@ Current application verification:
 - Laravel app: `docker compose up -d`, then open `http://localhost:8001`
 - PHP dependencies after creating the volume: `docker compose exec -T laravel.test composer install`, then `docker compose restart laravel.test`
 - Frontend assets: `docker compose exec -T laravel.test npm run build`
-- Database (run only after explicit user approval because this resets and reseeds data): `docker compose exec -T --user sail laravel.test php artisan migrate:fresh --seed`
+- Database schema updates: `docker compose exec -T --user sail laravel.test php artisan migrate`
+- Seed data only when the seeder is account-preserving: `docker compose exec -T --user sail laravel.test php artisan db:seed`
 - Tests: `docker compose exec -T --user sail laravel.test php artisan test`
 - Run Artisan as the container's `sail` user so CLI-created logs and cache files remain writable by the web process. If permissions drift, repair `storage` and `bootstrap/cache` from the root container user before retrying.
 
@@ -115,4 +118,5 @@ Current application verification:
 - Read this file, then `docs/PROJECT_MEMORY.md`, before making changes.
 - Use the project memory to locate the relevant code structure, then inspect the affected source before introducing new conventions.
 - Preserve user-created files and avoid broad refactors unless requested.
+- Database mutations are permitted, but never erase existing accounts; use additive migrations and account-preserving seeders.
 - Follow `docs/BRAND_UI_GUIDE.md` when adding or changing public, authentication, admin, staff, or customer interface elements.

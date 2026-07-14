@@ -18,6 +18,8 @@
                 <div><dt class="casa-section-label">{{ __('Therapist') }}</dt><dd class="mt-2 font-semibold">{{ $appointment->staffProfile?->user?->name }}</dd></div>
                 <div><dt class="casa-section-label">{{ __('Start') }}</dt><dd class="mt-2">{{ $appointment->scheduled_start_at?->format('M d, Y g:i A') }}</dd></div>
                 <div><dt class="casa-section-label">{{ __('End') }}</dt><dd class="mt-2">{{ $appointment->scheduled_end_at?->format('M d, Y g:i A') }}</dd></div>
+                <div class="sm:col-span-2"><dt class="casa-section-label">{{ __('RFM add-on voucher') }}</dt><dd class="mt-2 font-semibold">{{ $appointment->promotionSuggestion?->addonName() ?: __('None') }}</dd>@if ($appointment->promotionSuggestion)<p class="mt-1 text-xs text-casa-muted">{{ __('Complimentary add-on; package price remains unchanged.') }}</p>@endif</div>
+                <div class="sm:col-span-2"><dt class="casa-section-label">{{ __('Paid add-ons') }}</dt><dd class="mt-2 font-semibold">{{ $appointment->addons->isNotEmpty() ? $appointment->addons->pluck('addon_name')->join(', ') : __('None') }}</dd>@if ($appointment->addons->isNotEmpty())<p class="mt-1 text-xs text-casa-muted">PHP {{ number_format($appointment->paidAddonTotal(), 2) }} · {{ __('Expected total: PHP :amount', ['amount' => number_format($appointment->expectedAmount(), 2)]) }}</p>@endif</div>
             </dl>
             @if ($appointment->customer_notes)
                 <p class="mt-5 text-sm text-casa-muted">{{ $appointment->customer_notes }}</p>
@@ -30,7 +32,7 @@
                     <p class="casa-section-label">{{ __('Finish service') }}</p>
                     <form method="POST" action="{{ route('reception.appointments.complete', $appointment) }}" class="mt-4 space-y-3">
                         @csrf
-                        <input type="number" step="0.01" min="0" name="amount" value="{{ old('amount', $appointment->service?->price) }}" class="casa-input" required>
+                        <input type="number" step="0.01" min="0" name="amount" value="{{ old('amount', $appointment->expectedAmount()) }}" class="casa-input" required>
                         <select name="payment_status" class="casa-input" required>
                             @foreach ([\App\Models\Transaction::PAYMENT_UNPAID, \App\Models\Transaction::PAYMENT_PARTIAL, \App\Models\Transaction::PAYMENT_PAID] as $status)
                                 <option value="{{ $status }}">{{ ucfirst($status) }}</option>

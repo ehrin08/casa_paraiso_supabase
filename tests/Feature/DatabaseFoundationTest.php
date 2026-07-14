@@ -47,7 +47,7 @@ class DatabaseFoundationTest extends TestCase
             'is_active' => true,
         ]);
         $this->assertDatabaseCount('rfm_segments', 5);
-        $this->assertDatabaseCount('promotion_rules', 5);
+        $this->assertDatabaseCount('promotion_rules', 0);
         $this->assertGreaterThanOrEqual(2, StaffProfile::query()->count());
         $this->assertGreaterThanOrEqual(10, StaffWeeklySchedule::query()->count());
         $this->assertGreaterThanOrEqual(5, DB::table('staff_services')->count());

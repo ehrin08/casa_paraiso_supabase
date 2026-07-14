@@ -16,5 +16,6 @@
         'method' => 'PATCH',
         'submitLabel' => __('Save changes'),
         'passwordHelp' => __('Leave password blank to keep the current password.'),
+        'cancelUrl' => route('admin.staff.show', $staffProfile),
     ])
 </x-app-layout>

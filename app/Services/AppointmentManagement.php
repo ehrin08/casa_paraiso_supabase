@@ -10,11 +10,15 @@ use Illuminate\Validation\ValidationException;
 
 class AppointmentManagement
 {
-    public function __construct(private readonly AppointmentWorkflow $workflow) {}
+    public function __construct(
+        private readonly AppointmentWorkflow $workflow,
+        private readonly AppointmentAddons $addons,
+    ) {}
 
     /** @param array<string, mixed> $data */
     public function persist(Appointment $appointment, array $data, int $actorId): Appointment
     {
+        $appointment->loadMissing(['addons', 'promotionSuggestion']);
         $service = Service::query()->findOrFail($data['service_id']);
         $status = $data['status'];
         $requestedStart = Carbon::parse($data['requested_start_at']);
@@ -33,6 +37,12 @@ class AppointmentManagement
         $originalPreferredStaffProfileId = $appointment->preferred_staff_profile_id;
         $originalRequestedStart = $appointment->requested_start_at?->copy();
         $originalScheduledStart = $appointment->scheduled_start_at?->copy();
+        $addonCodes = $data['addon_codes'] ?? $appointment->addons->pluck('addon_code')->all();
+        $paidAddons = $this->addons->selected($addonCodes);
+        $this->addons->assertDoesNotDuplicateVoucher($paidAddons, $appointment->promotionSuggestion);
+        $scheduleAddonCodes = [...$addonCodes, ...($appointment->promotionSuggestion?->addon_code ? [$appointment->promotionSuggestion->addon_code] : [])];
+        $originalAddonCodes = $appointment->addons->pluck('addon_code')->sort()->values()->all();
+        $addonsChanged = collect($addonCodes)->sort()->values()->all() !== $originalAddonCodes;
 
         $this->workflow->assertTransitionAllowed($appointment, $status);
 
@@ -47,26 +57,28 @@ class AppointmentManagement
         }
 
         if ($isNew) {
-            $this->workflow->assertBookableStart($requestedStart, $service, 'requested_start_at');
+            $this->workflow->assertBookableStart($requestedStart, $service, 'requested_start_at', true, $scheduleAddonCodes);
         }
 
         if ($status === Appointment::STATUS_CONFIRMED && (! $staffProfile || ! $scheduledStart)) {
             throw ValidationException::withMessages(['scheduled_start_at' => __('Confirmed appointments require staff and scheduled time.')]);
         }
 
-        $scheduledEnd = $scheduledStart ? $this->workflow->scheduledEnd($scheduledStart, $service) : null;
+        $scheduledEnd = $scheduledStart ? $this->workflow->scheduledEnd($scheduledStart, $service, $scheduleAddonCodes) : null;
         $scheduledStartChanged = ($originalScheduledStart === null) !== ($scheduledStart === null)
             || ($originalScheduledStart && $scheduledStart && ! $originalScheduledStart->equalTo($scheduledStart));
         $scheduleChanged = $isNew
             || (int) $originalServiceId !== (int) $service->id
             || (int) $originalStaffProfileId !== (int) $staffProfile?->id
-            || $scheduledStartChanged;
+            || $scheduledStartChanged
+            || $addonsChanged;
         $terminalRecordChanged = (int) $originalCustomerProfileId !== (int) $data['customer_profile_id']
             || (int) $originalServiceId !== (int) $service->id
             || (int) $originalStaffProfileId !== (int) $staffProfile?->id
             || (int) $originalPreferredStaffProfileId !== (int) $preferredStaffProfile?->id
             || ! $originalRequestedStart?->equalTo($requestedStart)
-            || $scheduledStartChanged;
+            || $scheduledStartChanged
+            || $addonsChanged;
 
         if (in_array($originalStatus, [Appointment::STATUS_COMPLETED, Appointment::STATUS_CANCELLED, Appointment::STATUS_NO_SHOW], true) && $terminalRecordChanged) {
             throw ValidationException::withMessages(['status' => __('Completed, cancelled, and no-show appointment details are historical. Only notes may be edited.')]);
@@ -97,7 +109,7 @@ class AppointmentManagement
                 return $this->workflow->changeStatus($appointment, $status, $actorId, $data['reason'] ?? null);
             }
 
-            return $this->workflow->schedule($appointment, $staffProfile, $service, $scheduledStart, $actorId, $data['reason'] ?? null);
+            return $this->workflow->schedule($appointment, $staffProfile, $service, $scheduledStart, $actorId, $data['reason'] ?? null, $addonCodes);
         }
 
         return $this->workflow->changeStatus($appointment, $status, $actorId, $data['reason'] ?? null);

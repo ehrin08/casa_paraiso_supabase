@@ -27,6 +27,8 @@ class AdminCalendarAppointmentStoreRequest extends AppointmentRequest
             'requested_start_at' => ['required', 'date'],
             'scheduled_start_at' => ['required', 'date'],
             'status' => ['required', 'in:confirmed'],
+            'addon_codes' => ['nullable', 'array'],
+            'addon_codes.*' => ['required', 'string', 'distinct'],
             ...$this->noteRules(),
         ];
     }

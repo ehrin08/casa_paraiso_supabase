@@ -87,7 +87,8 @@ class TransactionController extends Controller
                 $transaction->appointment_id = $appointment->id;
                 $transaction->customer_profile_id = $appointment->customer_profile_id;
                 $transaction->service_id = $appointment->service_id;
-                $transaction->amount = $appointment->service?->price;
+                $appointment->loadMissing('addons');
+                $transaction->amount = $appointment->expectedAmount();
             }
         }
 
@@ -187,7 +188,7 @@ class TransactionController extends Controller
     private function eligibleAppointments(int $staffProfileId)
     {
         return Appointment::query()
-            ->with(['customerProfile.user', 'service'])
+            ->with(['customerProfile.user', 'service', 'addons'])
             ->where('staff_profile_id', $staffProfileId)
             ->whereIn('status', [Appointment::STATUS_CONFIRMED, Appointment::STATUS_COMPLETED])
             ->latest('scheduled_start_at')

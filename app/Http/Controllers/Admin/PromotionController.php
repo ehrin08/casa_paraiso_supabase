@@ -2,132 +2,135 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Concerns\HandlesIndexSorting;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\PromotionSuggestionStatusRequest;
-use App\Models\Feedback;
-use App\Models\PromotionRule;
+use App\Http\Requests\Admin\PromotionSettingsRequest;
+use App\Models\ApplicationSetting;
+use App\Models\Appointment;
 use App\Models\PromotionSuggestion;
 use App\Models\RfmSegment;
-use App\Services\RfmPromotionGenerator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class PromotionController extends Controller
 {
-    use HandlesIndexSorting;
-
     public function index(Request $request): View
     {
-        $status = (string) $request->query('status');
         $search = trim((string) $request->query('q'));
-        $sorts = [
-            'customer' => 'promotion_customers.name',
-            'segment' => 'rfm_segments.name',
-            'recency' => 'promotion_suggestions.recency_days',
-            'frequency' => 'promotion_suggestions.frequency_count',
-            'monetary' => 'promotion_suggestions.monetary_total',
-            'status' => 'promotion_suggestions.status',
-            'created' => 'promotion_suggestions.created_at',
-        ];
-        $sort = $this->indexSort($request, $sorts, 'created');
-        $direction = $this->indexDirection($request, 'desc');
-
-        $suggestions = PromotionSuggestion::query()
-            ->with(['customerProfile.user', 'rfmSegment', 'promotionRule', 'reviewer'])
-            ->leftJoin('customer_profiles as promotion_customer_profiles', 'promotion_customer_profiles.id', '=', 'promotion_suggestions.customer_profile_id')
-            ->leftJoin('users as promotion_customers', 'promotion_customers.id', '=', 'promotion_customer_profiles.user_id')
-            ->leftJoin('rfm_segments', 'rfm_segments.id', '=', 'promotion_suggestions.rfm_segment_id')
-            ->select('promotion_suggestions.*')
-            ->when(in_array($status, PromotionSuggestion::STATUSES, true), fn ($query) => $query->where('promotion_suggestions.status', $status))
-            ->when($search !== '', fn ($query) => $query->where(function ($query) use ($search): void {
-                $query->where('promotion_customers.name', 'like', "%{$search}%")
-                    ->orWhere('rfm_segments.name', 'like', "%{$search}%")
-                    ->orWhere('promotion_suggestions.suggested_offer', 'like', "%{$search}%");
-            }))
-            ->orderBy($sorts[$sort], $direction)
-            ->orderByDesc('promotion_suggestions.created_at')
+        $lifecycle = (string) $request->query('lifecycle');
+        $suggestions = $this->activityQuery($lifecycle)
+            ->with(['customerProfile.user', 'rfmSegment', 'appointments:id,promotion_suggestion_id,status'])
+            ->when($search !== '', function (Builder $query) use ($search): void {
+                $query->where(function (Builder $query) use ($search): void {
+                    $query->where('suggested_offer', 'like', "%{$search}%")
+                        ->orWhereHas('customerProfile.user', fn (Builder $users) => $users->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('rfmSegment', fn (Builder $segments) => $segments->where('name', 'like', "%{$search}%"));
+                });
+            })
+            ->latest('created_at')
             ->paginate((int) config('casa.pagination.per_page', 15))
             ->withQueryString();
 
+        $segments = RfmSegment::query()
+            ->whereNotNull('preset_key')
+            ->get()
+            ->keyBy('preset_key');
+
         return view('admin.promotions.index', [
+            'presets' => collect(config('casa.customer_rewards.presets', []))->map(fn (array $preset) => [
+                ...$preset,
+                'segment' => $segments->get($preset['key']),
+            ]),
+            'settings' => ApplicationSetting::current(),
             'suggestions' => $suggestions,
-            'segments' => RfmSegment::query()->withCount(['promotionRules', 'promotionSuggestions'])->orderBy('name')->get(),
-            'rules' => PromotionRule::query()->with('rfmSegment')->orderBy('name')->get(),
-            'status' => $status,
             'search' => $search,
-            'sort' => $sort,
-            'direction' => $direction,
+            'lifecycle' => $lifecycle,
             'summary' => [
-                'suggested' => PromotionSuggestion::query()->where('status', PromotionSuggestion::STATUS_SUGGESTED)->count(),
-                'applied' => PromotionSuggestion::query()->where('status', PromotionSuggestion::STATUS_APPLIED)->count(),
-                'dismissed' => PromotionSuggestion::query()->where('status', PromotionSuggestion::STATUS_DISMISSED)->count(),
+                'available' => $this->activityQuery('available')->count(),
+                'reserved' => $this->activityQuery('reserved')->count(),
+                'used' => $this->activityQuery('used')->count(),
+                'expired' => $this->activityQuery('expired')->count(),
             ],
-            'feedbackSummary' => [
-                'positive' => Feedback::query()->where('sentiment_label', Feedback::SENTIMENT_POSITIVE)->count(),
-                'neutral' => Feedback::query()->where('sentiment_label', Feedback::SENTIMENT_NEUTRAL)->count(),
-                'negative' => Feedback::query()->where('sentiment_label', Feedback::SENTIMENT_NEGATIVE)->count(),
-            ],
-            'recentFeedback' => Feedback::query()
-                ->with(['customerProfile.user', 'service'])
-                ->latest('submitted_at')
-                ->limit(5)
-                ->get(),
         ]);
     }
 
-    public function generate(RfmPromotionGenerator $generator): RedirectResponse
+    public function updateSettings(PromotionSettingsRequest $request): RedirectResponse
     {
-        $created = $generator->generate();
+        $data = $request->validated();
 
-        return redirect()
-            ->route('admin.promotions.index')
-            ->with('status', 'promotions-generated')
-            ->with('generated_count', $created->count());
+        DB::transaction(function () use ($data, $request): void {
+            ApplicationSetting::query()->updateOrCreate(
+                ['id' => 1],
+                [
+                    'business_name' => ApplicationSetting::current()->business_name,
+                    'contact_email' => ApplicationSetting::current()->contact_email,
+                    'contact_phone' => ApplicationSetting::current()->contact_phone,
+                    'business_address' => ApplicationSetting::current()->business_address,
+                    'default_payment_method' => ApplicationSetting::current()->default_payment_method,
+                    'promotion_voucher_validity_days' => $data['promotion_voucher_validity_days'],
+                    'updated_by' => $request->user()->id,
+                ],
+            );
+
+            foreach ($data['groups'] as $key => $group) {
+                RfmSegment::query()
+                    ->where('preset_key', $key)
+                    ->update([
+                        'addon_code' => $group['addon_code'],
+                        'is_active' => (bool) $group['is_active'],
+                    ]);
+            }
+        });
+
+        return back()->with('status', 'customer-rewards-updated');
     }
 
     public function show(PromotionSuggestion $promotion): View
     {
-        $promotion->load(['customerProfile.user', 'rfmSegment', 'promotionRule', 'reviewer']);
+        $promotion->load(['customerProfile.user', 'rfmSegment', 'appointments.service']);
 
-        return view('admin.promotions.show', [
-            'suggestion' => $promotion,
-        ]);
+        return view('admin.promotions.show', ['suggestion' => $promotion]);
     }
 
-    public function update(PromotionSuggestionStatusRequest $request, PromotionSuggestion $promotion): RedirectResponse
+    public function dismiss(PromotionSuggestion $promotion): RedirectResponse
     {
-        $data = $request->validated();
-        $status = $data['status'];
-        $previousStatus = $promotion->status;
-        $statusChanged = $previousStatus !== $status;
+        DB::transaction(function () use ($promotion): void {
+            $promotion = PromotionSuggestion::query()->lockForUpdate()->findOrFail($promotion->id);
 
-        $promotion->fill([
-            'status' => $status,
-            'notes' => $data['notes'] ?? null,
-        ]);
+            if (! $promotion->isAvailableVoucher()) {
+                throw ValidationException::withMessages([
+                    'promotion' => __('Only an available customer reward can be dismissed.'),
+                ]);
+            }
 
-        if ($status !== PromotionSuggestion::STATUS_SUGGESTED && ! $promotion->reviewed_at) {
-            $promotion->reviewed_by = $request->user()->id;
-            $promotion->reviewed_at = now();
-        }
+            $promotion->forceFill([
+                'status' => PromotionSuggestion::STATUS_DISMISSED,
+                'dismissed_at' => now(),
+            ])->save();
+        }, 3);
 
-        if ($statusChanged && $status === PromotionSuggestion::STATUS_APPLIED) {
-            $promotion->applied_at = now();
-            $promotion->dismissed_at = null;
-        } elseif ($statusChanged && $status === PromotionSuggestion::STATUS_DISMISSED) {
-            $promotion->dismissed_at = now();
-            $promotion->applied_at = null;
-        } elseif ($statusChanged) {
-            $promotion->applied_at = null;
-            $promotion->dismissed_at = null;
-        }
+        return back()->with('status', 'customer-reward-dismissed');
+    }
 
-        $promotion->save();
+    private function activityQuery(string $lifecycle): Builder
+    {
+        $query = PromotionSuggestion::query();
 
-        return redirect()
-            ->route('admin.promotions.show', $promotion)
-            ->with('status', 'promotion-updated');
+        return match ($lifecycle) {
+            'available' => $query->where('status', PromotionSuggestion::STATUS_SUGGESTED)
+                ->where(fn (Builder $expiry) => $expiry->whereNull('expires_at')->orWhere('expires_at', '>', now())),
+            'expired' => $query->where('status', PromotionSuggestion::STATUS_SUGGESTED)
+                ->whereNotNull('expires_at')
+                ->where('expires_at', '<=', now()),
+            'reserved' => $query->where('status', PromotionSuggestion::STATUS_APPLIED)
+                ->whereHas('appointments', fn (Builder $appointments) => $appointments->where('status', Appointment::STATUS_CONFIRMED)),
+            'used' => $query->where('status', PromotionSuggestion::STATUS_APPLIED)
+                ->whereDoesntHave('appointments', fn (Builder $appointments) => $appointments->where('status', Appointment::STATUS_CONFIRMED)),
+            'dismissed' => $query->where('status', PromotionSuggestion::STATUS_DISMISSED),
+            default => $query,
+        };
     }
 }

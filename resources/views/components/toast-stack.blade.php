@@ -15,7 +15,8 @@
         'transaction-created' => __('Transaction created.'),
         'transaction-updated' => __('Transaction updated.'),
         'feedback-submitted' => __('Feedback submitted.'),
-        'promotion-updated' => __('Promotion suggestion updated.'),
+        'customer-rewards-updated' => __('Customer reward settings updated.'),
+        'customer-reward-dismissed' => __('Customer reward dismissed.'),
         'customer-updated' => __('Customer notes updated.'),
         'profile-updated' => __('Profile updated.'),
         'password-updated' => __('Password updated.'),
@@ -29,7 +30,6 @@
         'schedule-exception-updated' => __('Schedule exception updated.'),
         'schedule-exception-deleted' => __('Schedule exception deleted.'),
         'settings-updated' => __('Settings updated.'),
-        'promotions-generated' => trans_choice(':count promotion suggestion generated|:count promotion suggestions generated', (int) session('generated_count', 0)),
         default => is_string($status) && $status !== '' ? __(str_replace('-', ' ', ucfirst($status))) : null,
     };
 

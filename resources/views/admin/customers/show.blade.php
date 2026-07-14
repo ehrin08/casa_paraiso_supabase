@@ -21,7 +21,7 @@
             ['label' => __('Appointments'), 'value' => $customer->appointments_count, 'meta' => __('Booking records'), 'tone' => 'brown'],
             ['label' => __('Transactions'), 'value' => $customer->transactions_count, 'meta' => __('Payment records'), 'tone' => 'green'],
             ['label' => __('Feedback'), 'value' => $customer->feedback_count, 'meta' => __('Submitted reviews'), 'tone' => 'gold'],
-            ['label' => __('Promos'), 'value' => $customer->promotion_suggestions_count, 'meta' => __('RFM suggestions'), 'tone' => 'dark'],
+            ['label' => __('Rewards'), 'value' => $customer->promotion_suggestions_count, 'meta' => __('Customer rewards'), 'tone' => 'dark'],
         ]" />
 
         <section class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
@@ -58,7 +58,7 @@
                 @include('admin.customers.partials.history-table', ['title' => __('Appointments'), 'records' => $customer->appointments, 'type' => 'appointments'])
                 @include('admin.customers.partials.history-table', ['title' => __('Transactions'), 'records' => $customer->transactions, 'type' => 'transactions'])
                 @include('admin.customers.partials.history-table', ['title' => __('Feedback'), 'records' => $customer->feedback, 'type' => 'feedback'])
-                @include('admin.customers.partials.history-table', ['title' => __('Promotion suggestions'), 'records' => $customer->promotionSuggestions, 'type' => 'promotions'])
+                @include('admin.customers.partials.history-table', ['title' => __('Customer rewards'), 'records' => $customer->promotionSuggestions, 'type' => 'promotions'])
             </div>
 
             <aside class="space-y-4">

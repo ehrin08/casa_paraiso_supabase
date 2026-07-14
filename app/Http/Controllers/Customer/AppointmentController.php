@@ -9,15 +9,19 @@ use App\Models\Service;
 use App\Models\StaffProfile;
 use App\Services\AppointmentAvailability;
 use App\Services\AppointmentWorkflow;
+use App\Services\RfmAddonVoucher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class AppointmentController extends Controller
 {
-    public function index(Request $request): View
-    {
+    public function index(
+        Request $request,
+        RfmAddonVoucher $addonVouchers,
+    ): View {
         $customerProfile = $request->user()->customerProfile;
         $customerProfileId = $customerProfile?->id ?? 0;
 
@@ -47,11 +51,17 @@ class AppointmentController extends Controller
                 ->whereHas('user', fn ($query) => $query->where('is_active', true))
                 ->get()
                 ->sortBy('user.name'),
+            'vouchers' => $customerProfile ? $addonVouchers->availableFor($customerProfile) : collect(),
+            'addons' => collect(config('casa.addons', [])),
         ]);
     }
 
-    public function create(): View
-    {
+    public function create(
+        Request $request,
+        RfmAddonVoucher $addonVouchers,
+    ): View {
+        $customerProfile = $request->user()->customerProfile;
+
         return view('customer.appointments.create', [
             'services' => Service::query()->with('staffProfiles.user')->where('is_active', true)->orderBy('name')->get(),
             'staffProfiles' => StaffProfile::query()
@@ -60,14 +70,19 @@ class AppointmentController extends Controller
                 ->whereHas('user', fn ($query) => $query->where('is_active', true))
                 ->get()
                 ->sortBy('user.name'),
+            'vouchers' => $customerProfile ? $addonVouchers->availableFor($customerProfile) : collect(),
+            'addons' => collect(config('casa.addons', [])),
         ]);
     }
 
-    public function availability(Request $request, AppointmentAvailability $availability): array
+    public function availability(Request $request, AppointmentAvailability $availability, RfmAddonVoucher $addonVouchers): array
     {
         $data = $request->validate([
             'service_id' => ['required', 'integer', 'exists:services,id'],
             'preferred_staff_profile_id' => ['nullable', 'integer', 'exists:staff_profiles,id'],
+            'promotion_suggestion_id' => ['nullable', 'integer', 'exists:promotion_suggestions,id'],
+            'addon_codes' => ['nullable', 'array'],
+            'addon_codes.*' => ['required', 'string', 'distinct'],
             'month' => ['required', 'date_format:Y-m'],
         ]);
 
@@ -75,10 +90,27 @@ class AppointmentController extends Controller
             ->where('is_active', true)
             ->findOrFail($data['service_id']);
 
+        $addonCodes = $data['addon_codes'] ?? [];
+
+        if (! empty($data['promotion_suggestion_id'])) {
+            $voucher = $request->user()->customerProfile
+                ? $addonVouchers->availableFor($request->user()->customerProfile)->firstWhere('id', (int) $data['promotion_suggestion_id'])
+                : null;
+
+            if (! $voucher) {
+                throw ValidationException::withMessages([
+                    'promotion_suggestion_id' => __('This add-on voucher is no longer available.'),
+                ]);
+            }
+
+            $addonCodes[] = $voucher->addon_code;
+        }
+
         return $availability->month(
             $service,
             $data['month'],
             isset($data['preferred_staff_profile_id']) ? (int) $data['preferred_staff_profile_id'] : null,
+            $addonCodes,
         );
     }
 
@@ -106,6 +138,8 @@ class AppointmentController extends Controller
 
         $appointment = $workflow->autoBook([
             'customer_profile_id' => $customerProfile->id,
+            'promotion_suggestion_id' => ! empty($data['promotion_suggestion_id']) ? (int) $data['promotion_suggestion_id'] : null,
+            'addon_codes' => $data['addon_codes'] ?? [],
             'customer_notes' => filled($data['customer_notes'] ?? null) ? trim((string) $data['customer_notes']) : null,
             'created_by' => $request->user()->id,
         ], $service, $requestedStart, $preferredStaffProfileId, $request->user()->id);
@@ -119,7 +153,7 @@ class AppointmentController extends Controller
     {
         $this->authorizeOwnAppointment($request, $appointment);
 
-        $appointment->load(['service', 'staffProfile.user', 'preferredStaffProfile.user', 'feedback', 'transactions']);
+        $appointment->load(['service', 'staffProfile.user', 'preferredStaffProfile.user', 'promotionSuggestion', 'addons', 'feedback', 'transactions']);
 
         return view('customer.appointments.show', [
             'appointment' => $appointment,

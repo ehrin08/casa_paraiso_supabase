@@ -14,6 +14,7 @@ class AppointmentCompletion
         private readonly AppointmentWorkflow $workflow,
         private readonly TransactionNumber $transactionNumbers,
         private readonly TherapistCommissionSynchronizer $commissions,
+        private readonly RfmPromotionGenerator $promotions,
     ) {}
 
     /** @param array<string, mixed> $payment */
@@ -50,6 +51,9 @@ class AppointmentCompletion
             $this->workflow->changeStatus($locked, Appointment::STATUS_COMPLETED, $adminId, __('Service finished and transaction recorded'));
 
             $this->commissions->synchronize($transaction);
+            if ($transaction->payment_status === Transaction::PAYMENT_PAID) {
+                $this->promotions->generateForTransaction($transaction);
+            }
 
             return $transaction;
         }, 3);

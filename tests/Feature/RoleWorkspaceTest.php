@@ -68,7 +68,7 @@ class RoleWorkspaceTest extends TestCase
         foreach ([
             ['/admin/dashboard', 1],
             ['/admin/transactions', 1],
-            ['/admin/promotions', 2],
+            ['/admin/promotions', 1],
             ['/admin/feedback', 1],
             ['/admin/reports', 1],
         ] as [$path, $expectedGridCount]) {
@@ -231,7 +231,7 @@ class RoleWorkspaceTest extends TestCase
             ->assertSee('APT-UPCOMING')
             ->assertSee('Hilot Massage')
             ->assertSee('PHP 1,200.00')
-            ->assertSee('1 promotion review waiting');
+            ->assertSee('1 customer reward available');
     }
 
     public function legacy_staff_dashboard_shows_assigned_pending_and_completed_counts(): void

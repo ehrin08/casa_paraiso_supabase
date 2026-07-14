@@ -58,6 +58,7 @@ class Appointment extends Model
         'service_id',
         'staff_profile_id',
         'preferred_staff_profile_id',
+        'promotion_suggestion_id',
         'requested_start_at',
         'scheduled_start_at',
         'scheduled_end_at',
@@ -102,6 +103,26 @@ class Appointment extends Model
     public function preferredStaffProfile()
     {
         return $this->belongsTo(StaffProfile::class, 'preferred_staff_profile_id')->withTrashed();
+    }
+
+    public function promotionSuggestion()
+    {
+        return $this->belongsTo(PromotionSuggestion::class);
+    }
+
+    public function addons()
+    {
+        return $this->hasMany(AppointmentAddon::class);
+    }
+
+    public function paidAddonTotal(): float
+    {
+        return (float) $this->addons->sum(fn (AppointmentAddon $addon) => (float) $addon->price);
+    }
+
+    public function expectedAmount(): float
+    {
+        return (float) ($this->service?->price ?? 0) + $this->paidAddonTotal();
     }
 
     /**

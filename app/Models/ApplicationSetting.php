@@ -18,6 +18,7 @@ class ApplicationSetting extends Model
         'contact_phone',
         'business_address',
         'default_payment_method',
+        'promotion_voucher_validity_days',
         'updated_by',
     ];
 
@@ -44,7 +45,15 @@ class ApplicationSetting extends Model
             'contact_phone' => null,
             'business_address' => null,
             'default_payment_method' => Transaction::METHOD_CASH,
+            'promotion_voucher_validity_days' => (int) config('casa.customer_rewards.default_validity_days', 90),
             'updated_by' => null,
+        ];
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'promotion_voucher_validity_days' => 'integer',
         ];
     }
 

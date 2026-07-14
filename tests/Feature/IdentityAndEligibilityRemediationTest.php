@@ -91,7 +91,7 @@ class IdentityAndEligibilityRemediationTest extends TestCase
         $staffProfile->services()->attach($service);
 
         $this->actingAs($admin)
-            ->get(route('admin.staff.index', absolute: false))
+            ->get(route('admin.staff.edit', $staffProfile, false))
             ->assertOk()
             ->assertSee('name="service_ids[]" value="'.$service->id.'"', false)
             ->assertSee($service->name)

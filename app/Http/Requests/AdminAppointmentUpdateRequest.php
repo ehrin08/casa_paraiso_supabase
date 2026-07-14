@@ -24,6 +24,8 @@ class AdminAppointmentUpdateRequest extends AppointmentRequest
             'requested_start_at' => ['required', 'date'],
             'scheduled_start_at' => ['nullable', 'date'],
             'status' => ['required', Rule::in(Appointment::STATUSES)],
+            'addon_codes' => ['nullable', 'array'],
+            'addon_codes.*' => ['required', 'string', 'distinct'],
             ...$this->noteRules(),
         ];
     }

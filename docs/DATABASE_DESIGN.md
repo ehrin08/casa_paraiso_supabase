@@ -133,7 +133,7 @@ Initial active services should mirror the current package menu:
 - HESTIA WARMTH, 90 minutes, PHP 749.00.
 - AURORA BREEZE, 120 minutes, PHP 849.00.
 
-Add-ons are not modeled as separate bookable records in the MVP. Ventosa, Hot Compress, Hot Stone, 30-Minute Back Massage, and VIP Room are displayed as static content until a later selectable add-on feature is approved.
+Add-ons are defined in `config/casa.php` rather than managed as standalone service records. Ventosa, Hot Compress, Hot Stone, 30-Minute Back Massage, and VIP Room may be selected as paid appointment add-ons. A separate RFM voucher may grant one complimentary add-on; it never discounts a paid selection. Only 30-Minute Back Massage extends the scheduled duration, by 30 minutes.
 
 Key columns:
 
@@ -259,6 +259,7 @@ Key columns:
 - `service_id` foreign key to `services.id`
 - `staff_profile_id` nullable foreign key to `staff_profiles.id`
 - `preferred_staff_profile_id` nullable foreign key to `staff_profiles.id`
+- `promotion_suggestion_id` nullable foreign key to `promotion_suggestions.id`
 - `requested_start_at`
 - `scheduled_start_at` nullable
 - `scheduled_end_at` nullable
@@ -296,7 +297,23 @@ Rules:
 
 Relationships:
 
-- Belongs to customer profile, service, and optionally staff profile.
+- Belongs to customer profile, service, optionally staff profile, and optionally one promotion suggestion used as an add-on voucher.
+- Has many paid appointment add-on snapshots.
+
+### `appointment_addons`
+
+Paid add-on snapshots attached to an appointment.
+
+Key columns:
+
+- `appointment_id` foreign key to `appointments.id`
+- `addon_code`, `addon_name`, `price`, and `duration_minutes`
+
+Rules:
+
+- One row per appointment/add-on code.
+- Snapshot catalog values so later configuration changes do not alter booking history.
+- Payment defaults add these prices to the base service price. RFM voucher add-ons do not create a paid row.
 - Has many transactions.
 - Has one feedback record in the MVP.
 - Has many status logs.
@@ -416,13 +433,15 @@ Rules:
 
 ### `rfm_segments`
 
-Named customer behavior segments.
+Five system-controlled customer-reward presets plus retained legacy segment records for historical references.
 
 Key columns:
 
 - `id`
 - `name`
+- `preset_key` nullable unique identifier for a fixed customer-reward group
 - `description` nullable
+- `addon_code` nullable configured complimentary add-on for future rewards
 - `recency_min_days` nullable
 - `recency_max_days` nullable
 - `frequency_min` nullable
@@ -443,7 +462,7 @@ Relationships:
 
 ### `promotion_rules`
 
-Rule definitions used to create admin-visible promotion suggestions.
+Legacy rule definitions retained only for historical suggestion references. New customer rewards use the preset segment directly.
 
 Key columns:
 
@@ -452,6 +471,7 @@ Key columns:
 - `name`
 - `description` nullable
 - `suggested_offer` nullable
+- `addon_code` nullable configuration-backed add-on identifier
 - `is_active` boolean default true
 - `deleted_at` nullable
 - `created_at`, `updated_at`
@@ -468,7 +488,7 @@ Relationships:
 
 ### `promotion_suggestions`
 
-Stored promotion recommendation snapshots for review and reporting.
+Stored customer-reward snapshots that may become customer-selectable add-on vouchers and remain available for audit and reporting.
 
 Key columns:
 
@@ -480,11 +500,13 @@ Key columns:
 - `frequency_count` nullable integer
 - `monetary_total` nullable decimal(10,2)
 - `suggested_offer`
+- `addon_code` nullable snapshot of the configured add-on
 - `status`
 - `reviewed_by` nullable foreign key to `users.id`
 - `reviewed_at` nullable
 - `applied_at` nullable
 - `dismissed_at` nullable
+- `expires_at` nullable redemption deadline snapshot
 - `notes` nullable
 - `created_at`, `updated_at`
 
@@ -493,14 +515,17 @@ Indexes:
 - Index on `customer_profile_id`, `status`
 - Index on `rfm_segment_id`
 - Index on `promotion_rule_id`
+- Index on `addon_code`
 - Index on `status`
 - Index on `created_at`
 
 Rules:
 
-- Store suggestions when RFM analysis is run.
-- Do not automatically apply discounts in the MVP.
-- Admin or staff must review, apply, or dismiss suggestions.
+- Create a reward automatically when a completed appointment’s transaction first becomes paid and a fixed active preset matches.
+- Never apply monetary or percentage discounts.
+- An available reward is customer-selectable during booking; selection reserves it. A reward remains valid for a confirmed appointment even if its expiry passes later.
+- At most one available or reserved reward may exist for a customer. Admin may dismiss only an available, unexpired reward; cancellation or no-show releases a reservation with its original expiry.
+- User-facing reward states are derived as available, reserved, used, dismissed, or expired; no scheduler is required.
 - Keep old suggestions for audit and reporting.
 
 Relationships:
@@ -540,7 +565,7 @@ Indexes:
 Rules:
 
 - Validate rating from 1 to 5.
-- Default sentiment logic can map high ratings to positive, middle ratings to neutral, and low ratings to negative, then refine with simple keyword rules if needed.
+- Default sentiment logic maps high ratings to positive, middle ratings to neutral, and low ratings to negative, then refines with code-controlled English, Tagalog, and Taglish keyword, phrase, and nearby-negation rules.
 - Allow only one feedback record per appointment in the MVP.
 
 Relationships:
@@ -625,7 +650,8 @@ Use this order when creating Laravel migrations:
 - The system atomically assigns the preferred available therapist or the least-booked eligible therapist.
 - The system can detect an overlapping confirmed appointment for the same staff member.
 - Admin can finish an appointment and atomically record its manual transaction.
-- RFM calculations can use completed paid transactions to store promotion suggestions.
-- Admin or staff can review, apply, or dismiss promotion suggestions.
+- Fixed RFM presets automatically issue at most one eligible customer reward after a completed paid transaction.
+- A customer can attach one eligible add-on voucher during booking without changing the appointment price or duration.
+- Admin can configure fixed customer rewards and dismiss an available reward; appointment cancellation/no-show releases a reserved voucher.
 - Customer can submit one feedback record for a completed appointment.
 - Admin can filter reports by appointment, transaction, promotion, and feedback fields without direct database access.

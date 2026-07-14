@@ -29,8 +29,6 @@ class TransactionController extends Controller
             'transactions' => $transactions,
             'status' => $status,
             'search' => $search,
-            'transaction' => new Transaction(['payment_status' => Transaction::PAYMENT_PAID, 'payment_method' => ApplicationSetting::current()->default_payment_method, 'paid_at' => now()]),
-            ...$this->selectors(),
         ]);
     }
 
@@ -70,7 +68,7 @@ class TransactionController extends Controller
         return [
             'customers' => CustomerProfile::query()->with('user')->get()->sortBy('user.name')->values(),
             'services' => Service::query()->orderBy('name')->get(),
-            'appointments' => Appointment::query()->with(['customerProfile.user', 'service'])->whereIn('status', [Appointment::STATUS_CONFIRMED, Appointment::STATUS_COMPLETED])->latest('scheduled_start_at')->get(),
+            'appointments' => Appointment::query()->with(['customerProfile.user', 'service', 'addons'])->whereIn('status', [Appointment::STATUS_CONFIRMED, Appointment::STATUS_COMPLETED])->latest('scheduled_start_at')->get(),
         ];
     }
 }

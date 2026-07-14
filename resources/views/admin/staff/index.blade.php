@@ -1,5 +1,4 @@
 <x-app-layout>
-    @php $createStaffModal = 'admin-staff-create'; $createServiceModal = 'admin-service-create'; @endphp
     <x-slot name="header">
         <div>
             <p class="casa-section-label">{{ __('Admin module') }}</p>
@@ -10,8 +9,8 @@
         </div>
 
         <div class="flex flex-wrap gap-3">
-            <button type="button" class="casa-button-secondary" x-data="" x-on:click="$dispatch('open-modal', '{{ $createServiceModal }}')">{{ __('Add service') }}</button>
-            @if(auth()->user()->isSuperAdmin())<button type="button" class="casa-button-primary" x-data="" x-on:click="$dispatch('open-modal', '{{ $createStaffModal }}')">{{ __('Add therapist') }}</button>@endif
+            <a href="{{ route('admin.services.create') }}" class="casa-button-secondary">{{ __('Add service') }}</a>
+            @if(auth()->user()->isSuperAdmin())<a href="{{ route('admin.staff.create') }}" class="casa-button-primary">{{ __('Add therapist') }}</a>@endif
         </div>
     </x-slot>
 
@@ -48,7 +47,7 @@
                         description="{{ __('Create therapist accounts before assigning services, schedules, and appointment responsibilities.') }}"
                     >
                         <x-slot name="action">
-                            @if(auth()->user()->isSuperAdmin())<button type="button" class="casa-button-primary" x-data="" x-on:click="$dispatch('open-modal', '{{ $createStaffModal }}')">{{ __('Add therapist') }}</button>@endif
+                            @if(auth()->user()->isSuperAdmin())<a href="{{ route('admin.staff.create') }}" class="casa-button-primary">{{ __('Add therapist') }}</a>@endif
                         </x-slot>
                     </x-empty-state>
                 @else
@@ -99,7 +98,7 @@
                                         </div>
                                     </td>
                                     <td class="px-4 py-4">
-                                        <button type="button" class="font-bold text-casa-primary hover:text-casa-primary-dark" x-data="" x-on:click="$dispatch('open-modal', 'admin-staff-edit-{{ $staffProfile->id }}')">{{ __('Edit') }}</button>
+                                        <a href="{{ route('admin.staff.edit', $staffProfile) }}" class="font-bold text-casa-primary hover:text-casa-primary-dark">{{ __('Edit') }}</a>
                                     </td>
                                 </tr>
                             @endforeach
@@ -124,7 +123,7 @@
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="casa-filter-chip">{{ trans_choice(':count service|:count services', $serviceCatalog->total()) }}</span>
-                    <button type="button" class="casa-button-primary" x-data="" x-on:click="$dispatch('open-modal', '{{ $createServiceModal }}')">{{ __('Add service') }}</button>
+                    <a href="{{ route('admin.services.create') }}" class="casa-button-primary">{{ __('Add service') }}</a>
                 </div>
             </div>
 
@@ -135,7 +134,7 @@
                         description="{{ __('Add the first treatment before assigning therapist eligibility and appointment workflows.') }}"
                     >
                         <x-slot name="action">
-                            <button type="button" class="casa-button-primary" x-data="" x-on:click="$dispatch('open-modal', '{{ $createServiceModal }}')">{{ __('Add service') }}</button>
+                            <a href="{{ route('admin.services.create') }}" class="casa-button-primary">{{ __('Add service') }}</a>
                         </x-slot>
                     </x-empty-state>
                 @else
@@ -172,7 +171,7 @@
                                     </td>
                                     <td class="px-4 py-4">
                                         <div class="flex flex-wrap gap-3">
-                                            <button type="button" class="font-bold text-casa-primary hover:text-casa-primary-dark" x-data="" x-on:click="$dispatch('open-modal', 'admin-service-edit-{{ $service->id }}')">{{ __('Edit') }}</button>
+                                            <a href="{{ route('admin.services.edit', $service) }}" class="font-bold text-casa-primary hover:text-casa-primary-dark">{{ __('Edit') }}</a>
                                             <x-confirm-action
                                                 :action="route('admin.services.toggle', $service)"
                                                 method="PATCH"
@@ -195,25 +194,4 @@
             </div>
         </x-app-card>
     </div>
-    @if(auth()->user()->isSuperAdmin())<x-modal :name="$createStaffModal" :show="old('_modal') === $createStaffModal" maxWidth="5xl" focusable><div class="p-5">@include('admin.staff.partials.form', ['staffProfile' => $newStaffProfile, 'staffUser' => $newStaffUser, 'services' => $staffAssignableServices, 'assignedServiceIds' => [], 'action' => route('admin.staff.store'), 'method' => 'POST', 'submitLabel' => __('Create therapist'), 'modalName' => $createStaffModal])</div></x-modal>@endif
-    <x-modal :name="$createServiceModal" :show="old('_modal') === $createServiceModal" maxWidth="4xl" focusable><div class="p-5">@include('admin.services.partials.form', ['service' => $newService, 'action' => route('admin.services.store'), 'method' => 'POST', 'submitLabel' => __('Create service'), 'modalName' => $createServiceModal])</div></x-modal>
-    @foreach ($staffProfiles as $staffProfile)
-        @php
-            $editStaffModal = 'admin-staff-edit-'.$staffProfile->id;
-            $staffServiceOptions = $staffAssignableServices
-                ->merge($staffProfile->services)
-                ->unique('id')
-                ->sortBy([
-                    ['is_active', 'desc'],
-                    ['name', 'asc'],
-                ])
-                ->values();
-        @endphp
-        <x-modal :name="$editStaffModal" :show="old('_modal') === $editStaffModal" maxWidth="5xl" focusable>
-            <div class="p-5">
-                @include('admin.staff.partials.form', ['staffProfile' => $staffProfile, 'staffUser' => $staffProfile->user, 'services' => $staffServiceOptions, 'assignedServiceIds' => $staffProfile->services->pluck('id')->all(), 'action' => route('admin.staff.update', $staffProfile), 'method' => 'PATCH', 'submitLabel' => __('Save therapist'), 'passwordHelp' => __('Leave blank to keep the current password.'), 'modalName' => $editStaffModal])
-            </div>
-        </x-modal>
-    @endforeach
-    @foreach ($serviceCatalog as $service) @php $editServiceModal = 'admin-service-edit-'.$service->id; @endphp <x-modal :name="$editServiceModal" :show="old('_modal') === $editServiceModal" maxWidth="4xl" focusable><div class="p-5">@include('admin.services.partials.form', ['service' => $service, 'action' => route('admin.services.update', $service), 'method' => 'PATCH', 'submitLabel' => __('Save service'), 'modalName' => $editServiceModal])</div></x-modal> @endforeach
 </x-app-layout>

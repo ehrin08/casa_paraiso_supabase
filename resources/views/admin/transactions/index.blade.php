@@ -1,5 +1,4 @@
 <x-app-layout>
-    @php $createTransactionModal = 'admin-transaction-create'; @endphp
     <x-slot name="header">
         <div>
             <p class="casa-section-label">{{ __('Admin module') }}</p>
@@ -11,11 +10,10 @@
 
         <div class="flex flex-wrap gap-3">
             <a href="{{ route('admin.reports.index', ['type' => 'transactions']) }}" class="casa-button-secondary">{{ __('Revenue report') }}</a>
-            <button type="button" class="casa-button-primary" x-data="" x-on:click="$dispatch('open-modal', '{{ $createTransactionModal }}')">{{ __('Record payment') }}</button>
+            <a href="{{ route('admin.transactions.create') }}" class="casa-button-primary">{{ __('Record payment') }}</a>
         </div>
     </x-slot>
 
-    @php $createTransaction = $transaction; @endphp
     <div class="space-y-6">
         <section class="casa-metric-grid grid gap-3 sm:gap-4 md:grid-cols-3" data-metric-grid>
             <x-metric-card label="Paid total" value="PHP {{ number_format((float) $summary['paid'], 2) }}" meta="Paid transactions" tone="green" />
@@ -65,7 +63,7 @@
                                     <td class="px-4 py-4">
                                         <div class="flex flex-wrap gap-3">
                                             <a href="{{ route('admin.transactions.show', $transaction) }}" class="font-bold text-casa-primary hover:text-casa-primary-dark">{{ __('Open') }}</a>
-                                            <button type="button" class="font-bold text-casa-muted hover:text-casa-primary" x-data="" x-on:click="$dispatch('open-modal', 'admin-transaction-edit-{{ $transaction->id }}')">{{ __('Edit') }}</button>
+                                            <a href="{{ route('admin.transactions.edit', $transaction) }}" class="font-bold text-casa-muted hover:text-casa-primary">{{ __('Edit') }}</a>
                                         </div>
                                     </td>
                                 </tr>
@@ -97,9 +95,4 @@
         </section>
     </div>
 
-    <x-modal :name="$createTransactionModal" :show="old('_modal') === $createTransactionModal" maxWidth="5xl" focusable><div class="p-5">@include('admin.transactions.partials.form', ['transaction' => $createTransaction, 'action' => route('admin.transactions.store'), 'method' => 'POST', 'submitLabel' => __('Create transaction'), 'modalName' => $createTransactionModal])</div></x-modal>
-    @foreach ($transactions as $transaction)
-        @php $editTransactionModal = 'admin-transaction-edit-'.$transaction->id; @endphp
-        <x-modal :name="$editTransactionModal" :show="old('_modal') === $editTransactionModal" maxWidth="5xl" focusable><div class="p-5">@include('admin.transactions.partials.form', ['transaction' => $transaction, 'action' => route('admin.transactions.update', $transaction), 'method' => 'PATCH', 'submitLabel' => __('Save transaction'), 'modalName' => $editTransactionModal])</div></x-modal>
-    @endforeach
 </x-app-layout>

@@ -61,12 +61,18 @@ Compact density applies only inside the authenticated application shell. Public 
 | Buttons, fields, tabs, and page controls | 44px minimum interaction target |
 
 - Use the shared `page-heading` component for authenticated page titles. Customer headings may use its editorial variant; admin and staff headings use the operational variant.
-- Use `stat-strip` for compact context on detail pages and appointment calendars. Reserve larger metric cards for dashboards, feedback, promotions, transactions, and reports.
+- Use `stat-strip` for compact context on detail pages and appointment calendars. Reserve larger metric cards for dashboards, feedback, customer rewards, transactions, and reports.
 - Put record totals and useful status counts in toolbar chips. Do not add generic “Showing” or “Search Ready” metric cards above lists.
 - List filters collapse below the 1024px breakpoint. The toggle exposes an accessible expanded state and active-filter count; render “Clear filters” only when at least one filter is active.
 - Keep tables inside the shared keyboard-focusable horizontal-scroll region. Week tabs and month grids may scroll internally when seven 44px targets cannot fit.
 - Operational week selectors use tab semantics with Left/Right and Home/End keyboard movement. Customer month grids and operational week strips must keep an accessible label on their keyboard-focusable scroll region.
 - At very narrow widths, customer dock labels may be visually hidden, but their accessible names must remain available.
+
+## Form and Modal Policy
+
+- Use full-page forms for complex CRUD work: therapist and service management, schedule entries and exceptions, transaction creation/editing, and appointment editing.
+- Reserve modals for short contextual workflows: calendar-based booking, the atomic Finish service action, feedback and notes, and explicit confirmation prompts.
+- Full-page forms must provide a clear Cancel or Back action to the relevant list or record detail; validation errors stay on that page with entered values preserved.
 
 ## Pagination Pattern
 

@@ -12,7 +12,7 @@
     <x-app-card>
         <x-stat-strip :items="[
             ['label' => __('Rating'), 'value' => $feedback->rating.'/5', 'meta' => __('Customer score'), 'tone' => 'gold'],
-            ['label' => __('Sentiment'), 'value' => ucfirst($feedback->sentiment_label), 'meta' => __('Rule-based label'), 'tone' => 'green'],
+            ['label' => __('Sentiment'), 'value' => ucfirst($feedback->sentiment_label), 'meta' => __('English, Tagalog, and Taglish rules'), 'tone' => 'green'],
             ['label' => __('Score'), 'value' => number_format((float) $feedback->sentiment_score, 2), 'meta' => __('Simple scale'), 'tone' => 'brown'],
         ]" />
         <div class="mt-6 rounded-2xl bg-casa-bg p-5">

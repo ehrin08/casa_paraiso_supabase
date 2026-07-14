@@ -11,5 +11,6 @@
         'action' => route('admin.transactions.update', $transaction),
         'method' => 'PATCH',
         'submitLabel' => __('Update transaction'),
+        'cancelUrl' => route('admin.transactions.show', $transaction),
     ])
 </x-app-layout>

@@ -17,6 +17,7 @@ class PromotionRule extends Model
         'name',
         'description',
         'suggested_offer',
+        'addon_code',
         'is_active',
     ];
 
@@ -35,5 +36,10 @@ class PromotionRule extends Model
     public function promotionSuggestions()
     {
         return $this->hasMany(PromotionSuggestion::class);
+    }
+
+    public function addonName(): ?string
+    {
+        return collect(config('casa.addons', []))->firstWhere('code', $this->addon_code)['name'] ?? null;
     }
 }

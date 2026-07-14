@@ -33,6 +33,7 @@ Route prefixes:
 - Customer mobile navigation uses a persistent three-item bottom bar for Appointments, Feedback, and Profile.
 - Admin and staff pages should use the persistent sidebar with module navigation, page title, search/filter area where needed, and clear primary action buttons.
 - Customer pages should stay simpler and appointment-first, with sidebar navigation focused on appointments, feedback, and profile.
+- Complex management CRUD uses dedicated create/edit pages. Keep modals for contextual calendar booking, the atomic Admin Finish service flow, short feedback or note entry, and destructive/action confirmation.
 - Use compact stat strips for detail and calendar context; reserve larger metric cards for dashboards and analytics-heavy summaries.
 - Paginate authenticated record lists at the fixed server-controlled size of 15. Preserve filters and sorting across pages, show the result range on every non-empty page, and do not expose a page-size selector.
 - On screens narrower than 1024px, list filters collapse behind a labeled toggle that exposes its expanded state and active-filter count. Show Clear filters only when a filter is active.
@@ -304,31 +305,28 @@ Primary actions:
 - Update payment status.
 - View customer transaction history.
 
-### Promotions
+### Customer Rewards
 
 Route group: `/admin/promotions`
 
 Purpose:
 
-- Review RFM segments, promotion rules, and stored promotion suggestions.
+- Configure fixed customer reward groups and view issued reward activity without technical RFM controls.
 
 Screens:
 
-- RFM segment list.
-- Promotion rule list.
-- Promotion suggestion queue.
-- Promotion suggestion detail.
+- Customer rewards workspace.
+- Read-only customer reward detail.
 
 Main data:
 
-- Customer, RFM segment, recency, frequency, monetary total, suggested offer, status.
+- Customer, plain-language group, paid-visit snapshot, complimentary add-on, expiry, and derived reward status.
 
 Primary actions:
 
-- Review suggestion.
-- Mark applied.
-- Dismiss suggestion.
-- Update promotion rule.
+- Activate/deactivate a fixed group.
+- Choose its future complimentary add-on and the global reward validity.
+- View reward usage and dismiss an available reward.
 
 ### Feedback
 
@@ -558,6 +556,8 @@ Main data:
 
 - Active services.
 - Available staff or preferred staff where supported.
+- Paid add-on catalog with individual prices.
+- Eligible unused RFM add-on vouchers.
 - Preferred date/time.
 - Customer notes.
 
@@ -567,6 +567,10 @@ Rules:
 - The server locks eligible therapist rows and rechecks availability before saving.
 - An available preferred therapist is assigned first; otherwise the least-booked eligible therapist is selected.
 - A lost concurrency race returns a slot-unavailable error without creating an appointment.
+- The customer may attach at most one eligible add-on voucher; its package price remains unchanged, while a 30-Minute Back Massage voucher extends the reservation by 30 minutes.
+- The customer, Admin, or Receptionist may select multiple paid add-ons. Their prices are added to the payment default; only 30-Minute Back Massage extends the reservation by 30 minutes.
+- A voucher is separate from paid add-ons and cannot duplicate a paid selection.
+- Cancelling or marking the appointment no-show releases its voucher for later use.
 
 Primary actions:
 
@@ -650,12 +654,13 @@ Primary actions:
 3. System stores sentiment label.
 4. Admin sees feedback in feedback reports and dashboard summaries.
 
-### Promotion Review
+### RFM Add-on Voucher Booking
 
-1. Admin opens promotion suggestions.
-2. Admin reviews customer RFM segment and suggested offer.
-3. Admin marks suggestion reviewed, applied, or dismissed.
-4. Suggestion remains stored for audit and reporting.
+1. The system evaluates completed paid transactions against active RFM segments and rules.
+2. An eligible suggestion snapshots one configured complimentary add-on.
+3. During booking, the customer optionally attaches one available voucher to the appointment.
+4. The voucher becomes applied when the appointment is confirmed, while the service price, payment amount, duration, and commission basis remain unchanged.
+5. Cancellation or no-show releases the voucher; the snapshot remains stored for audit and reporting.
 
 ## Access Matrix
 
@@ -668,7 +673,7 @@ Primary actions:
 | Customer records | All | Contact and operational history | Operational access | Own profile | No |
 | Transactions | All | Create and edit | Related read-only | No | No |
 | Commissions | Manage payouts | No | Own read-only | No | No |
-| Promotions, feedback insights, reports | Yes | No | Related feedback only | Own feedback | No |
+| Promotions, feedback insights, reports | Yes | No | Related feedback only | Own eligible booking vouchers and feedback | No |
 | Settings and users | Admin/super admin | Own profile | Own profile | Own profile | No |
 
 ## MVP Coverage Check
@@ -677,6 +682,6 @@ Primary actions:
 - Service and staff management are covered by admin modules.
 - Customer records are covered by admin customer screens and staff customer lookup.
 - Manual transactions are covered by admin and staff transaction screens.
-- RFM promotion suggestions are covered by admin promotions.
+- RFM promotion suggestions are covered by admin configuration/reporting and customer add-on voucher selection during booking.
 - Feedback and sentiment analytics are covered by customer feedback and admin feedback screens.
 - Reports and exports are covered by admin reports.

@@ -47,7 +47,7 @@
             @php
                 $statusOptions = match ($type) {
                     'appointments' => \App\Models\Appointment::STATUSES,
-                    'promotions' => \App\Models\PromotionSuggestion::STATUSES,
+                    'promotions' => ['available', 'reserved', 'used', 'dismissed', 'expired'],
                     'customers' => ['active', 'inactive'],
                     default => [],
                 };
@@ -55,7 +55,7 @@
                     'appointments' => __('Scheduled date when assigned; requested date otherwise.'),
                     'transactions' => __('Date payment was received.'),
                     'customers' => __('Date the customer profile was created.'),
-                    'promotions' => __('Date the suggestion was generated.'),
+                    'promotions' => __('Date the customer reward was issued.'),
                     'feedback' => __('Date feedback was submitted.'),
                 };
             @endphp
@@ -151,12 +151,12 @@
                                     <x-sortable-th sort="appointments">{{ __('Appointments') }}</x-sortable-th>
                                     <x-sortable-th sort="transactions">{{ __('Transactions') }}</x-sortable-th>
                                     <x-sortable-th sort="feedback">{{ __('Feedback') }}</x-sortable-th>
-                                    <x-sortable-th sort="promotions">{{ __('Promotions') }}</x-sortable-th>
+                                    <x-sortable-th sort="promotions">{{ __('Rewards') }}</x-sortable-th>
                                 @elseif ($type === 'promotions')
                                     <x-sortable-th sort="customer">{{ __('Customer') }}</x-sortable-th>
-                                    <x-sortable-th sort="segment">{{ __('Segment') }}</x-sortable-th>
-                                    <th class="px-4 py-3">{{ __('Offer') }}</th>
-                                    <x-sortable-th sort="monetary">{{ __('RFM') }}</x-sortable-th>
+                                    <x-sortable-th sort="segment">{{ __('Customer group') }}</x-sortable-th>
+                                    <th class="px-4 py-3">{{ __('Reward') }}</th>
+                                    <x-sortable-th sort="monetary">{{ __('Customer activity') }}</x-sortable-th>
                                     <x-sortable-th sort="status">{{ __('Status') }}</x-sortable-th>
                                 @elseif ($type === 'feedback')
                                     <x-sortable-th sort="customer">{{ __('Customer') }}</x-sortable-th>
@@ -192,13 +192,13 @@
                                         <td class="px-4 py-4 text-casa-muted">{{ trans_choice(':count appointment|:count appointments', $record->appointments_count) }}</td>
                                         <td class="px-4 py-4 text-casa-muted">{{ trans_choice(':count transaction|:count transactions', $record->transactions_count) }}</td>
                                         <td class="px-4 py-4 text-casa-muted">{{ trans_choice(':count feedback|:count feedback', $record->feedback_count) }}</td>
-                                        <td class="px-4 py-4 text-casa-muted">{{ trans_choice(':count promotion|:count promotions', $record->promotion_suggestions_count) }}</td>
+                                        <td class="px-4 py-4 text-casa-muted">{{ trans_choice(':count reward|:count rewards', $record->promotion_suggestions_count) }}</td>
                                     @elseif ($type === 'promotions')
                                         <td class="px-4 py-4 font-semibold text-casa-text">{{ $record->customerProfile?->user?->name }}</td>
                                         <td class="px-4 py-4 text-casa-muted">{{ $record->rfmSegment?->name }}</td>
-                                        <td class="px-4 py-4 text-casa-muted">{{ $record->suggested_offer }}</td>
-                                        <td class="px-4 py-4 text-casa-muted">R{{ $record->recency_days ?? 'N/A' }} F{{ $record->frequency_count ?? 0 }}</td>
-                                        <td class="px-4 py-4"><x-status-badge>{{ ucfirst($record->status) }}</x-status-badge></td>
+                                        <td class="px-4 py-4 text-casa-muted">{{ $record->addonName() ?: $record->suggested_offer }}</td>
+                                        <td class="px-4 py-4 text-casa-muted">{{ __(':days days · :visits paid visits', ['days' => $record->recency_days ?? __('N/A'), 'visits' => $record->frequency_count ?? 0]) }}</td>
+                                        <td class="px-4 py-4"><x-status-badge>{{ ucfirst($record->lifecycle()) }}</x-status-badge></td>
                                     @elseif ($type === 'feedback')
                                         <td class="px-4 py-4 font-semibold text-casa-text">{{ $record->customerProfile?->user?->name }}</td>
                                         <td class="px-4 py-4 text-casa-muted">{{ $record->service?->name }}</td>

@@ -17,7 +17,7 @@ It does not eliminate source inspection. Use it to avoid a broad repository scan
 3. Read the authoritative planning documents and current source files relevant to the task.
 4. Read representative tests before changing established behavior.
 
-Do not treat this memory as permission for a database operation. The database safety gate in `AGENTS.md` always applies.
+Database work is permitted when it follows the account-preservation rule in `AGENTS.md`; this memory does not override that rule.
 
 ## Authority Map
 
@@ -39,7 +39,7 @@ When sources disagree, identify whether the question concerns intended or curren
 
 ## Current Project State
 
-- The Laravel 12 monolith contains the core MVP workspaces for authentication and roles, services, therapist and customer records, scheduling, calendar-based appointments, receptionist operations, transactions, therapist commissions, feedback and sentiment, RFM promotion suggestions, reports, and CSV export.
+- The Laravel 12 monolith contains the core MVP workspaces for authentication and roles, services, therapist and customer records, scheduling, calendar-based appointments, receptionist operations, transactions, therapist commissions, feedback and sentiment, automatic customer rewards, reports, and CSV export.
 - Authenticated-workspace refinement is active in the current working tree, standardizing compact density, responsive filters, accessible overflow regions, shared page headings and stat strips, and fixed pagination.
 - Customer appointments use a month calendar with embedded booking, admin and receptionist appointments use weekly Bookings/Availability workspaces, and therapists use a personal weekly calendar.
 - Application behavior is covered primarily by Laravel feature tests under `tests/Feature`; factories exist for all business models.
@@ -64,7 +64,7 @@ When sources disagree, identify whether the question concerns intended or curren
 
 Production must not require Docker, a persistent Node.js process, a custom daemon, an external AI service, or a continuously running queue worker. Node is used for asset compilation. RFM and sentiment logic remain application-driven.
 
-`config/casa.php` is the fallback source for business identity and the code-controlled source for business hours, booking interval, commission rate, fixed pagination size, package content, security feature switches, and display-only add-ons. `ApplicationSetting` stores the editable business identity/contact fields and payment-form default. Schema remains migration-driven.
+`config/casa.php` is the fallback source for business identity and the code-controlled source for business hours, booking interval, commission rate, fixed pagination size, package content, security feature switches, and the paid/voucher add-on catalog. `config/sentiment.php` stores the code-controlled English, Tagalog, and Taglish sentiment lexicons and phrase rules. `ApplicationSetting` stores the editable business identity/contact fields and payment-form default. Schema remains migration-driven.
 
 ## Roles and Access Boundaries
 
@@ -73,10 +73,10 @@ All authenticated workspaces require `auth`, `active`, and `verified` middleware
 | Role | Primary access |
 | --- | --- |
 | Guest | Public landing page, customer registration, email/password login, Google sign-in, and password recovery |
-| Customer | Own profile, availability, booking, appointment calendar/history, pre-start cancellation, and eligible feedback |
+| Customer | Own profile, availability, booking with an optional eligible RFM add-on voucher, appointment calendar/history, pre-start cancellation, and eligible feedback |
 | Receptionist | Restricted front-desk dashboard plus appointment management, customer contact/history, and payment recording; availability is read-only |
 | Staff/Therapist | Personal dashboard/calendar plus assigned appointments, operational customer records, related transactions/feedback, and own commission history |
-| Admin | Dashboard and management of appointments, customers, staff, schedules, services, transactions, commissions, RFM settings/suggestions, feedback, reports, and limited application settings |
+| Admin | Dashboard and management of appointments, customers, staff, schedules, services, transactions, commissions, fixed customer rewards, feedback, reports, and limited application settings |
 | Super administrator | All admin access plus protected user provisioning, role assignment, activation, and deactivation |
 
 Important identity rules:
@@ -107,7 +107,7 @@ Key identity entry points are `routes/auth.php`, the shared profile routes in `r
 - `User` has at most one `StaffProfile` or `CustomerProfile`; role changes provision, restore, or soft-delete the corresponding profile.
 - `Service` is assigned to therapists through `StaffService` and connects to appointments, transactions, and feedback.
 - `StaffProfile` owns service eligibility, recurring `StaffWeeklySchedule` rows, date-specific `StaffScheduleException` rows, and assigned/preferred appointments.
-- `Appointment` connects customer, service, assigned therapist, optional preferred therapist, status logs, transactions, and at most one feedback record.
+- `Appointment` connects customer, service, assigned therapist, optional preferred therapist, paid add-on snapshots, an optional RFM add-on voucher, status logs, transactions, and at most one feedback record.
 - `Transaction` connects a customer to a service and optionally an appointment; it records amount, payment state, payment metadata, and recorder.
 - `TherapistCommission` stores one primary earning per eligible transaction plus signed reconciliation adjustments and external payout metadata.
 - `ApplicationSetting` stores the singleton-style editable business profile and default payment method; it falls back safely to configuration before its migration is applied.
@@ -121,6 +121,7 @@ Key identity entry points are `routes/auth.php`, the shared profile routes in `r
 | Effective schedules | `ScheduleWindowResolver` | Resolve recurring windows, date exceptions, business-hour clipping, merging, and unavailable subtraction |
 | Eligibility protection | `StaffScheduleConflictGuard` | Block staff, service, or availability changes that invalidate future confirmed visits |
 | Appointment lifecycle | `AppointmentWorkflow` | Validate starts, choose/lock eligible staff, prevent overlap, schedule, transition status, and log changes |
+| Paid add-ons | `AppointmentAddons` | Validate the code-backed catalog, snapshot paid selections, calculate price/duration, and prevent duplication with a voucher |
 | Customer availability | `AppointmentAvailability` | Build bookable month/day slots from effective staff capacity |
 | Calendar reads | `AppointmentCalendar` | Produce role-scoped admin, staff, and customer calendar payloads |
 | Service completion | `AppointmentCompletion` | Atomically create one transaction and complete an eligible confirmed visit |
@@ -128,8 +129,8 @@ Key identity entry points are `routes/auth.php`, the shared profile routes in `r
 | Transaction writes | `TransactionWorkflow` | Normalize Admin/Receptionist payment writes and invoke commission synchronization atomically |
 | Therapist commissions | `TherapistCommissionSynchronizer` | Create or recalculate pending earnings and immutable-payout adjustments |
 | Identifiers | `AppointmentNumberGenerator`, `TransactionNumber` | Allocate collision-resistant business identifiers |
-| Sentiment | `SentimentClassifier` | Combine rating defaults with simple positive/negative keyword and negation rules |
-| Promotions | `RfmPromotionGenerator` | Compute RFM metrics, match active rules, and store de-duplicated suggestion snapshots |
+| Sentiment | `SentimentClassifier` | Combine rating defaults with code-controlled English, Tagalog, and Taglish keyword, phrase, and nearby-negation rules; `casa:reclassify-sentiment` safely previews or applies historical updates |
+| Customer rewards | `RfmPromotionGenerator`, `RfmAddonVoucher` | Match five fixed RFM-backed presets after a completed paid transaction, issue one eligible reward, validate ownership/expiry, reserve it during booking, and release it after cancellation/no-show |
 | Identity safety | `PasswordSetupConfirmation`, `UserSessionRevoker` | Handle short-lived Google confirmation and session invalidation |
 
 ## Critical Workflows and Invariants
@@ -171,17 +172,20 @@ Key identity entry points are `routes/auth.php`, the shared profile routes in `r
 ### Feedback and Sentiment
 
 - A customer may submit one feedback record for an eligible completed appointment.
-- Ratings 4–5 default positive, 3 neutral, and 1–2 negative. Keyword polarity and nearby negation may refine the label; no external AI service is used.
+- Ratings 4–5 default positive, 3 neutral, and 1–2 negative. English, Tagalog, and mixed Taglish keyword/phrase polarity plus nearby negation may refine the label; negative written evidence overrides high ratings while 1–2 star ratings remain negative. No external AI service is used.
 - Sentiment labels are `positive`, `neutral`, and `negative`.
 - Admin sees full feedback insights; staff access is limited to related operational feedback.
 
-### RFM Promotions
+### Automatic Customer Rewards
 
 - RFM uses only `paid` transactions attached to `completed` appointments.
 - Recency is based on the latest paid timestamp, frequency is the qualifying transaction count, and monetary value is the qualifying amount total.
-- Active segments and rules are evaluated in application code.
-- A generation key prevents duplicate snapshots for the same customer, rule, and metric values.
-- Suggestion states are `suggested`, `reviewed`, `applied`, and `dismissed`. Suggestions are admin-reviewed guidance, never automatic discounts.
+- Five `casa.customer_rewards.presets` define the fixed priority and thresholds. Admin can only enable a preset, choose its future add-on, and set a 30/60/90/180-day or no-expiry validity period.
+- A transaction-derived generation key prevents duplicate issuance. Generation runs only when a qualifying transaction is created or transitions to `paid` for a completed appointment.
+- User-facing reward states are available, reserved, used, dismissed, and expired. Only available, unexpired snapshots are customer-selectable during booking; booking reserves the selected voucher.
+- A customer can have one available reward or one reward reserved against a confirmed appointment. Cancellation or no-show releases the reservation with its original expiry.
+- Rewards grant a complimentary add-on only. They never change the service price, transaction amount, or therapist commission basis; a 30-Minute Back Massage reward still extends reserved capacity by 30 minutes.
+- Paid add-ons are independently selectable by customers, Admins, and Receptionists. Their snapshot prices increase the appointment payment default; only 30-Minute Back Massage adds 30 minutes to the reserved capacity.
 
 ### Reports and Exports
 
@@ -197,7 +201,8 @@ Key identity entry points are `routes/auth.php`, the shared profile routes in `r
 - `AppServiceProvider` registers `pagination.compact`. The fixed page size is `casa.pagination.per_page = 15`; preserve query state with `withQueryString()` and never accept request-provided page size.
 - Multiple lists need distinct page keys and useful fragments. Calendars, active queues, selector collections, and bounded previews remain unpaginated.
 - Appointment workspaces remain calendar-only: customer month, admin/receptionist weekly Bookings/Availability, and therapist personal week.
-- Customer booking opens inside My Appointments; `/customer/appointments/create` remains the full-page fallback.
+- Complex management CRUD uses its normal create/edit page routes: staff, services, schedules, transactions, and appointment editing. Keep modals for contextual calendar booking, Admin service completion, feedback/notes, and confirmation prompts.
+- Customer booking opens inside My Appointments; `/customer/appointments/create` remains the full-page fallback. Both surfaces show eligible customer rewards with their expiry and keep the unchanged package price visible.
 - Preserve 44px interaction targets, visible focus, accessible names, labeled overflow regions, keyboard calendar navigation, and reduced-motion support.
 
 Primary UI sources are `docs/BRAND_UI_GUIDE.md`, `docs/TECH_STACK.md`, `resources/views/components`, `resources/views/layouts`, `resources/css/app.css`, `resources/js/app.js`, `config/casa.php`, and `AppServiceProvider`.
@@ -215,7 +220,7 @@ Primary UI sources are `docs/BRAND_UI_GUIDE.md`, `docs/TECH_STACK.md`, `resource
 | Receptionist or therapist commissions | `MVP_SCOPE.md`, `DATABASE_DESIGN.md`, `SCREEN_FLOW.md` | Reception controllers/routes, `TherapistCommission`, `TransactionWorkflow`, commission synchronizer | `ReceptionistWorkspaceTest`, `TherapistCommissionTest` |
 | Admin Settings or security hardening | `SCREEN_FLOW.md`, `SECURITY_HARDENING.md`, `TECH_STACK.md` | `ApplicationSetting`, Admin setting controller/request/view, security middleware, providers, auth routes, environment example | `AdminSettingsTest`, `SecurityHardeningTest`, `AuthenticatedWorkspaceSmokeTest` |
 | Feedback, sentiment, RFM, promotions, or reports | `MVP_SCOPE.md`, roadmap phases 8–10 | Related models/services, admin/customer/staff controllers, report export | `InsightRemediationTest`, `PhaseFiveToTenWorkflowTest` |
-| Schema, factories, seeders, or data integrity | `DATABASE_DESIGN.md`, `AGENTS.md` | `database/migrations`, factories, `DatabaseSeeder`, audit command; obtain approval before mutations | `DatabaseFoundationTest`, `SeederSafetyTest`, `CrudIntegrityCommandTest` |
+| Schema, factories, seeders, or data integrity | `DATABASE_DESIGN.md`, `AGENTS.md` | `database/migrations`, factories, `DatabaseSeeder`, audit command; use additive/account-preserving operations | `DatabaseFoundationTest`, `SeederSafetyTest`, `CrudIntegrityCommandTest` |
 | Authenticated UI, lists, calendars, or accessibility | `BRAND_UI_GUIDE.md`, `TECH_STACK.md` | Shared components/layouts, CSS/JS, pagination view, provider, relevant role view | `CompactWorkspacePaginationTest`, `InteractiveListControlsTest`, `ModalInfrastructureTest`, `RoleWorkspaceTest` |
 | Public content, packages, or business hours | `BRAND_UI_GUIDE.md`, `MVP_SCOPE.md` | `config/casa.php`, landing view, service seeding and service views | `ExampleTest`, `AdminServiceManagementTest`, `DatabaseFoundationTest` |
 | Docker, Hostinger, or handover | `TECH_STACK.md`, `DOCKER_WORKFLOW.md`, roadmap phase 11 | `compose.yaml`, Composer/npm manifests, `.env.example`, public entry point | Build/test commands and clean-checkout review |
@@ -236,11 +241,13 @@ docker compose exec -T laravel.test npm run build
 docker compose exec -T --user sail laravel.test php artisan test
 ```
 
+Sentiment reclassification is dry-run by default: `docker compose exec -T --user sail laravel.test php artisan casa:reclassify-sentiment`; use `--apply` only after reviewing its transition counts and taking the appropriate database backup/export.
+
 Run dependency installation only when dependencies changed or the environment is new; follow `AGENTS.md` and `DOCKER_WORKFLOW.md`.
 
 Run in-container Artisan commands with `docker compose exec -T --user sail laravel.test ...` so CLI-created logs and cache artifacts remain writable by the `sail` web process. The single and daily log channels create files with mode `0664`.
 
-Do not reset, reseed, migrate, import, truncate, delete, update, insert, repair, or otherwise modify any database schema or data without explicit approval for that exact operation. Confirm the intended environment before any approved database command. Tests must remain isolated from non-test databases.
+Database migrations, seeders, imports, and targeted data repairs are permitted in the intended environment. Preserve existing accounts: never use `migrate:fresh`, `db:wipe`, table drops, truncation, or bulk delete/reseed work that erases `users`, `customer_profiles`, `staff_profiles`, or authentication-support records. Prefer additive migrations and idempotent seeders; if an account-preserving route is unavailable, stop and ask the user. Tests must remain isolated from non-test databases.
 
 ## Known Gaps
 

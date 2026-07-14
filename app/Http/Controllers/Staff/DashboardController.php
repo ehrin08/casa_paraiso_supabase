@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Staff;
 
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
+use App\Models\TherapistCommission;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -17,6 +18,11 @@ class DashboardController extends Controller
             'assignedToday' => 0,
             'upcoming' => 0,
             'completedToday' => 0,
+        ];
+        $commissionTotals = [
+            'pending' => 0,
+            'paid' => 0,
+            'net' => 0,
         ];
 
         $todayAppointments = collect();
@@ -47,10 +53,23 @@ class DashboardController extends Controller
                 ->orderBy('scheduled_start_at')
                 ->limit(6)
                 ->get();
+
+            $commissionQuery = TherapistCommission::query()
+                ->where('staff_profile_id', $staffProfile->id);
+            $commissionTotals = [
+                'pending' => (clone $commissionQuery)
+                    ->where('status', TherapistCommission::STATUS_PENDING)
+                    ->sum('commission_amount'),
+                'paid' => (clone $commissionQuery)
+                    ->where('status', TherapistCommission::STATUS_PAID)
+                    ->sum('commission_amount'),
+                'net' => (clone $commissionQuery)->sum('commission_amount'),
+            ];
         }
 
         return view('staff.dashboard', [
             'summary' => $summary,
+            'commissionTotals' => $commissionTotals,
             'staffProfile' => $staffProfile,
             'todayAppointments' => $todayAppointments,
         ]);

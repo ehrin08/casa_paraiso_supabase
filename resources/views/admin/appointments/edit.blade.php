@@ -13,5 +13,6 @@
         'action' => route('admin.appointments.update', $appointment),
         'method' => 'PATCH',
         'submitLabel' => __('Update appointment'),
+        'cancelUrl' => route('admin.appointments.show', $appointment),
     ])
 </x-app-layout>

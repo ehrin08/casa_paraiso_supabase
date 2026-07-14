@@ -4,6 +4,7 @@
     $initialRequestedStart = old('requested_start_at', optional($appointment->requested_start_at)->format('Y-m-d\TH:i'));
     $initialScheduledStart = old('scheduled_start_at', optional($appointment->scheduled_start_at)->format('Y-m-d\TH:i'));
     $staffNames = $staffProfiles->mapWithKeys(fn ($staff) => [(string) $staff->id => $staff->user?->name])->all();
+    $initialAddonCodes = old('addon_codes', $appointment->addons->pluck('addon_code')->all());
     $availableTherapistsUrl = $availableTherapistsUrl ?? route('admin.appointments.available-therapists');
     $cancelUrl = $cancelUrl ?? route('admin.appointments.index');
 @endphp
@@ -22,7 +23,9 @@
         persistedServiceId: @js($appointment->exists ? (string) $appointment->service_id : ''),
         persistedScheduledStart: @js($appointment->exists ? optional($appointment->scheduled_start_at)->format('Y-m-d\TH:i') : ''),
         persistedStaffId: @js($appointment->exists ? (string) $appointment->staff_profile_id : ''),
-        staffNames: @js($staffNames)
+        staffNames: @js($staffNames),
+        addonOptions: @js($addons),
+        initialAddonCodes: @js($initialAddonCodes)
     })"
     x-init="init()"
     x-on:calendar-booking-selected.window="applyCalendarSelection($event.detail)"
@@ -65,6 +68,21 @@
                     <x-input-error class="mt-2" :messages="$errors->get('service_id')" />
                 </div>
             </div>
+
+            <fieldset class="rounded-2xl border border-casa-border bg-casa-sand/45 p-4">
+                <legend class="casa-label px-1">{{ __('Paid add-ons') }}</legend>
+                <p class="mt-1 text-sm leading-6 text-casa-muted">{{ __('Select any add-ons needed for this visit. Back Massage extends the appointment by 30 minutes.') }}</p>
+                <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                    @foreach ($addons as $addon)
+                        <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-casa-border bg-casa-paper px-4 py-3">
+                            <input type="checkbox" name="addon_codes[]" value="{{ $addon['code'] }}" x-model="addonCodes" x-on:change="addonChanged()" class="mt-1 rounded border-casa-border text-casa-primary focus:ring-casa-gold">
+                            <span><strong class="block text-sm text-casa-text">{{ $addon['name'] }}</strong><span class="mt-1 block text-xs text-casa-muted">PHP {{ number_format((float) $addon['price'], 2) }}@if (($addon['duration_minutes'] ?? 0) > 0) · +{{ $addon['duration_minutes'] }} {{ __('minutes') }}@endif</span></span>
+                        </label>
+                    @endforeach
+                </div>
+                <p class="mt-3 text-sm font-bold text-casa-text">{{ __('Selected add-ons:') }} <span x-text="`PHP ${paidAddonTotal.toFixed(2)}`"></span><span x-show="addonDurationMinutes" x-text="` · +${addonDurationMinutes} min`"></span></p>
+                <x-input-error class="mt-3" :messages="$errors->get('addon_codes')" />
+            </fieldset>
 
             <div class="grid gap-5 sm:grid-cols-2">
                 <div>

@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Models\ApplicationSetting;
 use App\Models\Appointment;
 use App\Models\Feedback;
-use App\Models\PromotionRule;
 use App\Models\PromotionSuggestion;
 use App\Models\RfmSegment;
 use App\Models\Service;
@@ -189,81 +188,19 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        $segments = collect([
-            [
-                'name' => 'New customer',
-                'description' => 'Recently registered or first-time spa customer.',
-                'recency_min_days' => null,
-                'recency_max_days' => 30,
-                'frequency_min' => 0,
-                'frequency_max' => 1,
-                'monetary_min' => null,
-                'monetary_max' => null,
-                'suggested_offer' => 'Welcome wellness add-on',
-            ],
-            [
-                'name' => 'Loyal customer',
-                'description' => 'Frequent customer with steady recent visits.',
-                'recency_min_days' => null,
-                'recency_max_days' => 60,
-                'frequency_min' => 4,
-                'frequency_max' => null,
-                'monetary_min' => null,
-                'monetary_max' => null,
-                'suggested_offer' => 'Loyalty massage upgrade',
-            ],
-            [
-                'name' => 'At-risk customer',
-                'description' => 'Previously active customer who has not visited recently.',
-                'recency_min_days' => 61,
-                'recency_max_days' => 180,
-                'frequency_min' => 2,
-                'frequency_max' => null,
-                'monetary_min' => null,
-                'monetary_max' => null,
-                'suggested_offer' => 'Return visit reminder offer',
-            ],
-            [
-                'name' => 'High-value customer',
-                'description' => 'Customer with high total spend.',
-                'recency_min_days' => null,
-                'recency_max_days' => 90,
-                'frequency_min' => 3,
-                'frequency_max' => null,
-                'monetary_min' => 5000,
-                'monetary_max' => null,
-                'suggested_offer' => 'Premium wellness package perk',
-            ],
-            [
-                'name' => 'Inactive customer',
-                'description' => 'Customer with no recent completed paid visit.',
-                'recency_min_days' => 181,
-                'recency_max_days' => null,
-                'frequency_min' => null,
-                'frequency_max' => null,
-                'monetary_min' => null,
-                'monetary_max' => null,
-                'suggested_offer' => 'We miss you reactivation offer',
-            ],
-        ]);
-
-        $segments->each(function (array $segment): void {
-            $suggestedOffer = $segment['suggested_offer'];
-            unset($segment['suggested_offer']);
-
-            $rfmSegment = RfmSegment::updateOrCreate(
-                ['name' => $segment['name']],
-                [...$segment, 'is_active' => true],
-            );
-
-            PromotionRule::updateOrCreate(
+        collect(config('casa.customer_rewards.presets', []))->each(function (array $preset): void {
+            RfmSegment::query()->firstOrCreate(
+                ['preset_key' => $preset['key']],
                 [
-                    'rfm_segment_id' => $rfmSegment->id,
-                    'name' => $rfmSegment->name.' suggestion',
-                ],
-                [
-                    'description' => 'Default rule for '.$rfmSegment->name.' promotion suggestions.',
-                    'suggested_offer' => $suggestedOffer,
+                    'name' => $preset['name'],
+                    'description' => $preset['description'],
+                    'addon_code' => $preset['addon_code'],
+                    'recency_min_days' => $preset['recency_min_days'],
+                    'recency_max_days' => $preset['recency_max_days'],
+                    'frequency_min' => $preset['frequency_min'],
+                    'frequency_max' => $preset['frequency_max'],
+                    'monetary_min' => $preset['monetary_min'],
+                    'monetary_max' => $preset['monetary_max'],
                     'is_active' => true,
                 ],
             );
@@ -335,22 +272,23 @@ class DatabaseSeeder extends Seeder
             ],
         );
 
-        $loyalSegment = RfmSegment::query()->where('name', 'New customer')->first();
-        $loyalRule = $loyalSegment?->promotionRules()->first();
+        $loyalSegment = RfmSegment::query()->where('preset_key', 'new_customer')->first();
 
-        if ($loyalSegment && $loyalRule) {
+        if ($loyalSegment) {
             PromotionSuggestion::updateOrCreate(
                 [
                     'customer_profile_id' => $returningCustomerProfile->id,
-                    'promotion_rule_id' => $loyalRule->id,
+                    'promotion_rule_id' => null,
                 ],
                 [
                     'rfm_segment_id' => $loyalSegment->id,
                     'recency_days' => 10,
                     'frequency_count' => 1,
                     'monetary_total' => $gaiaTouch->price,
-                    'suggested_offer' => $loyalRule->suggested_offer,
+                    'suggested_offer' => 'Complimentary '.($loyalSegment->addonName() ?: 'Hot Compress').' add-on voucher',
+                    'addon_code' => $loyalSegment->addon_code,
                     'status' => PromotionSuggestion::STATUS_SUGGESTED,
+                    'expires_at' => now()->addDays((int) config('casa.customer_rewards.default_validity_days', 90)),
                     'notes' => 'Demo suggestion for the promotion review queue.',
                 ],
             );

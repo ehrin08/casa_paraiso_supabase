@@ -30,8 +30,9 @@ class DashboardController extends Controller
             'newFeedback' => Feedback::query()
                 ->whereDate('submitted_at', $today)
                 ->count(),
-            'promotionReviews' => PromotionSuggestion::query()
+            'availableRewards' => PromotionSuggestion::query()
                 ->where('status', PromotionSuggestion::STATUS_SUGGESTED)
+                ->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))
                 ->count(),
         ];
 

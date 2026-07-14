@@ -13,6 +13,7 @@ use App\Models\StaffProfile;
 use App\Models\StaffWeeklySchedule;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\TransactionWorkflow;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -194,6 +195,167 @@ class PhaseFiveToTenWorkflowTest extends TestCase
         $this->assertDatabaseCount('appointments', 0);
     }
 
+    public function test_customer_can_attach_an_rfm_addon_voucher_and_cancellation_releases_it(): void
+    {
+        $customerUser = User::factory()->customer()->create();
+        $customerProfile = CustomerProfile::factory()->for($customerUser)->create();
+        $service = Service::factory()->create(['price' => 649, 'duration_minutes' => 60, 'is_active' => true]);
+        $staffProfile = StaffProfile::factory()->create();
+        $staffProfile->services()->attach($service);
+        $start = now()->addWeek()->setTime(14, 0, 0);
+
+        StaffWeeklySchedule::factory()->for($staffProfile)->create([
+            'day_of_week' => $start->dayOfWeek,
+            'start_time' => '13:00:00',
+            'end_time' => '17:00:00',
+        ]);
+
+        $segment = RfmSegment::factory()->create(['is_active' => true]);
+        $rule = PromotionRule::factory()->for($segment, 'rfmSegment')->create([
+            'suggested_offer' => 'Complimentary Hot Compress add-on voucher',
+            'addon_code' => 'hot-compress',
+            'is_active' => true,
+        ]);
+        $voucher = PromotionSuggestion::factory()
+            ->for($customerProfile)
+            ->for($segment, 'rfmSegment')
+            ->for($rule, 'promotionRule')
+            ->create([
+                'suggested_offer' => $rule->suggested_offer,
+                'addon_code' => $rule->addon_code,
+                'status' => PromotionSuggestion::STATUS_SUGGESTED,
+            ]);
+
+        $this->actingAs($customerUser)
+            ->get(route('customer.appointments.create', absolute: false))
+            ->assertOk()
+            ->assertSee('Hot Compress')
+            ->assertSee('does not change the package price');
+
+        $this->actingAs($customerUser)
+            ->from(route('customer.appointments.create', absolute: false))
+            ->post(route('customer.appointments.store', absolute: false), [
+                'service_id' => $service->id,
+                'promotion_suggestion_id' => $voucher->id,
+                'addon_codes' => ['hot-compress'],
+                'requested_start_at' => $start->format('Y-m-d H:i:s'),
+            ])
+            ->assertRedirect(route('customer.appointments.create', absolute: false))
+            ->assertSessionHasErrors('addon_codes');
+
+        $this->assertDatabaseCount('appointments', 0);
+
+        $this->actingAs($customerUser)
+            ->post(route('customer.appointments.store', absolute: false), [
+                'service_id' => $service->id,
+                'promotion_suggestion_id' => $voucher->id,
+                'requested_start_at' => $start->format('Y-m-d H:i:s'),
+            ])
+            ->assertRedirect();
+
+        $appointment = Appointment::query()->firstOrFail();
+
+        $this->assertSame($voucher->id, $appointment->promotion_suggestion_id);
+        $this->assertSame('649.00', $service->fresh()->price);
+        $this->assertDatabaseHas('promotion_suggestions', [
+            'id' => $voucher->id,
+            'status' => PromotionSuggestion::STATUS_APPLIED,
+        ]);
+
+        $this->actingAs($customerUser)
+            ->patch(route('customer.appointments.cancel', $appointment, false))
+            ->assertRedirect(route('customer.appointments.show', $appointment, false));
+
+        $this->assertDatabaseHas('promotion_suggestions', [
+            'id' => $voucher->id,
+            'status' => PromotionSuggestion::STATUS_SUGGESTED,
+        ]);
+    }
+
+    public function test_customer_paid_addons_extend_availability_and_persist_the_billing_snapshot(): void
+    {
+        $customerUser = User::factory()->customer()->create();
+        CustomerProfile::factory()->for($customerUser)->create();
+        $service = Service::factory()->create(['price' => 649, 'duration_minutes' => 60, 'is_active' => true]);
+        $staffProfile = StaffProfile::factory()->create();
+        $staffProfile->services()->attach($service);
+        $start = now()->addWeek()->setTime(14, 0, 0);
+
+        StaffWeeklySchedule::factory()->for($staffProfile)->create([
+            'day_of_week' => $start->dayOfWeek,
+            'start_time' => '14:00:00',
+            'end_time' => '17:00:00',
+        ]);
+
+        $slots = collect($this->actingAs($customerUser)
+            ->getJson(route('customer.appointments.availability', [
+                'service_id' => $service->id,
+                'addon_codes' => ['back-massage-30'],
+                'month' => $start->format('Y-m'),
+            ], false))
+            ->assertOk()
+            ->json('dates.'.$start->toDateString()));
+
+        $this->assertTrue($slots->contains('time', '14:00'));
+        $this->assertFalse($slots->contains('time', '16:00'));
+
+        $this->actingAs($customerUser)
+            ->post(route('customer.appointments.store', absolute: false), [
+                'service_id' => $service->id,
+                'requested_start_at' => $start->format('Y-m-d H:i:s'),
+                'addon_codes' => ['hot-compress', 'back-massage-30'],
+            ])
+            ->assertRedirect();
+
+        $appointment = Appointment::query()->with(['service', 'addons'])->sole();
+
+        $this->assertSame($start->copy()->addMinutes(90)->toDateTimeString(), $appointment->scheduled_end_at?->toDateTimeString());
+        $this->assertSame(['back-massage-30', 'hot-compress'], $appointment->addons->pluck('addon_code')->sort()->values()->all());
+        $this->assertSame(1148.0, $appointment->expectedAmount());
+    }
+
+    public function test_admin_and_receptionist_can_save_paid_addons_with_confirmed_appointments(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $receptionist = User::factory()->receptionist()->create();
+        $customer = CustomerProfile::factory()->create();
+        $service = Service::factory()->create(['duration_minutes' => 60, 'is_active' => true]);
+        $staff = StaffProfile::factory()->create();
+        $staff->services()->attach($service);
+        $start = now()->addWeek()->setTime(14, 0, 0);
+
+        StaffWeeklySchedule::factory()->for($staff)->create([
+            'day_of_week' => $start->dayOfWeek,
+            'start_time' => '13:00:00',
+            'end_time' => '18:00:00',
+        ]);
+
+        $payload = [
+            'customer_profile_id' => $customer->id,
+            'service_id' => $service->id,
+            'staff_profile_id' => $staff->id,
+            'requested_start_at' => $start->format('Y-m-d H:i:s'),
+            'scheduled_start_at' => $start->format('Y-m-d H:i:s'),
+            'status' => Appointment::STATUS_CONFIRMED,
+        ];
+
+        $this->actingAs($admin)
+            ->post(route('admin.appointments.store', absolute: false), [...$payload, 'addon_codes' => ['ventosa']])
+            ->assertRedirect();
+
+        $this->actingAs($receptionist)
+            ->post(route('reception.appointments.store', absolute: false), [
+                ...$payload,
+                'requested_start_at' => $start->copy()->addHours(2)->format('Y-m-d H:i:s'),
+                'scheduled_start_at' => $start->copy()->addHours(2)->format('Y-m-d H:i:s'),
+                'addon_codes' => ['back-massage-30'],
+            ])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('appointment_addons', ['addon_code' => 'ventosa']);
+        $this->assertDatabaseHas('appointment_addons', ['addon_code' => 'back-massage-30']);
+    }
+
     public function test_transaction_feedback_and_csv_report_workflow(): void
     {
         $admin = User::factory()->admin()->create();
@@ -248,26 +410,11 @@ class PhaseFiveToTenWorkflowTest extends TestCase
             ->assertDownload();
     }
 
-    public function test_admin_can_generate_and_apply_rfm_promotion_suggestion(): void
+    public function test_paid_completed_transaction_automatically_issues_customer_reward(): void
     {
         $admin = User::factory()->admin()->create();
         $customerProfile = CustomerProfile::factory()->create();
         $service = Service::factory()->create(['price' => 1500]);
-        $segment = RfmSegment::factory()->create([
-            'name' => 'Recent paid visitor',
-            'recency_min_days' => null,
-            'recency_max_days' => 30,
-            'frequency_min' => 1,
-            'frequency_max' => null,
-            'monetary_min' => null,
-            'monetary_max' => null,
-            'is_active' => true,
-        ]);
-        PromotionRule::factory()->for($segment, 'rfmSegment')->create([
-            'suggested_offer' => 'Free aromatherapy add-on',
-            'is_active' => true,
-        ]);
-
         $appointment = Appointment::factory()
             ->for($customerProfile)
             ->for($service)
@@ -276,36 +423,26 @@ class PhaseFiveToTenWorkflowTest extends TestCase
                 'completed_at' => now()->subDays(5),
             ]);
 
-        Transaction::factory()
-            ->for($customerProfile)
-            ->for($appointment)
-            ->for($service)
-            ->for($admin, 'recorder')
-            ->create([
-                'amount' => 1500,
-                'payment_status' => Transaction::PAYMENT_PAID,
-                'paid_at' => now()->subDays(5),
-            ]);
-
-        $this->actingAs($admin)
-            ->post(route('admin.promotions.generate', absolute: false))
-            ->assertRedirect(route('admin.promotions.index', absolute: false));
-
-        $suggestion = PromotionSuggestion::query()->firstOrFail();
-
-        $this->assertSame('Free aromatherapy add-on', $suggestion->suggested_offer);
-
-        $this->actingAs($admin)
-            ->patch(route('admin.promotions.update', $suggestion, false), [
-                'status' => PromotionSuggestion::STATUS_APPLIED,
-                'notes' => 'Customer contacted.',
-            ])
-            ->assertRedirect(route('admin.promotions.show', $suggestion, false));
+        app(TransactionWorkflow::class)->persist(new Transaction, [
+            'appointment_id' => $appointment->id,
+            'customer_profile_id' => $customerProfile->id,
+            'service_id' => $service->id,
+            'amount' => 1500,
+            'payment_status' => Transaction::PAYMENT_PAID,
+            'payment_method' => Transaction::METHOD_CASH,
+            'paid_at' => now(),
+            'notes' => null,
+        ], $admin->id);
 
         $this->assertDatabaseHas('promotion_suggestions', [
-            'id' => $suggestion->id,
-            'status' => PromotionSuggestion::STATUS_APPLIED,
-            'reviewed_by' => $admin->id,
+            'customer_profile_id' => $customerProfile->id,
+            'status' => PromotionSuggestion::STATUS_SUGGESTED,
+            'addon_code' => 'hot-compress',
         ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.promotions.index', absolute: false))
+            ->assertOk()
+            ->assertSee('Customer rewards');
     }
 }

@@ -26,6 +26,12 @@ class PromotionSuggestion extends Model
         self::STATUS_DISMISSED,
     ];
 
+    public const ADMIN_REVIEW_STATUSES = [
+        self::STATUS_SUGGESTED,
+        self::STATUS_REVIEWED,
+        self::STATUS_DISMISSED,
+    ];
+
     protected $fillable = [
         'customer_profile_id',
         'rfm_segment_id',
@@ -35,11 +41,13 @@ class PromotionSuggestion extends Model
         'frequency_count',
         'monetary_total',
         'suggested_offer',
+        'addon_code',
         'status',
         'reviewed_by',
         'reviewed_at',
         'applied_at',
         'dismissed_at',
+        'expires_at',
         'notes',
     ];
 
@@ -52,6 +60,7 @@ class PromotionSuggestion extends Model
             'reviewed_at' => 'datetime',
             'applied_at' => 'datetime',
             'dismissed_at' => 'datetime',
+            'expires_at' => 'datetime',
         ];
     }
 
@@ -73,5 +82,58 @@ class PromotionSuggestion extends Model
     public function reviewer()
     {
         return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    public function appointments()
+    {
+        return $this->hasMany(Appointment::class);
+    }
+
+    public function addonName(): ?string
+    {
+        return collect(config('casa.addons', []))->firstWhere('code', $this->addon_code)['name'] ?? null;
+    }
+
+    public function hasActiveVoucherReservation(): bool
+    {
+        if ($this->relationLoaded('appointments')) {
+            return $this->appointments->contains('status', Appointment::STATUS_CONFIRMED);
+        }
+
+        return $this->appointments()
+            ->where('status', Appointment::STATUS_CONFIRMED)
+            ->exists();
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->status === self::STATUS_SUGGESTED
+            && $this->expires_at !== null
+            && $this->expires_at->lte(now());
+    }
+
+    public function isAvailableVoucher(): bool
+    {
+        return $this->status === self::STATUS_SUGGESTED
+            && $this->addon_code !== null
+            && $this->addonName() !== null
+            && ! $this->isExpired();
+    }
+
+    public function lifecycle(): string
+    {
+        if ($this->status === self::STATUS_DISMISSED) {
+            return 'dismissed';
+        }
+
+        if ($this->isExpired()) {
+            return 'expired';
+        }
+
+        if ($this->status === self::STATUS_APPLIED) {
+            return $this->hasActiveVoucherReservation() ? 'reserved' : 'used';
+        }
+
+        return 'available';
     }
 }

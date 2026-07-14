@@ -302,7 +302,7 @@ Tasks:
   - Ratings 4-5 default to `positive`.
   - Rating 3 defaults to `neutral`.
   - Ratings 1-2 default to `negative`.
-  - Optional keyword rules may refine the label.
+  - Code-controlled English, Tagalog, and Taglish keyword, phrase, and nearby-negation rules may refine the label.
 - Build admin feedback list/detail and sentiment summary.
 - Build staff feedback view for related operational feedback.
 
@@ -316,28 +316,27 @@ docker compose exec -T laravel.test php artisan test
 Acceptance:
 
 - Customer can submit feedback for completed appointments.
-- Sentiment label is stored without external AI services.
+- English, Tagalog, and Taglish sentiment labels are stored without external AI services.
 - Admin can review feedback and sentiment summaries.
 
-## Phase 9: RFM Promotion Suggestions
+## Phase 9: Automatic Customer Rewards
 
-Goal: implement rule-based customer segmentation and stored promotion suggestions.
+Goal: implement fixed RFM-backed customer groups and automatic, customer-selectable add-on rewards.
 
 Tasks:
 
-- Build RFM segment and promotion rule seeders.
-- Build admin screens for segments, rules, and suggestion review.
+- Seed five fixed customer-reward presets without overwriting Admin configuration.
+- Build one non-technical Admin workspace for group activation, add-on selection, validity, and activity.
 - Implement RFM calculation from completed paid transactions:
   - Recency from latest paid completed transaction.
   - Frequency from completed paid transaction count.
   - Monetary from completed paid transaction total.
-- Store promotion suggestion snapshots.
-- Support suggestion statuses:
-  - `suggested`
-  - `reviewed`
-  - `applied`
-  - `dismissed`
-- Ensure suggestions are admin-visible and not automatic discounts.
+- Store reward snapshots with an add-on and optional expiry.
+- Issue automatically only when a completed appointment transaction becomes paid; do not queue a second available or reserved reward.
+- Bind each fixed group to the configuration-backed add-on catalog.
+- Let customers attach at most one eligible voucher during booking.
+- Reserve vouchers atomically and release them on cancellation or no-show.
+- Keep package price, transaction amount, duration, and commission basis unchanged.
 
 Verification:
 
@@ -348,9 +347,10 @@ docker compose exec -T laravel.test php artisan test
 
 Acceptance:
 
-- Admin can generate or view stored promotion suggestions.
-- Suggestions include RFM values and suggested offer.
-- Admin/staff can review, apply, or dismiss suggestions according to permissions.
+- Admin can configure fixed future rewards and view stored customer-reward activity.
+- Rewards include plain-language group data, a configured add-on, and expiry.
+- Customers can attach an eligible add-on voucher during booking without receiving a price discount.
+- Customers may use a reward immediately; Admin can dismiss an available reward and customer booking records reservation/application.
 
 ## Phase 10: Reports, Exports, And Dashboard Summaries
 
@@ -447,8 +447,8 @@ The MVP is complete when:
 - Receptionists can handle front-desk appointment, customer, and payment workflows; therapists retain assigned operational access.
 - Admin can record therapist commission payouts, and therapists can review only their own history.
 - Customers can book confirmed appointments, view status/history, cancel before the start, update profile, and submit feedback.
-- RFM promotion suggestions are stored and reviewable.
-- Feedback sentiment is classified without external AI services.
+- RFM add-on vouchers are stored, reviewable, and selectable during customer booking.
+- English, Tagalog, and Taglish feedback sentiment is classified without external AI services.
 - CSV reports are available for admin.
 - The app builds successfully with Tailwind/Vite.
 - Laravel tests pass.

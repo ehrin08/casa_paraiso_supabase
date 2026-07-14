@@ -11,7 +11,7 @@
         <div class="mt-5 grid gap-5 sm:grid-cols-2">
             <div>
                 <x-input-label for="completion_amount" :value="__('Amount')" />
-                <x-text-input id="completion_amount" name="amount" type="number" step="0.01" min="0" class="mt-2" :value="old('amount', $appointment->service?->price)" required />
+                <x-text-input id="completion_amount" name="amount" type="number" step="0.01" min="0" class="mt-2" :value="old('amount', $appointment->expectedAmount())" required />
                 <x-input-error class="mt-2" :messages="$errors->get('amount')" />
             </div>
             <div>

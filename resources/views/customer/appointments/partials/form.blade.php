@@ -15,6 +15,19 @@
         'specialization' => $staff->specialization ?: __('Spa therapist'),
         'service_ids' => $staff->services->pluck('id')->values()->all(),
     ])->values();
+    $bookingVouchers = $vouchers->map(fn ($voucher) => [
+        'id' => $voucher->id,
+        'addon_name' => $voucher->addonName(),
+        'addon_code' => $voucher->addon_code,
+        'offer' => $voucher->suggested_offer,
+        'expires_at' => $voucher->expires_at?->toIso8601String(),
+    ])->values();
+    $bookingAddons = $addons->map(fn (array $addon) => [
+        'code' => $addon['code'],
+        'name' => $addon['name'],
+        'price' => (float) $addon['price'],
+        'duration_minutes' => (int) ($addon['duration_minutes'] ?? 0),
+    ])->values();
     $bookingContext = $bookingContext ?? null;
 @endphp
 
@@ -27,9 +40,13 @@
         availabilityUrl: @js(route('customer.appointments.availability')),
         services: @js($bookingServices),
         staffOptions: @js($bookingStaff),
+        vouchers: @js($bookingVouchers),
+        addonOptions: @js($bookingAddons),
         initialMonth: @js($initialMonth),
         initialServiceId: @js((string) old('service_id', '')),
         initialStaffId: @js((string) old('preferred_staff_profile_id', '')),
+        initialVoucherId: @js((string) old('promotion_suggestion_id', '')),
+        initialAddonCodes: @js(old('addon_codes', [])),
         initialSlot: @js($initialRequestedAt),
         slotPreviewLimit: 2
     })"
@@ -90,6 +107,52 @@
                     <x-input-error class="mt-2" :messages="$errors->get('preferred_staff_profile_id')" />
                 </div>
             </div>
+
+            <fieldset class="mt-5 rounded-2xl border border-casa-border bg-casa-sand/45 p-4 sm:p-5">
+                <legend class="casa-label px-1">{{ __('Add-ons (optional)') }}</legend>
+                <p class="mt-1 text-sm leading-6 text-casa-muted">{{ __('Add extra care to your visit. Back Massage extends your reserved time by 30 minutes.') }}</p>
+                <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                    @foreach ($addons as $addon)
+                        <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-casa-border bg-casa-paper px-4 py-3 transition hover:border-casa-brass" x-bind:class="selectedVoucher?.addon_code === '{{ $addon['code'] }}' ? 'opacity-50' : ''">
+                            <input type="checkbox" name="addon_codes[]" value="{{ $addon['code'] }}" x-model="addonCodes" x-on:change="addonChanged()" x-bind:disabled="selectedVoucher?.addon_code === '{{ $addon['code'] }}'" class="mt-1 rounded border-casa-border text-casa-primary focus:ring-casa-gold">
+                            <span>
+                                <strong class="block text-sm text-casa-text">{{ $addon['name'] }}</strong>
+                                <span class="mt-1 block text-xs leading-5 text-casa-muted">PHP {{ number_format((float) $addon['price'], 2) }}@if (($addon['duration_minutes'] ?? 0) > 0) · +{{ $addon['duration_minutes'] }} {{ __('minutes') }}@endif</span>
+                            </span>
+                        </label>
+                    @endforeach
+                </div>
+                <p class="mt-3 text-sm font-bold text-casa-text">{{ __('Selected add-ons:') }} <span x-text="`PHP ${paidAddonTotal.toFixed(2)}`"></span><span x-show="addonDurationMinutes" x-text="` · +${addonDurationMinutes} min`"></span></p>
+                <x-input-error class="mt-3" :messages="$errors->get('addon_codes')" />
+            </fieldset>
+
+            @if ($vouchers->isNotEmpty())
+                <fieldset class="mt-5 rounded-2xl border border-casa-brass/60 bg-casa-brass/10 p-4 sm:p-5">
+                    <legend class="casa-label px-1">{{ __('Complimentary add-on voucher (optional)') }}</legend>
+                    <p class="mt-1 text-sm leading-6 text-casa-muted">{{ __('Your customer reward adds one spa add-on to this visit. It does not change the package price.') }}</p>
+                    <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                        <label class="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border border-casa-border bg-casa-paper px-4 py-3">
+                                <input type="radio" name="promotion_suggestion_id" value="" x-model="voucherId" x-on:change="voucherChanged()" class="border-casa-border text-casa-primary focus:ring-casa-gold">
+                            <span class="text-sm font-bold text-casa-text">{{ __('No voucher') }}</span>
+                        </label>
+                        @foreach ($vouchers as $voucher)
+                            <label class="flex min-h-11 cursor-pointer items-start gap-3 rounded-xl border border-casa-border bg-casa-paper px-4 py-3 transition hover:border-casa-brass">
+                                <input type="radio" name="promotion_suggestion_id" value="{{ $voucher->id }}" x-model="voucherId" x-on:change="voucherChanged()" class="mt-1 border-casa-border text-casa-primary focus:ring-casa-gold">
+                                <span>
+                                    <strong class="block text-sm text-casa-text">{{ $voucher->addonName() }}</strong>
+                                    <span class="mt-1 block text-xs leading-5 text-casa-muted">
+                                        {{ __('Complimentary customer reward') }}
+                                        @if ($voucher->expires_at)
+                                            {{ __('· Expires :date', ['date' => $voucher->expires_at->format('M d, Y')]) }}
+                                        @endif
+                                    </span>
+                                </span>
+                            </label>
+                        @endforeach
+                    </div>
+                    <x-input-error class="mt-3" :messages="$errors->get('promotion_suggestion_id')" />
+                </fieldset>
+            @endif
 
             <noscript>
                 <div class="mt-5">
@@ -232,6 +295,15 @@
                 <div>
                     <dt class="text-[0.65rem] font-extrabold uppercase tracking-[0.12em] text-white/60">{{ __('Therapist preference') }}</dt>
                     <dd class="mt-1.5 text-sm font-bold text-white" x-text="selectedStaff?.name || '{{ __('No preference') }}'"></dd>
+                </div>
+                <div>
+                    <dt class="text-[0.65rem] font-extrabold uppercase tracking-[0.12em] text-white/60">{{ __('Complimentary add-on') }}</dt>
+                    <dd class="mt-1.5 text-sm font-bold text-white" x-text="selectedVoucher?.addon_name || '{{ __('No voucher selected') }}'"></dd>
+                </div>
+                <div>
+                    <dt class="text-[0.65rem] font-extrabold uppercase tracking-[0.12em] text-white/60">{{ __('Paid add-ons') }}</dt>
+                    <dd class="mt-1.5 text-sm font-bold text-white" x-text="selectedPaidAddons.length ? selectedPaidAddons.map((addon) => addon.name).join(', ') : '{{ __('No paid add-ons') }}'"></dd>
+                    <p class="mt-1 text-xs text-white/65" x-show="selectedPaidAddons.length" x-text="`PHP ${paidAddonTotal.toFixed(2)}${addonDurationMinutes ? ` · +${addonDurationMinutes} min` : ''}`"></p>
                 </div>
                 <div>
                     <dt class="text-[0.65rem] font-extrabold uppercase tracking-[0.12em] text-white/60">{{ __('Selected time') }}</dt>

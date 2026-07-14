@@ -186,8 +186,6 @@ class ReceptionistWorkspaceTest extends TestCase
         foreach ([
             '/admin/staff',
             '/admin/services',
-            '/admin/rfm-segments',
-            '/admin/promotion-rules',
             '/admin/promotions',
             '/admin/feedback',
             '/admin/reports',

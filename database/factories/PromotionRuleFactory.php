@@ -17,7 +17,8 @@ class PromotionRuleFactory extends Factory
             'rfm_segment_id' => RfmSegment::factory(),
             'name' => fake()->sentence(3),
             'description' => fake()->sentence(),
-            'suggested_offer' => fake()->randomElement(['10% off next massage', 'Free foot soak add-on', 'Birthday wellness treat']),
+            'suggested_offer' => 'Complimentary Hot Compress add-on voucher',
+            'addon_code' => 'hot-compress',
             'is_active' => true,
         ];
     }

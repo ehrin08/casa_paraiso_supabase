@@ -12,12 +12,14 @@ class TransactionWorkflow
     public function __construct(
         private readonly TransactionNumber $numbers,
         private readonly TherapistCommissionSynchronizer $commissions,
+        private readonly RfmPromotionGenerator $promotions,
     ) {}
 
     /** @param array<string, mixed> $data */
     public function persist(Transaction $transaction, array $data, int $actorId): Transaction
     {
         return DB::transaction(function () use ($actorId, $data, $transaction): Transaction {
+            $wasPaid = $transaction->exists && $transaction->payment_status === Transaction::PAYMENT_PAID;
             if (! empty($data['appointment_id'])) {
                 $appointment = Appointment::query()->findOrFail($data['appointment_id']);
                 $data['customer_profile_id'] = $appointment->customer_profile_id;
@@ -44,6 +46,10 @@ class TransactionWorkflow
             }
 
             $this->commissions->synchronize($transaction);
+
+            if (! $wasPaid && $transaction->payment_status === Transaction::PAYMENT_PAID) {
+                $this->promotions->generateForTransaction($transaction);
+            }
 
             return $transaction->refresh();
         }, 3);

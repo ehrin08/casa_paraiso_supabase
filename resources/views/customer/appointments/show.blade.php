@@ -42,6 +42,18 @@
                         <dd class="mt-2 font-semibold text-casa-text">{{ $appointment->preferredStaffProfile?->user?->name ?: __('No preference') }}</dd>
                         <p class="mt-1 text-xs leading-5 text-casa-muted">{{ __('Your preferred therapist is assigned when available; otherwise the system selects another eligible therapist.') }}</p>
                     </div>
+                    <div class="rounded-2xl bg-casa-brass/10 p-4 sm:col-span-2">
+                        <dt class="text-xs font-black uppercase tracking-[0.12em] text-casa-cacao">{{ __('Complimentary add-on') }}</dt>
+                        <dd class="mt-2 font-semibold text-casa-text">{{ $appointment->promotionSuggestion?->addonName() ?: __('No voucher selected') }}</dd>
+                        @if ($appointment->promotionSuggestion)
+                            <p class="mt-1 text-xs leading-5 text-casa-muted">{{ __('This RFM voucher does not change your package price.') }}</p>
+                        @endif
+                    </div>
+                    <div class="rounded-2xl bg-casa-bg p-4 sm:col-span-2">
+                        <dt class="text-xs font-black uppercase tracking-[0.12em] text-casa-muted">{{ __('Paid add-ons') }}</dt>
+                        <dd class="mt-2 font-semibold text-casa-text">{{ $appointment->addons->isNotEmpty() ? $appointment->addons->pluck('addon_name')->join(', ') : __('None') }}</dd>
+                        @if ($appointment->addons->isNotEmpty())<p class="mt-1 text-xs leading-5 text-casa-muted">PHP {{ number_format($appointment->paidAddonTotal(), 2) }}@if ($appointment->addons->sum('duration_minutes')) · +{{ $appointment->addons->sum('duration_minutes') }} {{ __('minutes') }}@endif</p>@endif
+                    </div>
                 </dl>
             </x-app-card>
 

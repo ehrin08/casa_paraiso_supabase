@@ -613,6 +613,8 @@ window.adminAppointmentForm = (config) => ({
     persistedScheduledStart: config.persistedScheduledStart || '',
     persistedStaffId: config.persistedStaffId || '',
     staffNames: config.staffNames || {},
+    addonOptions: config.addonOptions || [],
+    addonCodes: config.initialAddonCodes || [],
     availableStaffIds: null,
     loadingTherapists: false,
     therapistError: '',
@@ -654,7 +656,23 @@ window.adminAppointmentForm = (config) => ({
                 minute: '2-digit',
             });
 
-        return `${label} · ${this.assignedStaffName}`;
+        return `${label} · ${this.assignedStaffName}${this.addonDurationMinutes ? ` · +${this.addonDurationMinutes} min add-ons` : ''}`;
+    },
+
+    get selectedPaidAddons() {
+        return this.addonOptions.filter((addon) => this.addonCodes.includes(addon.code));
+    },
+
+    get paidAddonTotal() {
+        return this.selectedPaidAddons.reduce((total, addon) => total + Number(addon.price || 0), 0);
+    },
+
+    get addonDurationMinutes() {
+        return this.selectedPaidAddons.reduce((total, addon) => total + Number(addon.duration_minutes || 0), 0);
+    },
+
+    addonChanged() {
+        this.refreshTherapists();
     },
 
     refreshTherapists() {
@@ -672,6 +690,7 @@ window.adminAppointmentForm = (config) => ({
                 service_id: this.serviceId,
                 starts_at: this.scheduledStart,
                 appointment_id: this.appointmentId || null,
+                addon_codes: this.addonCodes,
             },
         }).then((response) => {
             this.availableStaffIds = (response.data.therapists || []).map((staff) => String(staff.id));
@@ -707,8 +726,12 @@ window.customerCalendarBooking = (config) => ({
     availabilityUrl: config.availabilityUrl,
     services: config.services || [],
     staffOptions: config.staffOptions || [],
+    vouchers: config.vouchers || [],
+    addonOptions: config.addonOptions || [],
     serviceId: config.initialServiceId || '',
     staffId: config.initialStaffId || '',
+    voucherId: config.initialVoucherId || '',
+    addonCodes: config.initialAddonCodes || [],
     month: config.initialMonth,
     selectedDate: '',
     selectedSlot: config.initialSlot || '',
@@ -775,6 +798,38 @@ window.customerCalendarBooking = (config) => ({
 
     get selectedStaff() {
         return this.staffOptions.find((staff) => String(staff.id) === String(this.staffId)) || null;
+    },
+
+    get selectedVoucher() {
+        return this.vouchers.find((voucher) => String(voucher.id) === String(this.voucherId)) || null;
+    },
+
+    get selectedPaidAddons() {
+        return this.addonOptions.filter((addon) => this.addonCodes.includes(addon.code));
+    },
+
+    get paidAddonTotal() {
+        return this.selectedPaidAddons.reduce((total, addon) => total + Number(addon.price || 0), 0);
+    },
+
+    get addonDurationMinutes() {
+        return this.selectedPaidAddons.reduce((total, addon) => total + Number(addon.duration_minutes || 0), 0);
+    },
+
+    addonChanged() {
+        this.selectedDate = '';
+        this.selectedSlot = '';
+        this.fetchAvailability();
+    },
+
+    voucherChanged() {
+        if (this.selectedVoucher?.addon_code) {
+            this.addonCodes = this.addonCodes.filter((code) => code !== this.selectedVoucher.addon_code);
+        }
+
+        this.selectedDate = '';
+        this.selectedSlot = '';
+        this.fetchAvailability();
     },
 
     get selectedDateLabel() {
@@ -907,6 +962,8 @@ window.customerCalendarBooking = (config) => ({
             params: {
                 service_id: this.serviceId,
                 preferred_staff_profile_id: this.staffId || null,
+                promotion_suggestion_id: this.voucherId || null,
+                addon_codes: this.addonCodes,
                 month: this.month,
             },
         }).then((response) => {

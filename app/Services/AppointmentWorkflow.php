@@ -20,6 +20,8 @@ class AppointmentWorkflow
     public function __construct(
         private readonly ScheduleWindowResolver $scheduleWindows,
         private readonly AppointmentNumberGenerator $numberGenerator,
+        private readonly RfmAddonVoucher $addonVouchers,
+        private readonly AppointmentAddons $addons,
     ) {}
 
     public function nextAppointmentNumber(): string
@@ -27,9 +29,10 @@ class AppointmentWorkflow
         return $this->numberGenerator->next();
     }
 
-    public function scheduledEnd(CarbonInterface $start, Service $service): CarbonInterface
+    /** @param array<int, string> $addonCodes */
+    public function scheduledEnd(CarbonInterface $start, Service $service, array $addonCodes = []): CarbonInterface
     {
-        return $start->copy()->addMinutes($service->duration_minutes);
+        return $start->copy()->addMinutes($service->duration_minutes + $this->addons->durationMinutes($this->addons->selected($addonCodes)));
     }
 
     public function assertBookableStart(
@@ -37,6 +40,7 @@ class AppointmentWorkflow
         Service $service,
         string $field = 'scheduled_start_at',
         bool $mustBeFuture = true,
+        array $addonCodes = [],
     ): void {
         $timezone = (string) config('casa.business_hours.timezone', config('app.timezone'));
         $candidate = Carbon::instance($start)->setTimezone($timezone);
@@ -53,7 +57,7 @@ class AppointmentWorkflow
             ]);
         }
 
-        if (! $this->scheduleWindows->withinBusinessHours($candidate, $this->scheduledEnd($candidate, $service))) {
+        if (! $this->scheduleWindows->withinBusinessHours($candidate, $this->scheduledEnd($candidate, $service, $addonCodes))) {
             $messages[] = __('The full service must fit inside business hours (1:00 PM to 12:00 midnight).');
         }
 
@@ -80,8 +84,9 @@ class AppointmentWorkflow
         CarbonInterface $start,
         ?CarbonInterface $end = null,
         ?Appointment $ignoreAppointment = null,
+        array $addonCodes = [],
     ): bool {
-        $end ??= $this->scheduledEnd($start, $service);
+        $end ??= $this->scheduledEnd($start, $service, $addonCodes);
 
         if (! $this->isStaffEligibleForService($staffProfile, $service)) {
             return false;
@@ -121,10 +126,23 @@ class AppointmentWorkflow
         ?int $preferredStaffProfileId = null,
         ?int $changedBy = null,
     ): Appointment {
-        $this->assertBookableStart($start, $service, 'requested_start_at');
+        $addonCodes = is_array($attributes['addon_codes'] ?? null) ? $attributes['addon_codes'] : [];
+        $paidAddons = $this->addons->selected($addonCodes);
+        $this->assertBookableStart($start, $service, 'requested_start_at', true, $addonCodes);
 
-        return $this->withAppointmentNumberRetry(function (string $number) use ($attributes, $service, $start, $preferredStaffProfileId, $changedBy): Appointment {
-            return DB::transaction(function () use ($attributes, $service, $start, $preferredStaffProfileId, $changedBy, $number): Appointment {
+        return $this->withAppointmentNumberRetry(function (string $number) use ($attributes, $service, $start, $preferredStaffProfileId, $changedBy, $addonCodes, $paidAddons): Appointment {
+            return DB::transaction(function () use ($attributes, $service, $start, $preferredStaffProfileId, $changedBy, $number, $addonCodes, $paidAddons): Appointment {
+                $promotionSuggestionId = isset($attributes['promotion_suggestion_id'])
+                    ? (int) $attributes['promotion_suggestion_id']
+                    : null;
+
+                $voucher = $promotionSuggestionId
+                    ? $this->addonVouchers->reserve($promotionSuggestionId, (int) $attributes['customer_profile_id'])
+                    : null;
+                $this->addons->assertDoesNotDuplicateVoucher($paidAddons, $voucher);
+                $scheduleAddonCodes = [...$addonCodes, ...($voucher?->addon_code ? [$voucher->addon_code] : [])];
+                $this->assertBookableStart($start, $service, 'requested_start_at', true, $scheduleAddonCodes);
+
                 $candidateIds = StaffProfile::query()
                     ->where('is_bookable', true)
                     ->whereHas('user', fn ($query) => $query->where('is_active', true))
@@ -148,7 +166,7 @@ class AppointmentWorkflow
                     ->pluck('aggregate', 'staff_profile_id');
 
                 $available = $staffProfiles
-                    ->filter(fn (StaffProfile $staff) => $this->isStaffAvailable($staff, $service, $start))
+                    ->filter(fn (StaffProfile $staff) => $this->isStaffAvailable($staff, $service, $start, null, null, $scheduleAddonCodes))
                     ->sortBy(fn (StaffProfile $staff) => sprintf(
                         '%012d-%012d',
                         (int) ($futureBookingCounts[$staff->id] ?? 0),
@@ -166,7 +184,7 @@ class AppointmentWorkflow
                     ]);
                 }
 
-                $end = $this->scheduledEnd($start, $service);
+                $end = $this->scheduledEnd($start, $service, $scheduleAddonCodes);
                 $appointment = new Appointment;
                 $appointment->fill([
                     ...$attributes,
@@ -174,13 +192,17 @@ class AppointmentWorkflow
                     'service_id' => $service->id,
                     'staff_profile_id' => $assignedStaff->id,
                     'preferred_staff_profile_id' => $preferredStaffProfileId,
+                    'promotion_suggestion_id' => $promotionSuggestionId,
                     'requested_start_at' => $start,
                     'scheduled_start_at' => $start,
                     'scheduled_end_at' => $end,
                     'updated_by' => $changedBy,
                 ]);
 
-                return $this->applyStatus($appointment, Appointment::STATUS_CONFIRMED, $changedBy, __('Automatically confirmed from customer booking'));
+                $appointment = $this->applyStatus($appointment, Appointment::STATUS_CONFIRMED, $changedBy, __('Automatically confirmed from customer booking'));
+                $this->addons->sync($appointment, $paidAddons);
+
+                return $appointment;
             }, 3);
         });
     }
@@ -192,11 +214,15 @@ class AppointmentWorkflow
         CarbonInterface $start,
         ?int $changedBy = null,
         ?string $reason = null,
+        ?array $addonCodes = null,
     ): Appointment {
-        $this->assertBookableStart($start, $service);
+        $addonCodes ??= $appointment->exists
+            ? $appointment->addons()->pluck('addon_code')->all()
+            : [];
+        $this->assertBookableStart($start, $service, 'scheduled_start_at', true, $addonCodes);
 
         if ($appointment->exists) {
-            return $this->scheduleTransaction($appointment, $staffProfile, $service, $start, $changedBy, $reason);
+            return $this->scheduleTransaction($appointment, $staffProfile, $service, $start, $changedBy, $reason, $addonCodes);
         }
 
         $attributes = $appointment->getAttributes();
@@ -210,14 +236,14 @@ class AppointmentWorkflow
             $attributes['cancelled_by'],
         );
 
-        return $this->withAppointmentNumberRetry(function (string $number) use ($attributes, $staffProfile, $service, $start, $changedBy, $reason): Appointment {
+        return $this->withAppointmentNumberRetry(function (string $number) use ($attributes, $staffProfile, $service, $start, $changedBy, $reason, $addonCodes): Appointment {
             $candidate = new Appointment;
             $candidate->fill([
                 ...$attributes,
                 'appointment_number' => $number,
             ]);
 
-            return $this->scheduleTransaction($candidate, $staffProfile, $service, $start, $changedBy, $reason);
+            return $this->scheduleTransaction($candidate, $staffProfile, $service, $start, $changedBy, $reason, $addonCodes);
         });
     }
 
@@ -262,10 +288,11 @@ class AppointmentWorkflow
         CarbonInterface $start,
         ?int $changedBy,
         ?string $reason,
+        array $addonCodes,
     ): Appointment {
         $dirtyAttributes = $appointment->getDirty();
 
-        return DB::transaction(function () use ($appointment, $staffProfile, $service, $start, $changedBy, $reason, $dirtyAttributes): Appointment {
+        return DB::transaction(function () use ($appointment, $staffProfile, $service, $start, $changedBy, $reason, $dirtyAttributes, $addonCodes): Appointment {
             $lockedStaff = StaffProfile::query()
                 ->with(['user', 'services', 'weeklySchedules', 'scheduleExceptions'])
                 ->lockForUpdate()
@@ -279,7 +306,12 @@ class AppointmentWorkflow
                 $target->fill($dirtyAttributes);
             }
 
-            $end = $this->scheduledEnd($start, $service);
+            $paidAddons = $this->addons->selected($addonCodes);
+            $voucherCode = $target->promotionSuggestion?->addon_code;
+            $this->addons->assertDoesNotDuplicateVoucher($paidAddons, $target->promotionSuggestion);
+            $scheduleAddonCodes = [...$addonCodes, ...($voucherCode ? [$voucherCode] : [])];
+            $this->assertBookableStart($start, $service, 'scheduled_start_at', true, $scheduleAddonCodes);
+            $end = $this->scheduledEnd($start, $service, $scheduleAddonCodes);
 
             if (! $this->isStaffAvailable($lockedStaff, $service, $start, $end, $target->exists ? $target : null)) {
                 throw ValidationException::withMessages([
@@ -295,7 +327,10 @@ class AppointmentWorkflow
                 'updated_by' => $changedBy,
             ]);
 
-            return $this->applyStatus($target, Appointment::STATUS_CONFIRMED, $changedBy, $reason);
+            $target = $this->applyStatus($target, Appointment::STATUS_CONFIRMED, $changedBy, $reason);
+            $this->addons->sync($target, $paidAddons);
+
+            return $target;
         }, 3);
     }
 
@@ -341,6 +376,15 @@ class AppointmentWorkflow
             'status' => $status,
             'updated_by' => $changedBy,
         ])->save();
+
+        if (in_array($status, [Appointment::STATUS_CANCELLED, Appointment::STATUS_NO_SHOW], true)
+            && $appointment->promotion_suggestion_id) {
+            $appointment->loadMissing('promotionSuggestion');
+
+            if ($appointment->promotionSuggestion) {
+                $this->addonVouchers->release($appointment->promotionSuggestion);
+            }
+        }
 
         if ($fromStatus !== $status) {
             AppointmentStatusLog::query()->create([

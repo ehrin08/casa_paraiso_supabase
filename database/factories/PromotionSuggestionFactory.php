@@ -24,12 +24,14 @@ class PromotionSuggestionFactory extends Factory
             'recency_days' => fake()->numberBetween(1, 180),
             'frequency_count' => fake()->numberBetween(1, 12),
             'monetary_total' => fake()->randomFloat(2, 600, 15000),
-            'suggested_offer' => fake()->randomElement(['10% off next visit', 'Free aromatherapy add-on']),
+            'suggested_offer' => 'Complimentary Hot Compress add-on voucher',
+            'addon_code' => 'hot-compress',
             'status' => PromotionSuggestion::STATUS_SUGGESTED,
             'reviewed_by' => null,
             'reviewed_at' => null,
             'applied_at' => null,
             'dismissed_at' => null,
+            'expires_at' => now()->addDays(90),
             'notes' => fake()->optional()->sentence(),
         ];
     }

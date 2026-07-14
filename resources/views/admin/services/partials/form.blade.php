@@ -1,10 +1,9 @@
-@php $modalName = $modalName ?? null; @endphp
-<form method="POST" action="{{ $action }}" @class(['grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]', 'casa-modal-form' => $modalName])>
+@php $cancelUrl = $cancelUrl ?? route('admin.services.index'); @endphp
+<form method="POST" action="{{ $action }}" class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
     @csrf
     @if ($method !== 'POST')
         @method($method)
     @endif
-    @if ($modalName)<input type="hidden" name="_modal" value="{{ $modalName }}">@endif
 
     <x-app-card>
         <div class="border-b border-casa-border pb-5">
@@ -63,7 +62,7 @@
         <x-app-card>
             <div class="flex flex-col gap-3">
                 <button type="submit" class="casa-button-primary w-full">{{ $submitLabel }}</button>
-                @if ($modalName)<button type="button" class="casa-button-secondary w-full" x-on:click="$dispatch('close-modal', '{{ $modalName }}')">{{ __('Cancel') }}</button>@else<a href="{{ route('admin.services.index') }}" class="casa-button-secondary w-full">{{ __('Cancel') }}</a>@endif
+                <a href="{{ $cancelUrl }}" class="casa-button-secondary w-full">{{ __('Cancel') }}</a>
             </div>
         </x-app-card>
     </aside>

@@ -36,7 +36,8 @@ Users authenticate with either a verified Google account or a verified email and
   - TETHYS FLOW: PHP 649.00, 1 hour.
   - HESTIA WARMTH: PHP 749.00, 1 hour 30 minutes.
   - AURORA BREEZE: PHP 849.00, 2 hours.
-- Add-ons such as Ventosa, Hot Compress, Hot Stone, 30-Minute Back Massage, and VIP Room are shown as customer-facing content only until selectable add-ons are added in a later phase.
+- Ventosa, Hot Compress, Hot Stone, 30-Minute Back Massage, and VIP Room are configuration-backed paid add-ons that customers, Admins, and Receptionists may select during booking. Customers may select multiple add-ons; 30-Minute Back Massage extends the reservation by 30 minutes.
+- An eligible RFM voucher grants one separate complimentary add-on. It does not discount or replace paid add-ons, and the same add-on cannot be selected both as paid and voucher-based.
 - Business hours are shown as open every day from 1:00 PM to 12:00 MN.
 - Admin can manage therapist profiles and therapist availability. Therapist profiles retain the internal `staff` role and use `staff_type = therapist`.
 - Therapist availability should be simple enough for non-technical staff to maintain.
@@ -66,20 +67,26 @@ Users authenticate with either a verified Google account or a verified email and
 - Paid commission rows are immutable. Later transaction corrections create traceable signed adjustments.
 - Therapists can view only their own commission totals and history. Receptionists have no commission access.
 
-### RFM Promotion Suggestions
+### Customer Rewards
 
 - The system should classify customers using RFM logic:
   - Recency: how recently the customer visited or completed a transaction.
   - Frequency: how often the customer books or completes services.
   - Monetary: how much the customer has spent.
-- Promotion output should be admin-visible suggestions, not automatic customer discounts.
-- Admin or staff should review promotion suggestions before applying or contacting customers.
+- Promotion output grants a complimentary add-on voucher, never a monetary or percentage discount.
+- The application uses five fixed, plain-language customer groups: High-value, Loyal, At-risk, Inactive, and New customer. Their RFM thresholds remain code-controlled.
+- Admin configures only each group’s active state, complimentary add-on, and the global voucher validity period; no RFM thresholds, rules, manual generation, or approval queue are exposed.
+- A reward is issued automatically after an eligible completed paid visit. A customer can hold one available reward or one reward reserved against a confirmed appointment.
+- Eligible, unused vouchers are customer-visible and optional during booking; they expire after the configured 30, 60, 90, or 180-day period, or never when configured without expiry.
+- Attaching a voucher does not change the package price, transaction amount, or therapist commission basis. A 30-Minute Back Massage voucher still extends the reservation by 30 minutes.
+- A voucher is released when its confirmed appointment is cancelled or marked no-show.
+- Existing rewards retain their originally issued add-on and expiry even when future configuration changes.
 - RFM logic should be rule-based and application-driven to avoid external service dependencies.
 
 ### Feedback And Sentiment Analytics
 
 - Customers can submit a star rating and written comment after service.
-- The system should classify feedback sentiment as positive, neutral, or negative using simple application logic.
+- The system should classify English, Tagalog, and mixed Taglish feedback sentiment as positive, neutral, or negative using simple application logic.
 - Admin should see feedback summaries that support management decisions.
 - External AI sentiment services are not part of the MVP.
 
@@ -109,6 +116,6 @@ Users authenticate with either a verified Google account or a verified email and
 
 - MVP scope clearly supports bookings, customer records, manual transactions, RFM promotion suggestions, feedback insights, and low-maintenance operation.
 - Each MVP module can be implemented without VPS-only services or external AI dependencies.
-- Admin remains in control of service outcomes, transaction recording, and promotion application.
-- Customer-facing workflows stay limited to confirmed booking, pre-start cancellation, booking status, and feedback.
+- Admin remains in control of service outcomes, transaction recording, and RFM rule configuration.
+- Customer-facing workflows include optional eligible add-on voucher selection during confirmed booking, pre-start cancellation, booking status, and feedback.
 - Future implementation work should use this document as the first-build scope reference before database, screen, or API design.

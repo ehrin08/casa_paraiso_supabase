@@ -13,7 +13,9 @@ class RfmSegment extends Model
 
     protected $fillable = [
         'name',
+        'preset_key',
         'description',
+        'addon_code',
         'recency_min_days',
         'recency_max_days',
         'frequency_min',
@@ -44,5 +46,10 @@ class RfmSegment extends Model
     public function promotionSuggestions()
     {
         return $this->hasMany(PromotionSuggestion::class);
+    }
+
+    public function addonName(): ?string
+    {
+        return collect(config('casa.addons', []))->firstWhere('code', $this->addon_code)['name'] ?? null;
     }
 }

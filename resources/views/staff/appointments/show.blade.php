@@ -40,6 +40,18 @@
                         <dt class="text-xs font-black uppercase tracking-[0.12em] text-casa-muted">{{ __('Therapist preference') }}</dt>
                         <dd class="mt-2 font-semibold text-casa-text">{{ $appointment->preferredStaffProfile?->user?->name ?: __('No preference') }}</dd>
                     </div>
+                    <div class="rounded-2xl bg-casa-brass/10 p-4 sm:col-span-2">
+                        <dt class="text-xs font-black uppercase tracking-[0.12em] text-casa-cacao">{{ __('RFM add-on voucher') }}</dt>
+                        <dd class="mt-2 font-semibold text-casa-text">{{ $appointment->promotionSuggestion?->addonName() ?: __('None') }}</dd>
+                        @if ($appointment->promotionSuggestion)
+                            <p class="mt-1 text-xs leading-5 text-casa-muted">{{ __('Prepare this complimentary add-on as part of the scheduled visit.') }}</p>
+                        @endif
+                    </div>
+                    <div class="rounded-2xl bg-casa-bg p-4 sm:col-span-2">
+                        <dt class="text-xs font-black uppercase tracking-[0.12em] text-casa-muted">{{ __('Paid add-ons') }}</dt>
+                        <dd class="mt-2 font-semibold text-casa-text">{{ $appointment->addons->isNotEmpty() ? $appointment->addons->pluck('addon_name')->join(', ') : __('None') }}</dd>
+                        @if ($appointment->addons->isNotEmpty())<p class="mt-1 text-xs leading-5 text-casa-muted">{{ __('Prepare these add-ons as part of the scheduled visit.') }}</p>@endif
+                    </div>
                 </dl>
             </x-app-card>
 
