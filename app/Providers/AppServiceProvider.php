@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
+use Symfony\Component\HttpFoundation\Response;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -40,6 +41,30 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('user-sensitive', fn (Request $request): Limit => Limit::perMinute(10)
             ->by((string) ($request->user()?->id ?? $request->ip())));
+
+        RateLimiter::for('mobile-meta', fn (Request $request): Limit => Limit::perMinute(30)
+            ->by('mobile-meta:'.$request->ip())
+            ->response(fn (): Response => response()->json([
+                'error' => [
+                    'code' => 'RATE_LIMITED',
+                    'message' => 'Too many metadata requests. Please try again shortly.',
+                ],
+            ], 429)->header('Cache-Control', 'no-store')));
+
+        RateLimiter::for('mobile-pairing', function (Request $request): array {
+            $key = 'mobile-pairing:'.$request->ip();
+            $response = fn (): Response => response()->json([
+                'error' => [
+                    'code' => 'RATE_LIMITED',
+                    'message' => 'Too many pairing attempts. Please wait before trying again.',
+                ],
+            ], 429)->header('Cache-Control', 'no-store');
+
+            return [
+                Limit::perMinute(5)->by('minute:'.$key)->response($response),
+                Limit::perHour(20)->by('hour:'.$key)->response($response),
+            ];
+        });
 
         Paginator::defaultView('pagination.compact');
 

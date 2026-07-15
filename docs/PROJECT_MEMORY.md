@@ -41,10 +41,10 @@ When sources disagree, identify whether the question concerns intended or curren
 ## Standalone Mobile Variant
 
 - This repository was separated from `casa_paraiso` so mobile and database migration work cannot accidentally affect the original project.
-- The inherited Laravel/Blade/MariaDB implementation remains the current functional baseline.
+- The inherited Laravel/Blade/MariaDB implementation remains the functional baseline; this repository now has an isolated cloned demo database and mobile pairing foundation.
 - The approved target is a bundled Capacitor Android application using Vue 3 and TypeScript, with Laravel retained as the authenticated API and business-logic backend and Supabase PostgreSQL as the authoritative database after cutover.
 - All five roles remain in scope: customer, receptionist, therapist, admin, and super administrator.
-- The demonstration backend will run locally through Docker and a Cloudflare quick tunnel. The APK will pair with the current tunnel URL because quick-tunnel hostnames rotate.
+- The demonstration backend runs on the dedicated `CasaParaisoDocker` WSL2 Docker Engine and a Cloudflare Quick Tunnel. The bundled APK pairs with the current rotating tunnel through a five-minute, single-use code.
 - The implementation and migration sequence is authoritative in [`MOBILE_SUPABASE_PLAN.md`](MOBILE_SUPABASE_PLAN.md). Inherited Hostinger/MariaDB documents describe the baseline unless and until they are reconciled as implementation work lands.
 
 ## Current Project State
@@ -54,6 +54,8 @@ When sources disagree, identify whether the question concerns intended or curren
 - Customer appointments use a month calendar with embedded booking and a separate customer-owned, filterable appointment-history page, admin and receptionist appointments use weekly Bookings/Availability workspaces, and therapists use a personal weekly calendar.
 - Admin Availability now includes a dated weekly therapist-roster draft/publish workflow. `StaffScheduleWeek`, `StaffScheduleShift`, `WeeklyRoster`, and `WeeklyRosterController` are the entry points; published weeks inherit forward by weekday, while legacy recurring schedules remain the initial fallback and exceptions retain final precedence.
 - Application behavior is covered primarily by Laravel feature tests under `tests/Feature`; factories exist for all business models.
+- The pairing-only mobile foundation is implemented: `/api/v1/meta`, `/api/v1/pairings/verify`, the `casa:mobile-pairing-code` command, the Vue/Capacitor Android shell, and the tunnel/demo helpers. Pairing establishes server identity only; user authentication is not implemented yet.
+- The dedicated engine and Compose project are isolated from Docker Desktop. The account-preserving clone compares account/profile counts against the read-only inherited source and refuses to overwrite a differing account-bearing destination.
 - Admin Settings persists editable business identity/contact details and a payment-form default while displaying code-controlled operating and security safeguards.
 - The Phase 11 application security baseline and checklist are implemented. Target-host validation, Hostinger delivery preparation, and the non-technical handover/operations manual remain incomplete.
 - CRUD audit and repair information is tracked separately in [`CRUD_REMEDIATION_CHECKLIST.md`](CRUD_REMEDIATION_CHECKLIST.md) and [`CRUD_DATA_REPAIR_PLAN.md`](CRUD_DATA_REPAIR_PLAN.md). Never copy its record-level findings here or infer approval to execute a repair.
@@ -62,12 +64,12 @@ When sources disagree, identify whether the question concerns intended or curren
 
 | Area | Current decision |
 | --- | --- |
-| Backend | Laravel 12 on PHP 8.2+; currently server-rendered, with a versioned mobile API planned |
+| Backend | Laravel 12 on PHP 8.2+; Blade fallback plus an implemented pairing-only `/api/v1` surface |
 | Authentication | Laravel Breeze/Socialite baseline; Sanctum device tokens and mobile Google exchange planned |
 | Views | Blade templates with reusable Blade components |
-| Frontend | Existing Blade/Tailwind UI plus a planned bundled Vue 3/TypeScript/Capacitor Android client |
+| Frontend | Existing Blade/Tailwind UI plus a bundled Vue 3/TypeScript/Tailwind/Pinia/Capacitor 8 Android pairing shell |
 | Data | MariaDB/MySQL migration source; dedicated Supabase PostgreSQL target |
-| Primary local runtime | Laravel Sail services through direct `docker compose` commands |
+| Primary local runtime | Dedicated Ubuntu WSL2 Docker Engine through `scripts/casa-docker.ps1`; bare Compose is intentionally avoided |
 | Local fallback | XAMPP/Apache with compatible PHP and MariaDB/MySQL |
 | Delivery target | Signed Android APK; local Laravel demo backend through a Cloudflare quick tunnel |
 | Timezone | `Asia/Manila` |
@@ -108,10 +110,12 @@ Key identity entry points are `routes/auth.php`, the shared profile routes in `r
 
 - `routes/web.php` owns public, shared profile, admin, staff, and customer workspaces. Read its middleware groups before changing access.
 - `routes/auth.php` owns registration, login, Google OAuth, verification, password reset, confirmation, and logout.
+- `routes/api.php` owns the versioned mobile surface. The current endpoints expose server metadata and consume a pairing code; they do not authenticate a user.
 - `app/Http/Controllers/{Admin,Reception,Staff,Customer}` separates role-specific request handling.
 - `app/Http/Requests` contains workflow validation; business invariants that require transactions, locks, or cross-record checks live in services.
 - `app/Models` contains state vocabulary, casts, and relationships.
 - `app/Services` contains reusable scheduling, completion, sentiment, RFM, numbering, identity-confirmation, session, and conflict logic.
+- `app/Services/MobilePairing.php` owns pairing-code issuance/consumption, Quick Tunnel and instance binding, HMAC keying, TTL, locking, and single-use behavior.
 
 ### Core Records and Relationships
 
@@ -181,6 +185,7 @@ Key identity entry points are `routes/auth.php`, the shared profile routes in `r
 - Editable settings are business name, contact email, phone, address, and the default payment method used to prefill new Admin and Receptionist forms. The default never settles a transaction by itself.
 - `AddSecurityHeaders` supplies the browser header baseline. `AppServiceProvider` registers named guest/user sensitive rate limiters and can force HTTPS in production.
 - `casa.security` reads `FORCE_HTTPS`, `HSTS_ENABLED`, and `TRUSTED_HOSTS`. Production release checks live in `SECURITY_HARDENING.md`; HSTS must wait until HTTPS is verified.
+- Mobile pairing is enabled only for an exact HTTPS `*.trycloudflare.com` `APP_URL` with a configured UUID. Metadata and verification responses are non-cacheable; named rate limits and exact Capacitor/Vite CORS origins apply.
 
 ### Feedback and Sentiment
 
@@ -237,6 +242,7 @@ Primary UI sources are `docs/BRAND_UI_GUIDE.md`, `docs/TECH_STACK.md`, `resource
 | Authenticated UI, lists, calendars, or accessibility | `BRAND_UI_GUIDE.md`, `TECH_STACK.md` | Shared components/layouts, CSS/JS, pagination view, provider, relevant role view | `CompactWorkspacePaginationTest`, `InteractiveListControlsTest`, `ModalInfrastructureTest`, `RoleWorkspaceTest` |
 | Public content, packages, or business hours | `BRAND_UI_GUIDE.md`, `MVP_SCOPE.md` | `config/casa.php`, landing view, service seeding and service views | `ExampleTest`, `AdminServiceManagementTest`, `DatabaseFoundationTest` |
 | Docker, Hostinger, or handover | `TECH_STACK.md`, `DOCKER_WORKFLOW.md`, roadmap phase 11 | `compose.yaml`, Composer/npm manifests, `.env.example`, public entry point | Build/test commands and clean-checkout review |
+| Mobile pairing, tunnel, or Android shell | `MOBILE_SUPABASE_PLAN.md`, `DOCKER_WORKFLOW.md` | `routes/api.php`, `MobilePairing`, API controllers, `mobile/src`, `scripts/mobile-demo.ps1` | `MobilePairingApiTest`, `mobile/src/lib/pairing.test.ts`, Android `assembleDebug` |
 
 ## Verification and Database Safety
 
@@ -250,8 +256,9 @@ git status --short
 Standard application checks:
 
 ```powershell
-docker compose exec -T laravel.test npm run build
-docker compose exec -T --user sail laravel.test php artisan test
+.\scripts\casa-docker.ps1 compose exec -T laravel.test npm run build
+.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test php artisan test
+Set-Location mobile; npm run build; npm test
 ```
 
 Sentiment reclassification is dry-run by default: `docker compose exec -T --user sail laravel.test php artisan casa:reclassify-sentiment`; use `--apply` only after reviewing its transition counts and taking the appropriate database backup/export.
@@ -264,9 +271,9 @@ Database migrations, seeders, imports, and targeted data repairs are permitted i
 
 ## Known Gaps
 
-- The Capacitor/Vue mobile project, versioned Laravel API, Sanctum token authentication, and signed Android build are not implemented yet.
+- The mobile pairing shell and pairing-only versioned API are implemented; Sanctum token authentication, role workspaces, mobile Google exchange, secure token storage, and release signing remain pending.
 - Supabase project provisioning, PostgreSQL portability fixes, account-preserving data transfer, and cutover verification remain pending.
-- The quick-tunnel pairing flow and mobile Google OAuth callback/exchange workflow remain pending.
+- The Quick Tunnel pairing flow is implemented and live-verified; the mobile Google OAuth callback/exchange workflow remains pending.
 - The automated four-workspace smoke suite passes, but representative live browser checks still need to be repeated when the in-app browser runtime is available.
 - Mobile and Supabase security checks require validation against the final APK, tunnel, and database configuration.
 - Record-level CRUD repair status belongs only in its dedicated repair documents and must be rechecked read-only before any separately approved action.

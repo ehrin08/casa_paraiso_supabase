@@ -17,6 +17,15 @@ return [
             explode(',', (string) env('TRUSTED_HOSTS', '')),
         ))),
     ],
+    'mobile' => [
+        'service' => 'casa-paraiso-mobile-api',
+        'api_version' => 'v1',
+        'pairing_protocol' => 1,
+        'instance_id' => env('MOBILE_DEMO_INSTANCE_ID'),
+        'demo_enabled' => (bool) env('MOBILE_DEMO_PAIRING_ENABLED', false),
+        'pairing_cache_store' => env('MOBILE_PAIRING_CACHE_STORE', 'file'),
+        'pairing_ttl_seconds' => 300,
+    ],
     'business_hours' => [
         'summary' => 'Open every day',
         'window' => '1:00 PM to 12:00 MN',

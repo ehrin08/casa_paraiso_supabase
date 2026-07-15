@@ -12,6 +12,10 @@ Authoritative planning documents are the [MVP scope](docs/MVP_SCOPE.md),
 [implementation roadmap](docs/IMPLEMENTATION_ROADMAP.md), and
 [brand/UI guide](docs/BRAND_UI_GUIDE.md).
 
+## Mobile Pairing Foundation
+
+This branch includes the isolated WSL2 Docker runtime, account-preserving inherited-data clone, rotating Cloudflare Quick Tunnel helper, pairing-only `/api/v1` endpoints, and bundled Capacitor Android client. Start with the [dedicated Docker workflow](docs/DOCKER_WORKFLOW.md) and the [mobile/Supabase plan](docs/MOBILE_SUPABASE_PLAN.md). User authentication and production Supabase cutover are later milestones.
+
  <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">

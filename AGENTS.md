@@ -44,7 +44,7 @@ Design and develop a centralized Spa Appointment and Management System for Casa 
 ## Working Directory
 
 - Root: `C:\casa_paraiso_supabase`
-- Primary local server context: Docker with Laravel Sail services managed through direct `docker compose` commands
+- Primary local server context: the dedicated `CasaParaisoDocker` WSL2 Docker Engine, managed through `scripts\casa-docker.ps1`
 - Fallback local server context: XAMPP / Apache
 - Git repository is initialized.
 
@@ -55,7 +55,7 @@ Design and develop a centralized Spa Appointment and Management System for Casa 
 - Backend: the existing Laravel application exposed through a versioned, authenticated JSON API while retaining Blade as a fallback.
 - Database target: a dedicated Supabase PostgreSQL project in Singapore.
 - Demonstration backend: the local Docker Laravel service exposed through a Cloudflare quick tunnel and paired dynamically by the app.
-- Primary local development environment: Docker with Laravel Sail services managed through direct `docker compose` commands.
+- Primary local development environment: the dedicated WSL2 Docker Engine and Laravel Sail services managed through `scripts\casa-docker.ps1`.
 - Fallback local development environment: XAMPP / Apache.
 - Do not expose database credentials or Supabase privileged keys to the mobile application.
 - Keep the inherited web application working during migration so the source database and browser workflows remain available for rollback and comparison.
@@ -89,8 +89,8 @@ Design and develop a centralized Spa Appointment and Management System for Casa 
 - End every completed work session by committing that session's scoped changes and pushing the current branch. Do not include unrelated pre-existing worktree changes; if committing or pushing is blocked, report the blocker before ending the session.
 - Keep project-specific setup notes in this file as the application takes shape.
 - Keep Laravel 12 and the existing Blade application; add Vue 3, TypeScript, Tailwind CSS, Capacitor, Sanctum, and PostgreSQL according to the mobile plan.
-- Use Laravel Sail as the primary local development runtime, but prefer direct `docker compose` commands on this Windows machine because `vendor\bin\sail.bat` depends on a working Bash/WSL shim.
-- Keep the container's PHP dependencies in the `sail-vendor` Docker volume; after first creation or a Composer lock change, run `docker compose exec -T laravel.test composer install` in addition to the host install.
+- Use Laravel Sail on the dedicated `CasaParaisoDocker` WSL2 engine. Route Compose operations through `scripts\casa-docker.ps1`; its daemon-label check prevents accidental Docker Desktop use.
+- Keep the container's PHP dependencies in the `sail-vendor` Docker volume; after first creation or a Composer lock change, run `.\scripts\casa-docker.ps1 compose exec -T laravel.test composer install` in addition to the host install.
 - Treat Docker and the Cloudflare quick tunnel as the demonstration backend runtime; the mobile UI itself must be bundled into the APK.
 - Keep Apache/XAMPP compatibility as a fallback local workflow only.
 - Use Node/npm for frontend asset builds only; do not require a production Node.js runtime for the MVP.
@@ -111,12 +111,13 @@ Design and develop a centralized Spa Appointment and Management System for Casa 
 
 Current application verification:
 
-- Laravel app: `docker compose up -d`, then open `http://localhost:8001`
-- PHP dependencies after creating the volume: `docker compose exec -T laravel.test composer install`, then `docker compose restart laravel.test`
-- Frontend assets: `docker compose exec -T laravel.test npm run build`
-- Database schema updates: `docker compose exec -T --user sail laravel.test php artisan migrate`
-- Seed data only when the seeder is account-preserving: `docker compose exec -T --user sail laravel.test php artisan db:seed`
-- Tests: `docker compose exec -T --user sail laravel.test php artisan test`
+- Laravel app: `.\scripts\casa-docker.ps1 start`, then open `http://localhost:18001`
+- PHP dependencies after creating the volume: `.\scripts\casa-docker.ps1 compose exec -T laravel.test composer install`, then restart `laravel.test`
+- Frontend assets: `.\scripts\casa-docker.ps1 compose exec -T laravel.test npm run build`
+- Database schema updates: `.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test php artisan migrate`
+- Seed data only when the seeder is account-preserving: `.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test php artisan db:seed`
+- Tests: `.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test php artisan test`
+- Mobile: from `mobile`, run `npm run build`, `npm test`, `npm run android:sync`, and `android\gradlew.bat -p android assembleDebug` with Android SDK API 36 available.
 - Run Artisan as the container's `sail` user so CLI-created logs and cache files remain writable by the web process. If permissions drift, repair `storage` and `bootstrap/cache` from the root container user before retrying.
 
 ## Notes For Future Agents

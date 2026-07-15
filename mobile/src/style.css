@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@theme {
+  --color-violet-950: #29113c;
+  --color-violet-800: #5e2d7d;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; }
+.field { width: 100%; min-height: 48px; border: 1px solid #d6d3d1; border-radius: 0.75rem; padding: 0.75rem 0.875rem; font: inherit; outline: none; }
+.field:focus { border-color: #5e2d7d; box-shadow: 0 0 0 3px rgb(94 45 125 / 18%); }
+.primary-button, .secondary-button { min-height: 48px; width: 100%; border-radius: 0.75rem; padding: 0.75rem 1rem; font-weight: 700; }
+.primary-button { background: #5e2d7d; color: white; }
+.primary-button:disabled { cursor: not-allowed; opacity: 0.55; }
+.secondary-button { border: 1px solid #5e2d7d; color: #5e2d7d; background: white; }

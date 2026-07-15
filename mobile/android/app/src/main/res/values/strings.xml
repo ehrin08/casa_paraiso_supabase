@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Casa Paraiso</string>
+    <string name="title_activity_main">Casa Paraiso</string>
+    <string name="package_name">com.casaparaiso.mobile</string>
+    <string name="custom_url_scheme">com.casaparaiso.mobile</string>
+</resources>

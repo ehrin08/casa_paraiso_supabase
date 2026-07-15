@@ -6,6 +6,15 @@ Deliver the complete Casa Paraiso system as a mobile-first Android application w
 
 The release consists of a signed Capacitor APK with a bundled Vue frontend, a versioned Laravel JSON API, and a dedicated Supabase PostgreSQL database. The existing Blade application remains available as a fallback and regression reference.
 
+## Implemented Foundation (2026-07-15)
+
+- A dedicated Ubuntu 24.04 WSL2 Docker Engine and guarded PowerShell workflow isolate this repository from Docker Desktop and the inherited project.
+- The isolated MariaDB demo database has an account-preserving, read-only-source clone workflow with source/destination account-count verification.
+- `/api/v1/meta` and `/api/v1/pairings/verify` implement the pairing-only API milestone with exact Quick Tunnel host validation, server UUID binding, five-minute single-use codes, HMAC-digested cache storage, CORS restrictions, and rate limits.
+- `mobile/` is a bundled Vue 3/TypeScript/Tailwind/Pinia/Capacitor 8 Android project. It validates server metadata, accepts manual or `casaparaiso://pair` input, stores only non-secret pairing state, reports network/revalidation failures, and has no remote `server.url`.
+- `scripts/mobile-demo.ps1` owns tunnel start, rotation, environment hardening/restoration, metadata checks, code issuance, optional ADB delivery, and shutdown.
+- Pairing does not grant an authenticated application session. Sanctum, role workspaces, mobile Google exchange, PostgreSQL/Supabase cutover, release signing, and physical-device acceptance remain later milestones.
+
 ## Architecture
 
 - Create an isolated `mobile/` application using Vue 3, TypeScript, Vite, Tailwind CSS, Vue Router, Pinia, Axios, Vitest, and Playwright.
