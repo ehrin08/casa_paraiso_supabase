@@ -17,8 +17,9 @@ The release consists of a signed Capacitor APK with a bundled Vue frontend, a ve
 - The receptionist APK workspace now covers Today, Bookings, Customers, and Payments through persistent bottom navigation. It provides front-desk metrics and schedule context; appointment search, creation, editing, therapist availability, outcome and completion operations; customer contact/history search and editing; and manual transaction search, creation, and editing. The matching `/api/v1/reception` endpoints reuse the Laravel domain rules and enforce receptionist-only access.
 - The therapist APK workspace now covers Today, Schedule, Guests, and Earnings through persistent bottom navigation. It provides personal metrics and agenda context; assigned appointment search/detail with no-show and atomic completion actions; served-customer treatment history; related feedback and payment records; and personal pending/paid commission totals and history. The matching `/api/v1/staff` endpoints enforce assignment ownership and keep customer, feedback, payment, and commission access read-only.
 - The admin and super-administrator APK workspace now covers Today, Ops, Manage, Insights, and Control. It provides operational dashboards; booking, customer, and payment management; therapist, service, schedule, exception, and weekly-roster management; feedback, rewards, commissions, and native-share CSV reports; business settings; and protected super-administrator-only user access. The matching `/api/v1/admin` endpoints enforce admin access, while user provisioning and role/activation changes remain restricted to the configured protected super administrator.
+- Local PostgreSQL 17 runs beside MariaDB on the dedicated engine. The Laravel suite passes on PostgreSQL, MySQL-only expressions are portable, and `casa:transfer-to-postgres` provides dry-run, guarded apply, full-row validation, and sequence verification. A local transfer preserved all 20 accounts and related business records and passed the read-only CRUD integrity audit.
 - `scripts/mobile-demo.ps1` owns tunnel start, rotation, environment hardening/restoration, metadata checks, code issuance, optional ADB delivery, and shutdown.
-- Pairing does not grant an authenticated application session; it only identifies the backend. Mobile Google exchange, PostgreSQL/Supabase cutover, release signing, and physical-device acceptance remain later milestones.
+- Pairing does not grant an authenticated application session; it only identifies the backend. Mobile Google exchange, dedicated Supabase provisioning/cutover, release signing, and physical-device acceptance remain later milestones.
 
 ## Architecture
 
@@ -60,13 +61,15 @@ The release consists of a signed Capacitor APK with a bundled Vue frontend, a ve
 - Transfer business and identity data. Exclude sessions, caches, queues, failed jobs, reset tokens, migration history, and the obsolete `transaction_adjustments` table.
 - Validate table counts, foreign keys, sequences, password and Google identities, scheduling capacity, financial totals, rewards, and representative records before cutover.
 
+Local implementation and verification are complete for the PostgreSQL service, portable queries, transfer command, full-row/source identity comparison, sequence alignment, and integrity audit. A freshly migrated target contains only five deterministic migration-owned RFM presets; the command recognizes that exact baseline as non-business data and replaces it inside the target transaction. The production run still requires a consistent MariaDB backup and an approved empty dedicated Supabase project in Singapore.
+
 ## Delivery and Acceptance
 
 - Keep the inherited web application functional throughout the migration.
 - Run the Laravel suite against PostgreSQL and web regression coverage against MariaDB.
 - Add API authorization and contract tests for every role, authentication method, conflict path, export, CORS rule, and pairing flow.
 - Add Vue unit/component tests, Playwright role workflows, accessibility checks, Android lint/tests, and a physical-device smoke test.
-- Current verification covers the complete Laravel suite, the mobile production build and unit suite, Capacitor Android synchronization, debug APK assembly, Android v2 signature verification, and phone-sized Quick Tunnel acceptance for customer, receptionist, therapist, admin, and protected super-administrator workspaces. Final release-key signing and installation on the user's physical phone are still required.
+- Current verification covers 247 Laravel tests and 1,799 assertions on PostgreSQL, local full-row migration validation and CRUD integrity, the complete MariaDB regression suite, the mobile production build and unit suite, Capacitor Android synchronization, debug APK assembly, Android v2 signature verification, and phone-sized Quick Tunnel acceptance for customer, receptionist, therapist, admin, and protected super-administrator workspaces. Dedicated Supabase cutover, final release-key signing, and installation on the user's physical phone are still required.
 - Demonstrate customer booking/rewards/feedback; receptionist bookings/payments; therapist schedule/outcomes/commissions; admin operations/reports/export; and super-admin user access entirely through the APK.
 - Build a signed universal APK version `1.0.0` with version code `1`. Keep the keystore outside Git and publish the APK checksum with the installation and demo runbook.
 

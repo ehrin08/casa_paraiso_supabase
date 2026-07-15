@@ -31,6 +31,7 @@ services:
             - sail
         depends_on:
             - mariadb
+            - pgsql
             - mailpit
     cloudflared:
         image: 'cloudflare/cloudflared:2026.7.1'
@@ -66,6 +67,25 @@ services:
                 - '--innodb_initialized'
             retries: 3
             timeout: 5s
+    pgsql:
+        image: 'postgres:17-alpine'
+        ports:
+            - '127.0.0.1:${FORWARD_PGSQL_PORT:-15432}:5432'
+        environment:
+            POSTGRES_DB: '${POSTGRES_DB:-casa_paraiso}'
+            POSTGRES_USER: '${POSTGRES_USER:-sail}'
+            POSTGRES_PASSWORD: '${POSTGRES_PASSWORD:-password}'
+        volumes:
+            - 'sail-postgres:/var/lib/postgresql/data'
+            - './vendor/laravel/sail/database/pgsql/create-testing-database.sql:/docker-entrypoint-initdb.d/10-create-testing-database.sql'
+        networks:
+            - sail
+        healthcheck:
+            test:
+                - CMD-SHELL
+                - 'pg_isready -q -d $${POSTGRES_DB} -U $${POSTGRES_USER}'
+            retries: 5
+            timeout: 5s
     mailpit:
         image: 'axllent/mailpit:v1.28.3'
         ports:
@@ -78,6 +98,8 @@ networks:
         driver: bridge
 volumes:
     sail-mariadb:
+        driver: local
+    sail-postgres:
         driver: local
     sail-vendor:
         driver: local

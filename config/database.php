@@ -99,6 +99,41 @@ return [
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 
+        'migration_source' => [
+            'driver' => 'mariadb',
+            'url' => env('MIGRATION_SOURCE_DB_URL'),
+            'host' => env('MIGRATION_SOURCE_DB_HOST', 'mariadb'),
+            'port' => env('MIGRATION_SOURCE_DB_PORT', '3306'),
+            'database' => env('MIGRATION_SOURCE_DB_DATABASE', 'casa_paraiso'),
+            'username' => env('MIGRATION_SOURCE_DB_USERNAME', 'sail'),
+            'password' => env('MIGRATION_SOURCE_DB_PASSWORD', 'password'),
+            'unix_socket' => env('MIGRATION_SOURCE_DB_SOCKET', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MIGRATION_SOURCE_MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
+        'migration_target' => [
+            'driver' => 'pgsql',
+            'url' => env('MIGRATION_TARGET_DB_URL'),
+            'host' => env('MIGRATION_TARGET_DB_HOST', 'pgsql'),
+            'port' => env('MIGRATION_TARGET_DB_PORT', '5432'),
+            'database' => env('MIGRATION_TARGET_DB_DATABASE', 'casa_paraiso'),
+            'username' => env('MIGRATION_TARGET_DB_USERNAME', 'sail'),
+            'password' => env('MIGRATION_TARGET_DB_PASSWORD', 'password'),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => env('MIGRATION_TARGET_DB_SSLMODE', 'require'),
+        ],
+
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL'),

@@ -21,7 +21,7 @@ class UserManagementController extends Controller
         return view('admin.users.index', [
             'users' => User::query()
                 ->with(['staffProfile', 'customerProfile'])
-                ->orderByRaw("FIELD(role, 'super_admin', 'admin', 'receptionist', 'staff', 'customer')")
+                ->orderByRaw("CASE role WHEN 'super_admin' THEN 1 WHEN 'admin' THEN 2 WHEN 'receptionist' THEN 3 WHEN 'staff' THEN 4 WHEN 'customer' THEN 5 ELSE 6 END")
                 ->orderBy('name')
                 ->paginate((int) config('casa.pagination.per_page', 15)),
             'assignableRoles' => [User::ROLE_ADMIN, User::ROLE_RECEPTIONIST, User::ROLE_STAFF, User::ROLE_CUSTOMER],

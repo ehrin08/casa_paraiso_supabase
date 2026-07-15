@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Transaction;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 
 class TransactionNumber
 {
@@ -33,10 +34,10 @@ class TransactionNumber
 
         for ($attempt = 1; $attempt <= self::MAX_SAVE_ATTEMPTS; $attempt++) {
             try {
-                return Transaction::query()->create([
+                return DB::transaction(fn (): Transaction => Transaction::query()->create([
                     ...$attributes,
                     'transaction_number' => $this->next(),
-                ]);
+                ]));
             } catch (QueryException $exception) {
                 if (! $this->isTransactionNumberCollision($exception)) {
                     throw $exception;

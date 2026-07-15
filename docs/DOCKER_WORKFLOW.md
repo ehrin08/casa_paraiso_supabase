@@ -12,11 +12,12 @@ The inherited Docker Desktop MariaDB stack is a read-only migration source. Neve
 
 - `laravel.test`: Sail PHP 8.2 at `http://localhost:18001`
 - `mariadb`: isolated migration/demo database at `127.0.0.1:13307`
+- `pgsql`: PostgreSQL 17 migration target at `127.0.0.1:15432`
 - `mailpit`: SMTP `11026`, dashboard `http://localhost:18025`
 - `cloudflared`: profile-gated rotating Quick Tunnel
 - Vite: `127.0.0.1:15173`
 
-Composer dependencies inside the app use the `sail-vendor` named volume. MariaDB data uses `sail-mariadb`. Published host ports bind only to loopback.
+Composer dependencies inside the app use the `sail-vendor` named volume. MariaDB data uses `sail-mariadb`, and PostgreSQL data uses `sail-postgres`. Published host ports bind only to loopback.
 
 ## Provision the Dedicated Engine
 
@@ -72,6 +73,22 @@ The clone tool:
 - never writes to the Docker Desktop source database.
 
 Use `-KeepDump` only when a temporary ignored SQL artifact is needed for diagnosis. Dumps live under `storage/backups/migration` and must never be committed.
+
+## MariaDB-to-PostgreSQL Transfer
+
+The local PostgreSQL service retains a separate database and volume. Migrate its empty schema, preview the transfer, apply it once, then run the read-only comparison and integrity audit:
+
+```powershell
+.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test sh -lc 'DB_CONNECTION=pgsql DB_HOST=pgsql DB_PORT=5432 DB_DATABASE=casa_paraiso DB_USERNAME=sail DB_PASSWORD=password php artisan migrate --force'
+.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test php artisan casa:transfer-to-postgres
+.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test php artisan casa:transfer-to-postgres --apply
+.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test php artisan casa:transfer-to-postgres --validate
+.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test sh -lc 'DB_CONNECTION=pgsql DB_HOST=pgsql DB_PORT=5432 DB_DATABASE=casa_paraiso DB_USERNAME=sail DB_PASSWORD=password php artisan casa:audit-crud-integrity'
+```
+
+`casa:transfer-to-postgres` reads `migration_source` and `migration_target` from the uncommitted environment. It is dry-run-first, uses a read-only source transaction, refuses target business data, copies identity and business tables in foreign-key order, preserves IDs and credential hashes, repairs PostgreSQL sequences, and never transfers runtime sessions, tokens, queues, caches, reset tokens, migration history, or obsolete adjustment data. A fresh migration creates five deterministic RFM preset rows; the command recognizes only that exact migration baseline and replaces it transactionally during `--apply`. `--validate` performs a full-row comparison and sequence check without writing.
+
+For Supabase, set `MIGRATION_TARGET_DB_URL` to the migration/import account's Supavisor session-pooler connection string and keep `MIGRATION_TARGET_DB_SSLMODE=require`. Never commit that URL or expose it to the APK.
 
 ## Daily Commands
 
@@ -149,6 +166,15 @@ DB_DATABASE=casa_paraiso
 DB_USERNAME=sail
 DB_PASSWORD=password
 FORWARD_DB_PORT=13307
+POSTGRES_DB=casa_paraiso
+POSTGRES_USER=sail
+POSTGRES_PASSWORD=password
+FORWARD_PGSQL_PORT=15432
+MIGRATION_SOURCE_DB_HOST=mariadb
+MIGRATION_SOURCE_DB_DATABASE=casa_paraiso
+MIGRATION_TARGET_DB_HOST=pgsql
+MIGRATION_TARGET_DB_DATABASE=casa_paraiso
+MIGRATION_TARGET_DB_SSLMODE=prefer
 MAIL_HOST=mailpit
 MAIL_PORT=1025
 FORWARD_MAILPIT_PORT=11026
@@ -159,6 +185,6 @@ Secrets, the generated server UUID, pairing state, dumps, build outputs, and loc
 
 ## Deployment Boundary
 
-Docker and the Quick Tunnel are the approved demonstration backend, not the final hosted production backend. The Android UI is bundled into the APK and must never use Capacitor `server.url` to wrap a remote web page. The planned production database remains dedicated Supabase PostgreSQL; Supabase provisioning, PostgreSQL portability, authenticated API expansion, and production hosting are separate later milestones.
+Docker and the Quick Tunnel are the approved demonstration backend, not the final hosted production backend. The Android UI is bundled into the APK and must never use Capacitor `server.url` to wrap a remote web page. Local PostgreSQL portability and transfer are verified; provisioning the dedicated Supabase project, production hosting, release signing, and physical-device acceptance remain delivery milestones.
 
 XAMPP remains a fallback for inherited browser comparison only. It must not share or replace the dedicated project database.

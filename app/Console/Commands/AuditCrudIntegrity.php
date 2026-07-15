@@ -45,9 +45,7 @@ class AuditCrudIntegrity extends Command
             'Cancelled appointments missing cancellation metadata' => Appointment::query()
                 ->where('status', Appointment::STATUS_CANCELLED)
                 ->whereNull('cancelled_at'),
-            'Scheduled appointments outside 30-minute start intervals' => Appointment::query()
-                ->whereNotNull('scheduled_start_at')
-                ->whereRaw('MINUTE(scheduled_start_at) MOD 30 <> 0'),
+            'Scheduled appointments outside 30-minute start intervals' => $this->appointmentsOutsideStartIntervals(),
             'Paid transactions missing method or paid date' => Transaction::query()
                 ->where('payment_status', Transaction::PAYMENT_PAID)
                 ->where(fn ($query) => $query->whereNull('payment_method')->orWhereNull('paid_at')),
@@ -113,6 +111,17 @@ class AuditCrudIntegrity extends Command
             ->where(fn ($query) => $query
                 ->whereNull('staff_profiles.id')
                 ->orWhereNotNull('staff_profiles.deleted_at'));
+    }
+
+    private function appointmentsOutsideStartIntervals(): EloquentBuilder
+    {
+        $query = Appointment::query()->whereNotNull('scheduled_start_at');
+
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            return $query->whereRaw("CAST(strftime('%M', scheduled_start_at) AS INTEGER) % 30 <> 0");
+        }
+
+        return $query->whereRaw('MOD(EXTRACT(MINUTE FROM scheduled_start_at), 30) <> 0');
     }
 
     private function count(mixed $query): int

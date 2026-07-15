@@ -49,4 +49,16 @@ class CrudIntegrityCommandTest extends TestCase
             'status' => 'pending',
         ]);
     }
+
+    public function test_integrity_audit_detects_starts_outside_the_thirty_minute_interval(): void
+    {
+        Appointment::factory()->confirmed()->create([
+            'scheduled_start_at' => now()->addDay()->setTime(15, 15),
+            'scheduled_end_at' => now()->addDay()->setTime(16, 15),
+        ]);
+
+        $this->artisan('casa:audit-crud-integrity')
+            ->expectsOutputToContain('Scheduled appointments outside 30-minute start intervals: 1')
+            ->assertFailed();
+    }
 }

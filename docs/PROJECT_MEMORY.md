@@ -60,6 +60,7 @@ When sources disagree, identify whether the question concerns intended or curren
 - The therapist mobile workspace now covers a personal dashboard, assigned appointment search/detail, no-show and atomic completion actions, served-customer history, related feedback and payments, and personal commission history. Its bottom bar exposes Today, Schedule, Guests, and Earnings. `MobileStaffDashboardController`, `MobileStaffAppointmentController`, `MobileStaffCustomerController`, `MobileStaffFeedbackController`, `MobileStaffTransactionController`, `MobileStaffCommissionController`, `MobileStaffFeedbackResource`, `MobileStaffCommissionResource`, and the matching staff store/views are the primary entry points.
 - The admin and protected super-administrator mobile workspace now covers operational dashboards; booking, customer, and payment operations; therapist, service, recurring-schedule, exception, and dated weekly-roster management; feedback, rewards, commissions, and native-share CSV reports; business settings; and protected user access. Its bottom bar exposes Today, Ops, Manage, Insights, and Control. `MobileAdminDashboardController`, the `MobileAdmin*` API controllers, `/api/v1/admin`, and the matching `mobile/src/stores/admin*` and `mobile/src/views/Admin*` modules are the primary entry points. Regular admins cannot access user provisioning or role/activation controls.
 - The dedicated engine and Compose project are isolated from Docker Desktop. The account-preserving clone compares account/profile counts against the read-only inherited source and refuses to overwrite a differing account-bearing destination.
+- PostgreSQL 17 now runs beside MariaDB in the dedicated Compose project. `casa:transfer-to-postgres` is dry-run-first, preserves identity and business rows in foreign-key order, accepts only the exact migration-owned RFM baseline on an otherwise empty target, resets sequences, and supports a read-only full-row `--validate` pass. The verified local transfer preserved 20 accounts and passed the CRUD integrity audit.
 - Admin Settings persists editable business identity/contact details and a payment-form default while displaying code-controlled operating and security safeguards.
 - The Phase 11 application security baseline and checklist are implemented. Target-host validation, Hostinger delivery preparation, and the non-technical handover/operations manual remain incomplete.
 - CRUD audit and repair information is tracked separately in [`CRUD_REMEDIATION_CHECKLIST.md`](CRUD_REMEDIATION_CHECKLIST.md) and [`CRUD_DATA_REPAIR_PLAN.md`](CRUD_DATA_REPAIR_PLAN.md). Never copy its record-level findings here or infer approval to execute a repair.
@@ -72,7 +73,7 @@ When sources disagree, identify whether the question concerns intended or curren
 | Authentication | Laravel Breeze/Socialite baseline plus Sanctum scoped device tokens; mobile Google exchange remains planned |
 | Views | Blade templates with reusable Blade components |
 | Frontend | Existing Blade/Tailwind UI plus a bundled Vue 3/TypeScript/Tailwind/Pinia/Capacitor 8 Android pairing, sign-in, and role-shell app |
-| Data | MariaDB/MySQL migration source; dedicated Supabase PostgreSQL target |
+| Data | MariaDB/MySQL migration source; verified local PostgreSQL 17 target; dedicated Supabase PostgreSQL production target |
 | Primary local runtime | Dedicated Ubuntu WSL2 Docker Engine through `scripts/casa-docker.ps1`; bare Compose is intentionally avoided |
 | Local fallback | XAMPP/Apache with compatible PHP and MariaDB/MySQL |
 | Delivery target | Signed Android APK; local Laravel demo backend through a Cloudflare quick tunnel |
@@ -245,6 +246,7 @@ Primary UI sources are `docs/BRAND_UI_GUIDE.md`, `docs/TECH_STACK.md`, `resource
 | Admin Settings or security hardening | `SCREEN_FLOW.md`, `SECURITY_HARDENING.md`, `TECH_STACK.md` | `ApplicationSetting`, Admin setting controller/request/view, security middleware, providers, auth routes, environment example | `AdminSettingsTest`, `SecurityHardeningTest`, `AuthenticatedWorkspaceSmokeTest` |
 | Feedback, sentiment, RFM, promotions, or reports | `MVP_SCOPE.md`, roadmap phases 8–10 | Related models/services, admin/customer/staff controllers, report export | `InsightRemediationTest`, `PhaseFiveToTenWorkflowTest` |
 | Schema, factories, seeders, or data integrity | `DATABASE_DESIGN.md`, `AGENTS.md` | `database/migrations`, factories, `DatabaseSeeder`, audit command; use additive/account-preserving operations | `DatabaseFoundationTest`, `SeederSafetyTest`, `CrudIntegrityCommandTest` |
+| PostgreSQL portability or data transfer | `MOBILE_SUPABASE_PLAN.md`, `DOCKER_WORKFLOW.md`, `AGENTS.md` | `compose.yaml`, `config/database.php`, `TransferDatabaseToPostgres`, portable query call sites | `TransferDatabaseToPostgresTest`, `CrudIntegrityCommandTest`, full Laravel suite on PostgreSQL |
 | Authenticated UI, lists, calendars, or accessibility | `BRAND_UI_GUIDE.md`, `TECH_STACK.md` | Shared components/layouts, CSS/JS, pagination view, provider, relevant role view | `CompactWorkspacePaginationTest`, `InteractiveListControlsTest`, `ModalInfrastructureTest`, `RoleWorkspaceTest` |
 | Public content, packages, or business hours | `BRAND_UI_GUIDE.md`, `MVP_SCOPE.md` | `config/casa.php`, landing view, service seeding and service views | `ExampleTest`, `AdminServiceManagementTest`, `DatabaseFoundationTest` |
 | Docker, Hostinger, or handover | `TECH_STACK.md`, `DOCKER_WORKFLOW.md`, roadmap phase 11 | `compose.yaml`, Composer/npm manifests, `.env.example`, public entry point | Build/test commands and clean-checkout review |
@@ -264,6 +266,7 @@ Standard application checks:
 ```powershell
 .\scripts\casa-docker.ps1 compose exec -T laravel.test npm run build
 .\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test php artisan test
+.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test php artisan casa:transfer-to-postgres --validate
 Set-Location mobile; npm run build; npm test
 ```
 
@@ -278,7 +281,7 @@ Database migrations, seeders, imports, and targeted data repairs are permitted i
 ## Known Gaps
 
 - Pairing, Sanctum device-token authentication, secure token storage, and complete customer, receptionist, therapist, admin, and protected super-administrator mobile workspaces are implemented. Mobile Google exchange and release signing remain pending.
-- Supabase project provisioning, PostgreSQL portability fixes, account-preserving data transfer, and cutover verification remain pending.
+- Local PostgreSQL portability, account-preserving transfer, full-row comparison, sequence alignment, and integrity verification are complete. Dedicated Singapore Supabase project provisioning, restricted production roles/TLS configuration, backup, production transfer, and cutover acceptance remain pending.
 - The Quick Tunnel pairing flow is implemented and live-verified; the mobile Google OAuth callback/exchange workflow remains pending.
 - The automated five-workspace smoke suite passes. Pairing, password sign-in, customer booking options, live availability, slot selection, feedback history, profile display/update, navigation, and sign-out were verified through a phone-sized in-app browser against a Cloudflare Quick Tunnel on 2026-07-15. Receptionist dashboard, booking creation/options and lists, customer search/detail/edit fields, payment lists, and payment-entry options were likewise live-verified without mutating records. Therapist dashboard, assigned schedule and detail actions, served-customer history, related-review empty state, commission totals/history, and related payments were also live-verified without mutating records.
 - Admin Today, Ops, Manage, Insights, Control, native report sharing entry points, and the protected super-administrator User Access boundary were live-verified through the phone-sized bundled client and Quick Tunnel on 2026-07-15. A debug APK builds with API 36 and verifies with an Android v2 debug signature; final release-key signing and physical-phone installation remain outstanding.
