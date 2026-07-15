@@ -5,7 +5,7 @@ return [
     'allowed_methods' => ['GET', 'POST', 'OPTIONS'],
     'allowed_origins' => array_values(array_filter(array_map(
         'trim',
-        explode(',', (string) env('MOBILE_CORS_ALLOWED_ORIGINS', 'https://localhost,http://localhost:5173')),
+        explode(',', (string) env('MOBILE_CORS_ALLOWED_ORIGINS', 'https://localhost,capacitor://localhost,http://localhost:5173')),
     ))),
     'allowed_origins_patterns' => [],
     'allowed_headers' => ['Accept', 'Authorization', 'Content-Type'],

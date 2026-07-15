@@ -42,6 +42,16 @@ class MobilePairingApiTest extends TestCase
             ->assertJsonPath('data.supported_auth', ['password']);
     }
 
+    public function test_meta_allows_both_capacitor_android_origins(): void
+    {
+        foreach (['https://localhost', 'capacitor://localhost'] as $origin) {
+            $this->withHeader('Origin', $origin)
+                ->getJson('/api/v1/meta')
+                ->assertOk()
+                ->assertHeader('Access-Control-Allow-Origin', $origin);
+        }
+    }
+
     public function test_meta_requires_a_configured_instance_identity(): void
     {
         config(['casa.mobile.instance_id' => null]);
