@@ -22,7 +22,7 @@ async function handleAppUrl(url: string): Promise<void> {
     else await router.replace('/sign-in')
     return
   }
-  pairing.acceptDeepLink(url)
+  await pairing.acceptDeepLink(url)
 }
 
 const ready = auth.hydrate().then(async () => {

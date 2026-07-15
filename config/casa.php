@@ -20,12 +20,10 @@ return [
     'mobile' => [
         'service' => 'casa-paraiso-mobile-api',
         'api_version' => 'v1',
-        'pairing_protocol' => 1,
+        'pairing_protocol' => 2,
         'instance_id' => env('MOBILE_DEMO_INSTANCE_ID'),
         'demo_enabled' => (bool) env('MOBILE_DEMO_PAIRING_ENABLED', false),
         'apk_path' => env('MOBILE_DEMO_APK_PATH', base_path('mobile/android/app/build/outputs/apk/release/app-release.apk')),
-        'pairing_cache_store' => env('MOBILE_PAIRING_CACHE_STORE', 'file'),
-        'pairing_ttl_seconds' => 300,
         'google_cache_store' => env('MOBILE_GOOGLE_CACHE_STORE', 'file'),
         'google_ttl_seconds' => 300,
         'token_ttl_days' => 30,

@@ -55,21 +55,6 @@ class AppServiceProvider extends ServiceProvider
                 ],
             ], 429)->header('Cache-Control', 'no-store')));
 
-        RateLimiter::for('mobile-pairing', function (Request $request): array {
-            $key = 'mobile-pairing:'.$request->ip();
-            $response = fn (): Response => response()->json([
-                'error' => [
-                    'code' => 'RATE_LIMITED',
-                    'message' => 'Too many pairing attempts. Please wait before trying again.',
-                ],
-            ], 429)->header('Cache-Control', 'no-store');
-
-            return [
-                Limit::perMinute(5)->by('minute:'.$key)->response($response),
-                Limit::perHour(20)->by('hour:'.$key)->response($response),
-            ];
-        });
-
         RateLimiter::for('mobile-login', function (Request $request): array {
             $email = strtolower(trim((string) $request->input('email', 'anonymous')));
             $key = 'mobile-login:'.$email.'|'.$request->ip();

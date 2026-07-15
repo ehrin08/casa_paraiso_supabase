@@ -38,11 +38,7 @@ async function mockBackend(page: Page): Promise<void> {
     const request = route.request()
     const url = new URL(request.url())
     if (url.pathname === '/api/v1/meta') {
-      await route.fulfill({ json: { data: { service: 'casa-paraiso-mobile-api', api_version: 'v1', instance_id: instanceId, timezone: 'Asia/Manila', server_time: new Date().toISOString(), supported_auth: ['password', 'google'], pairing: { protocol: 1, enabled: true } } } })
-      return
-    }
-    if (url.pathname === '/api/v1/pairings/verify') {
-      await route.fulfill({ json: { data: { instance_id: instanceId, pairing_protocol: 1, paired_at: new Date().toISOString() } } })
+      await route.fulfill({ json: { data: { service: 'casa-paraiso-mobile-api', api_version: 'v1', instance_id: instanceId, timezone: 'Asia/Manila', server_time: new Date().toISOString(), supported_auth: ['password', 'google'], pairing: { protocol: 2, enabled: true } } } })
       return
     }
     if (url.pathname === '/api/v1/auth/login') {
@@ -62,9 +58,8 @@ async function mockBackend(page: Page): Promise<void> {
 async function pairAndSignIn(page: Page, email: string): Promise<void> {
   await mockBackend(page)
   await page.goto('/')
-  await page.getByLabel('Tunnel address').fill(server)
-  await page.getByLabel('One-time pairing code').fill('12345678')
-  await page.getByRole('button', { name: 'Pair this phone' }).click()
+  await page.getByLabel('Casa Paraiso link').fill(server)
+  await page.getByRole('button', { name: 'Connect' }).click()
   await page.getByLabel('Email').fill(email)
   await page.getByLabel('Password').fill('password')
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()

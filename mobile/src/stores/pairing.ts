@@ -2,7 +2,7 @@ import { Preferences } from '@capacitor/preferences'
 import { Network } from '@capacitor/network'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { fetchMeta, normalizeBackendUrl, parsePairingDeepLink, validateMeta, verifyPairing } from '../lib/pairing'
+import { fetchMeta, normalizeBackendUrl, parsePairingDeepLink, validateMeta } from '../lib/pairing'
 
 const STORAGE_KEY = 'casa.mobile.pairing'
 
@@ -10,10 +10,9 @@ interface SavedPairing { url: string; instanceId: string; pairedAt: string }
 
 export const usePairingStore = defineStore('pairing', () => {
   const url = ref('')
-  const code = ref('')
   const instanceId = ref('')
   const pairedAt = ref('')
-  const status = ref<'unpaired' | 'validating' | 'verifying' | 'paired' | 'unreachable' | 'mismatch'>('unpaired')
+  const status = ref<'unpaired' | 'validating' | 'paired' | 'unreachable' | 'mismatch'>('unpaired')
   const error = ref('')
   const online = ref(true)
   const supportedAuth = ref<string[]>([])
@@ -54,7 +53,7 @@ export const usePairingStore = defineStore('pairing', () => {
     }
   }
 
-  async function pair(): Promise<void> {
+  async function pair(): Promise<boolean> {
     status.value = 'validating'
     error.value = ''
     try {
@@ -62,30 +61,28 @@ export const usePairingStore = defineStore('pairing', () => {
       const meta = await fetchMeta(normalized)
       supportedAuth.value = meta.data.supported_auth
       if (!meta.data.pairing.enabled) throw new Error('Pairing is not enabled on this tunnel. Start the demo helper again.')
-      if (!/^\d{8}$/.test(code.value)) throw new Error('Enter the eight-digit pairing code.')
-      status.value = 'verifying'
-      const receipt = await verifyPairing(normalized, meta.data.instance_id, code.value)
-      const saved: SavedPairing = { url: normalized, instanceId: receipt.data.instance_id, pairedAt: receipt.data.paired_at }
+      const saved: SavedPairing = { url: normalized, instanceId: meta.data.instance_id, pairedAt: meta.data.server_time }
       await Preferences.set({ key: STORAGE_KEY, value: JSON.stringify(saved) })
       url.value = saved.url
       instanceId.value = saved.instanceId
       pairedAt.value = saved.pairedAt
-      code.value = ''
       status.value = 'paired'
+      return true
     } catch (reason) {
       status.value = 'unpaired'
       error.value = reason instanceof Error ? reason.message : 'Pairing could not be completed.'
+      return false
     }
   }
 
-  function acceptDeepLink(value: string): void {
+  async function acceptDeepLink(value: string): Promise<boolean> {
     const parsed = parsePairingDeepLink(value)
-    if (!parsed) return
+    if (!parsed) return false
     url.value = parsed.url
-    code.value = parsed.code
     status.value = 'unpaired'
     error.value = ''
+    return pair()
   }
 
-  return { url, code, instanceId, pairedAt, status, error, online, supportedAuth, hydrate, revalidate, pair, acceptDeepLink }
+  return { url, instanceId, pairedAt, status, error, online, supportedAuth, hydrate, revalidate, pair, acceptDeepLink }
 })

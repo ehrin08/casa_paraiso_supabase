@@ -45,7 +45,7 @@ From the repository root:
 
 The helper prints a temporary `APK download` URL and its SHA-256 checksum. Open the URL in the Android phone browser to install the signed app without USB; Android may ask you to allow installs from that browser. The download exists only while the demo is active and the signed release artifact is present.
 
-If one authorized phone is connected, the helper opens the pairing link automatically. Otherwise open the app and enter the displayed Quick Tunnel URL and eight-digit code. Google Cloud must authorize the exact displayed mobile callback ending in `/auth/google/mobile/callback`; the callback changes whenever the Quick Tunnel rotates.
+If one authorized phone is connected, the helper opens and validates the connection link automatically. Otherwise open the app and paste either the displayed `Connection link` or the same APK download URL; no PIN is required. Google Cloud must authorize the exact displayed mobile callback ending in `/auth/google/mobile/callback`; the callback changes whenever the Quick Tunnel rotates.
 
 Sign in, exercise the appropriate role workspace, and stop the public tunnel afterward:
 
@@ -53,4 +53,4 @@ Sign in, exercise the appropriate role workspace, and stop the public tunnel aft
 .\scripts\mobile-demo.ps1 -Action Stop
 ```
 
-The app is online-only. A stopped or rotated tunnel requires a new pairing URL and code.
+The app is online-only. A stopped or rotated tunnel requires pasting the new connection link.

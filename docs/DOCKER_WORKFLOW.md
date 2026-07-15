@@ -119,9 +119,9 @@ Start a demo session:
 .\scripts\mobile-demo.ps1 -Action Start
 ```
 
-The helper requires an existing signed release APK, starts the dedicated stack and tunnel, temporarily hardens the ignored `.env`, validates `/api/v1/meta`, issues one eight-digit code valid for five minutes, prints a temporary APK download URL plus the rotating API URL and Google callback, and sends a `casaparaiso://pair` deep link when exactly one ADB device is available. The APK download route is disabled whenever the demo pairing flag is off.
+The helper requires an existing signed release APK, starts the dedicated stack and tunnel, temporarily hardens the ignored `.env`, validates `/api/v1/meta`, prints a temporary APK download URL plus the connection link and Google callback, and sends a URL-only `casaparaiso://pair` deep link when exactly one ADB device is available. The APK download route is disabled whenever the demo pairing flag is off.
 
-Pairing codes are HMAC-digested in the file cache, bound to the current server UUID and tunnel host, single-use, rate-limited, and never stored by the APK. The app accepts only exact HTTPS `*.trycloudflare.com` origins and persists only the verified URL, instance UUID, and pairing timestamp in Capacitor Preferences.
+The app accepts the bare connection URL or the APK download URL, reduces it to an exact HTTPS `*.trycloudflare.com` origin, validates the Casa Paraiso service identity and instance UUID through the rate-limited metadata endpoint, and persists only the verified URL, instance UUID, and pairing timestamp in Capacitor Preferences. Pairing grants no authenticated session; password or Google sign-in remains required.
 
 Rotate or inspect the demo:
 
@@ -136,7 +136,7 @@ Always stop after the demonstration. This closes the public tunnel, restores the
 .\scripts\mobile-demo.ps1 -Action Stop
 ```
 
-A Quick Tunnel has no uptime guarantee. The bundled APK UI remains installed and usable as an app shell, but a rotated or stopped backend requires a new URL and code.
+A Quick Tunnel has no uptime guarantee. The bundled APK UI remains installed and usable as an app shell, but a rotated or stopped backend requires pasting the new connection link.
 
 ## Mobile Build
 

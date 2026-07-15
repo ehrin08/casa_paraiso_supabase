@@ -147,14 +147,14 @@ function Get-AdbPath {
 }
 
 function Send-PairingDeepLink {
-    param([string] $Url, [string] $Code)
+    param([string] $Url)
 
     $adb = Get-AdbPath
     if (-not $adb) { return $false }
     $devices = & $adb devices | Select-Object -Skip 1 | Where-Object { $_ -match "`tdevice$" }
     if (($devices | Measure-Object).Count -ne 1) { return $false }
 
-    $deepLink = "casaparaiso://pair?url=$([uri]::EscapeDataString($Url))&code=$Code"
+    $deepLink = "casaparaiso://pair?url=$([uri]::EscapeDataString($Url))"
     & $adb shell am start -W -a android.intent.action.VIEW -d "'$deepLink'" 'com.casaparaiso.mobile' | Out-Null
     return ($LASTEXITCODE -eq 0)
 }
@@ -176,19 +176,17 @@ switch ($Action) {
             Configure-TunnelEnvironment $url
             $meta = Wait-MobileMeta -Url $url
             if ($meta.data.service -ne 'casa-paraiso-mobile-api' -or -not $meta.data.pairing.enabled) { throw 'The tunnel did not return a pairing-enabled mobile API.' }
-            $pairing = (Invoke-Laravel @('php', 'artisan', 'casa:mobile-pairing-code', '--json') | Select-Object -Last 1) | ConvertFrom-Json
-            $sent = Send-PairingDeepLink -Url $url -Code $pairing.code
+            $sent = Send-PairingDeepLink -Url $url
             Write-Output "Tunnel URL: $url"
             Write-Output "APK download: $url/api/v1/demo/Casa-Paraiso-Mobile.apk"
             Write-Output "APK SHA-256: $((Get-FileHash -LiteralPath $apkPath -Algorithm SHA256).Hash)"
-            Write-Output "Pairing code: $($pairing.code)"
-            Write-Output "Expires: $($pairing.expires_at)"
+            Write-Output "Connection link: $url"
             Write-Output "Google web callback: $url/auth/google/callback"
             Write-Output "Google mobile callback: $url/auth/google/mobile/callback"
             if ($sent) {
-                Write-Output 'Pairing link sent through ADB.'
+                Write-Output 'Connection link sent through ADB.'
             } else {
-                Write-Output 'Enter the URL and code manually in the Android app.'
+                Write-Output 'Paste the Connection link into the Android app.'
             }
         } catch {
             try { Invoke-CasaCompose -Arguments @('--profile', 'tunnel', 'stop', 'cloudflared') | Out-Null } catch { }
