@@ -10,6 +10,12 @@ use App\Http\Controllers\Api\V1\MobileReceptionAppointmentController;
 use App\Http\Controllers\Api\V1\MobileReceptionCustomerController;
 use App\Http\Controllers\Api\V1\MobileReceptionDashboardController;
 use App\Http\Controllers\Api\V1\MobileReceptionTransactionController;
+use App\Http\Controllers\Api\V1\MobileStaffAppointmentController;
+use App\Http\Controllers\Api\V1\MobileStaffCommissionController;
+use App\Http\Controllers\Api\V1\MobileStaffCustomerController;
+use App\Http\Controllers\Api\V1\MobileStaffDashboardController;
+use App\Http\Controllers\Api\V1\MobileStaffFeedbackController;
+use App\Http\Controllers\Api\V1\MobileStaffTransactionController;
 use App\Http\Controllers\Api\V1\PairingVerificationController;
 use Illuminate\Support\Facades\Route;
 
@@ -65,6 +71,22 @@ Route::prefix('v1')->group(function (): void {
             Route::post('/transactions', [MobileReceptionTransactionController::class, 'store'])->name('api.v1.reception.transactions.store');
             Route::get('/transactions/{transaction}', [MobileReceptionTransactionController::class, 'show'])->name('api.v1.reception.transactions.show');
             Route::patch('/transactions/{transaction}', [MobileReceptionTransactionController::class, 'update'])->name('api.v1.reception.transactions.update');
+        });
+
+        Route::middleware('role:staff')->prefix('staff')->group(function (): void {
+            Route::get('/dashboard', MobileStaffDashboardController::class)->name('api.v1.staff.dashboard');
+            Route::get('/appointments', [MobileStaffAppointmentController::class, 'index'])->name('api.v1.staff.appointments.index');
+            Route::get('/appointments/{appointment}', [MobileStaffAppointmentController::class, 'show'])->name('api.v1.staff.appointments.show');
+            Route::post('/appointments/{appointment}/outcome', [MobileStaffAppointmentController::class, 'outcome'])->name('api.v1.staff.appointments.outcome');
+            Route::post('/appointments/{appointment}/complete', [MobileStaffAppointmentController::class, 'complete'])->name('api.v1.staff.appointments.complete');
+            Route::get('/customers', [MobileStaffCustomerController::class, 'index'])->name('api.v1.staff.customers.index');
+            Route::get('/customers/{customer}', [MobileStaffCustomerController::class, 'show'])->name('api.v1.staff.customers.show');
+            Route::get('/transactions', [MobileStaffTransactionController::class, 'index'])->name('api.v1.staff.transactions.index');
+            Route::get('/transactions/{transaction}', [MobileStaffTransactionController::class, 'show'])->name('api.v1.staff.transactions.show');
+            Route::get('/feedback', [MobileStaffFeedbackController::class, 'index'])->name('api.v1.staff.feedback.index');
+            Route::get('/feedback/{feedback}', [MobileStaffFeedbackController::class, 'show'])->name('api.v1.staff.feedback.show');
+            Route::get('/commissions', [MobileStaffCommissionController::class, 'index'])->name('api.v1.staff.commissions.index');
+            Route::get('/commissions/{commission}', [MobileStaffCommissionController::class, 'show'])->name('api.v1.staff.commissions.show');
         });
     });
 });

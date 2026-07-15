@@ -449,17 +449,15 @@ Screens:
 Rules:
 
 - Staff can view assigned appointments.
-- Staff appointment and transaction workspaces are read-only.
+- Staff can mark an assigned confirmed appointment no-show and finish an assigned arrived appointment; finishing records its transaction atomically. All other appointment mutations and the standalone transaction workspace remain read-only.
 - Staff availability is read-only and maintained by admin.
 - Staff cannot access admin-only settings.
 
 Primary actions:
 
 - Open assigned appointment details.
-- Reschedule appointment.
-- Mark completed.
+- Finish an arrived appointment and record its transaction atomically.
 - Mark no-show.
-- Record transaction.
 
 ### Staff Customers
 
@@ -691,10 +689,10 @@ Primary actions:
 
 ## MVP Coverage Check
 
-- Appointment scheduling is covered by automated customer booking, admin appointment management, and staff read-only schedules.
+- Appointment scheduling is covered by automated customer booking, admin appointment management, and staff assigned schedules with scoped completion and no-show actions.
 - Service and staff management are covered by admin modules.
 - Customer records are covered by admin customer screens and staff customer lookup.
-- Manual transactions are covered by admin and staff transaction screens.
+- Manual transactions are covered by admin and receptionist transaction screens; therapists have related read-only payment records.
 - RFM promotion suggestions are covered by admin configuration/reporting and customer add-on voucher selection during booking.
 - Feedback and sentiment analytics are covered by customer feedback and admin feedback screens.
 - Reports and exports are covered by admin reports.

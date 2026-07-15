@@ -135,6 +135,19 @@ export interface ReceptionTransactionOptions {
   payment_methods: string[]
   default_payment_method: string
 }
+export interface StaffDashboard {
+  profile: { id: number; name: string; specialization: string | null }
+  summary: { assigned_today: number; upcoming: number; completed_today: number; feedback: number }
+  commissions: { pending: string; paid: string; net: string }
+  today_appointments: OperationalAppointment[]
+}
+export interface StaffCustomerSummary { id: number; customer_code: string; name: string | null; phone: string | null; assigned_appointments_count: number }
+export interface StaffCustomerDetail extends StaffCustomerSummary {
+  email: string | null; address: string | null; contact_preference: string | null; notes: string | null
+  appointments: Array<{ id: number; appointment_number: string; status: string; starts_at: string | null; service: string | null; transaction: { amount: string; payment_status: string } | null; feedback: { rating: number; comment: string | null; sentiment: string } | null }>
+}
+export interface StaffFeedback { id: number; rating: number; comment: string | null; sentiment: 'positive' | 'neutral' | 'negative'; submitted_at: string | null; customer: AppointmentParty | null; service: AppointmentParty | null; appointment: { id: number; appointment_number: string } | null }
+export interface StaffCommission { id: number; type: 'earning' | 'adjustment'; status: 'pending' | 'paid'; basis_amount: string; rate: string; amount: string; earned_at: string | null; paid_at: string | null; notes: string | null; appointment: { id: number; appointment_number: string; service: string | null } | null; transaction: { id: number; transaction_number: string } | null }
 
 let client: AxiosInstance | null = null
 let token = ''
@@ -221,3 +234,12 @@ export async function receptionTransactions(params: { page?: number; payment_sta
 export async function receptionTransactionOptions(): Promise<ReceptionTransactionOptions> { return (await getClient().get('/reception/transaction-options')).data.data }
 export async function createReceptionTransaction(payload: Record<string, unknown>) { return (await getClient().post('/reception/transactions', payload)).data as { data: OperationalTransaction; message: string } }
 export async function updateReceptionTransaction(id: number, payload: Record<string, unknown>) { return (await getClient().patch(`/reception/transactions/${id}`, payload)).data as { data: OperationalTransaction; message: string } }
+export async function staffDashboard(): Promise<StaffDashboard> { return (await getClient().get('/staff/dashboard')).data.data }
+export async function staffAppointments(params: { page?: number; status?: string; date?: string; q?: string } = {}) { return (await getClient().get('/staff/appointments', { params })).data as { data: OperationalAppointment[]; summary: { confirmed: number; completed: number; no_show: number }; meta: AppointmentListResponse['meta'] } }
+export async function setStaffAppointmentNoShow(id: number, reason?: string) { return (await getClient().post(`/staff/appointments/${id}/outcome`, { status: 'no_show', reason })).data as { data: OperationalAppointment; message: string } }
+export async function completeStaffAppointment(id: number, payload: Record<string, unknown>) { return (await getClient().post(`/staff/appointments/${id}/complete`, payload)).data as { data: OperationalTransaction; message: string } }
+export async function staffCustomers(params: { page?: number; q?: string } = {}) { return (await getClient().get('/staff/customers', { params })).data as { data: StaffCustomerSummary[]; meta: AppointmentListResponse['meta'] } }
+export async function staffCustomer(id: number): Promise<StaffCustomerDetail> { return (await getClient().get(`/staff/customers/${id}`)).data.data }
+export async function staffTransactions(params: { page?: number; payment_status?: string; q?: string } = {}) { return (await getClient().get('/staff/transactions', { params })).data as { data: OperationalTransaction[]; summary: { paid: string; unpaid_count: number; partial_count: number }; meta: AppointmentListResponse['meta'] } }
+export async function staffFeedback(params: { page?: number; sentiment?: string; q?: string } = {}) { return (await getClient().get('/staff/feedback', { params })).data as { data: StaffFeedback[]; meta: AppointmentListResponse['meta'] } }
+export async function staffCommissions(params: { page?: number; status?: string } = {}) { return (await getClient().get('/staff/commissions', { params })).data as { data: StaffCommission[]; summary: { pending: string; paid: string; net: string }; meta: AppointmentListResponse['meta'] } }

@@ -5,6 +5,7 @@ import CustomerAppointmentsView from './CustomerAppointmentsView.vue'
 import CustomerFeedbackView from './CustomerFeedbackView.vue'
 import CustomerProfileView from './CustomerProfileView.vue'
 import ReceptionWorkspaceView from './ReceptionWorkspaceView.vue'
+import StaffWorkspaceView from './StaffWorkspaceView.vue'
 import { useAuthStore } from '../stores/auth'
 const auth = useAuthStore(); const router = useRouter()
 const customerTab = ref<'appointments' | 'feedback' | 'profile'>('appointments')
@@ -27,6 +28,7 @@ function openFeedback(appointmentId: number) { feedbackAppointmentId.value = app
     </nav>
   </main>
   <ReceptionWorkspaceView v-else-if="auth.user?.workspace === 'reception'" />
+  <StaffWorkspaceView v-else-if="auth.user?.workspace === 'staff'" />
   <main v-else class="screen">
     <section class="panel">
       <p class="eyebrow">{{ auth.user?.role }}</p><h1>{{ title }}</h1>

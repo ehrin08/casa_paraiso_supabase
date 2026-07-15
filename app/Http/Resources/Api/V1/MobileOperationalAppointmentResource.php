@@ -13,6 +13,7 @@ class MobileOperationalAppointmentResource extends JsonResource
     {
         $transaction = $this->transactions->sortByDesc('id')->first();
         $start = $this->scheduled_start_at ?? $this->requested_start_at;
+        $isTherapist = $request->user()?->role === 'staff';
 
         return [
             'id' => $this->id,
@@ -56,8 +57,8 @@ class MobileOperationalAppointmentResource extends JsonResource
                 'payment_status' => $transaction->payment_status,
             ] : null,
             'actions' => [
-                'can_edit' => $this->status === Appointment::STATUS_CONFIRMED,
-                'can_cancel' => $this->status === Appointment::STATUS_CONFIRMED,
+                'can_edit' => ! $isTherapist && $this->status === Appointment::STATUS_CONFIRMED,
+                'can_cancel' => ! $isTherapist && $this->status === Appointment::STATUS_CONFIRMED,
                 'can_mark_no_show' => $this->status === Appointment::STATUS_CONFIRMED,
                 'can_finish' => $this->status === Appointment::STATUS_CONFIRMED
                     && $start?->isFuture() === false
