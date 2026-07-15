@@ -1,6 +1,6 @@
 # Casa Paraiso Project Memory
 
-> Last reviewed: 2026-07-14
+> Last reviewed: 2026-07-15
 > Review basis: current repository working tree
 > Role: fast orientation for agents and developers; not an independent source of truth
 
@@ -24,6 +24,7 @@ Database work is permitted when it follows the account-preservation rule in `AGE
 | Question | Authority | Use |
 | --- | --- | --- |
 | What operations and constraints are mandatory? | [`AGENTS.md`](../AGENTS.md) | Safety gates, environment rules, deployment boundaries, and development conventions |
+| What is approved for the standalone mobile variant? | [`MOBILE_SUPABASE_PLAN.md`](MOBILE_SUPABASE_PLAN.md) | Capacitor architecture, API boundary, Supabase migration, Android delivery, and acceptance |
 | What should the MVP do? | [`MVP_SCOPE.md`](MVP_SCOPE.md) | Product scope, users, features, exclusions, and acceptance |
 | Which stack and hosting assumptions are approved? | [`TECH_STACK.md`](TECH_STACK.md) | Runtime, frontend, authentication, deployment, and verification |
 | What data shape and state vocabulary are intended? | [`DATABASE_DESIGN.md`](DATABASE_DESIGN.md) | Tables, relationships, statuses, indexes, and data rules |
@@ -36,6 +37,15 @@ Database work is permitted when it follows the account-preservation rule in `AGE
 | Where should a new task begin? | This document | Fast navigation only |
 
 When sources disagree, identify whether the question concerns intended or current behavior, inspect the corresponding authority, and record a durable discrepancy under Known Gaps. Do not silently guess.
+
+## Standalone Mobile Variant
+
+- This repository was separated from `casa_paraiso` so mobile and database migration work cannot accidentally affect the original project.
+- The inherited Laravel/Blade/MariaDB implementation remains the current functional baseline.
+- The approved target is a bundled Capacitor Android application using Vue 3 and TypeScript, with Laravel retained as the authenticated API and business-logic backend and Supabase PostgreSQL as the authoritative database after cutover.
+- All five roles remain in scope: customer, receptionist, therapist, admin, and super administrator.
+- The demonstration backend will run locally through Docker and a Cloudflare quick tunnel. The APK will pair with the current tunnel URL because quick-tunnel hostnames rotate.
+- The implementation and migration sequence is authoritative in [`MOBILE_SUPABASE_PLAN.md`](MOBILE_SUPABASE_PLAN.md). Inherited Hostinger/MariaDB documents describe the baseline unless and until they are reconciled as implementation work lands.
 
 ## Current Project State
 
@@ -52,14 +62,14 @@ When sources disagree, identify whether the question concerns intended or curren
 
 | Area | Current decision |
 | --- | --- |
-| Backend | Laravel 12 on PHP 8.2+ as a server-rendered monolith |
-| Authentication | Laravel Breeze email/password and verification, plus Laravel Socialite Google OAuth |
+| Backend | Laravel 12 on PHP 8.2+; currently server-rendered, with a versioned mobile API planned |
+| Authentication | Laravel Breeze/Socialite baseline; Sanctum device tokens and mobile Google exchange planned |
 | Views | Blade templates with reusable Blade components |
-| Frontend | Tailwind CSS 4, Vite 7, Alpine.js for local state, and Turbo Drive 8 for safe navigation |
-| Data | MariaDB/MySQL with Laravel migrations, Eloquent models, factories, and seeders |
+| Frontend | Existing Blade/Tailwind UI plus a planned bundled Vue 3/TypeScript/Capacitor Android client |
+| Data | MariaDB/MySQL migration source; dedicated Supabase PostgreSQL target |
 | Primary local runtime | Laravel Sail services through direct `docker compose` commands |
 | Local fallback | XAMPP/Apache with compatible PHP and MariaDB/MySQL |
-| Production target | Hostinger shared/web hosting unless a later decision moves the project to VPS |
+| Delivery target | Signed Android APK; local Laravel demo backend through a Cloudflare quick tunnel |
 | Timezone | `Asia/Manila` |
 | Business window | Every day, 1:00 PM through 12:00 midnight, with 30-minute starts |
 
@@ -254,9 +264,11 @@ Database migrations, seeders, imports, and targeted data repairs are permitted i
 
 ## Known Gaps
 
-- Hostinger production deployment, phpMyAdmin handover instructions, and the full non-technical operations manual are not complete.
+- The Capacitor/Vue mobile project, versioned Laravel API, Sanctum token authentication, and signed Android build are not implemented yet.
+- Supabase project provisioning, PostgreSQL portability fixes, account-preserving data transfer, and cutover verification remain pending.
+- The quick-tunnel pairing flow and mobile Google OAuth callback/exchange workflow remain pending.
 - The automated four-workspace smoke suite passes, but representative live browser checks still need to be repeated when the in-app browser runtime is available.
-- Production-only security checklist items require validation on the final Hostinger domain and cannot be completed from the local environment.
+- Mobile and Supabase security checks require validation against the final APK, tunnel, and database configuration.
 - Record-level CRUD repair status belongs only in its dedicated repair documents and must be rechecked read-only before any separately approved action.
 
 ## Maintenance Contract

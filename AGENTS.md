@@ -4,6 +4,8 @@
 
 The Laravel 12 application includes the core MVP workspaces for authentication and roles, services, staff and customer records, calendar-based appointments, transactions, feedback and sentiment, RFM promotions, and reports. Read `docs/PROJECT_MEMORY.md` for the current implementation map, active refinement, domain entry points, and durable known gaps.
 
+This standalone repository is the mobile-first variant. Its approved target is a Capacitor Android application backed by the existing Laravel domain through a versioned API and Supabase PostgreSQL. The inherited Blade/MariaDB application is the migration baseline and fallback, not the final deployment target for this repository. Follow `docs/MOBILE_SUPABASE_PLAN.md` when it conflicts with inherited Hostinger or MariaDB planning notes.
+
 ## Planning Documents
 
 - MVP scope: `docs/MVP_SCOPE.md`
@@ -15,6 +17,7 @@ The Laravel 12 application includes the core MVP workspaces for authentication a
 - Brand and UI guide: `docs/BRAND_UI_GUIDE.md`
 - Security hardening checklist: `docs/SECURITY_HARDENING.md`
 - Project memory and implementation map: `docs/PROJECT_MEMORY.md`
+- Mobile/Supabase implementation plan: `docs/MOBILE_SUPABASE_PLAN.md`
 - Use the MVP scope, tech stack, database design, screen flow, Docker workflow, implementation roadmap, and brand/UI guide as the source of truth. Reconcile proposed changes with the current implementation before changing APIs, routes, controllers, views, migrations, or models.
 
 ## Project Memory Protocol
@@ -40,27 +43,29 @@ Design and develop a centralized Spa Appointment and Management System for Casa 
 
 ## Working Directory
 
-- Root: `C:\xampp\htdocs\casa_paraiso`
+- Root: `C:\casa_paraiso_supabase`
 - Primary local server context: Docker with Laravel Sail services managed through direct `docker compose` commands
 - Fallback local server context: XAMPP / Apache
 - Git repository is initialized.
 
 ## Deployment Target
 
-- Planned production host: Hostinger.
-- Default hosting assumption: Hostinger shared/web hosting unless the project later moves to VPS.
+- Primary deliverable: a signed Android APK built with Capacitor.
+- Mobile frontend: bundled Vue 3 and TypeScript application; do not ship a remote `server.url` wrapper.
+- Backend: the existing Laravel application exposed through a versioned, authenticated JSON API while retaining Blade as a fallback.
+- Database target: a dedicated Supabase PostgreSQL project in Singapore.
+- Demonstration backend: the local Docker Laravel service exposed through a Cloudflare quick tunnel and paired dynamically by the app.
 - Primary local development environment: Docker with Laravel Sail services managed through direct `docker compose` commands.
 - Fallback local development environment: XAMPP / Apache.
-- Prefer PHP-compatible backend decisions while the project remains Hostinger shared-hosting compatible.
-- Use MariaDB/MySQL-compatible database design for Hostinger Web/Cloud hosting compatibility.
-- Avoid requiring Docker, persistent Node.js services, custom daemons, server-level packages, or long-running background workers in production unless the deployment target changes to VPS.
+- Do not expose database credentials or Supabase privileged keys to the mobile application.
+- Keep the inherited web application working during migration so the source database and browser workflows remain available for rollback and comparison.
 
 ## Database Deployment Notes
 
 - Database operations are allowed as part of normal development work, including migrations, seeders, imports, and targeted data repairs.
 - Preserve existing accounts. Never use `migrate:fresh`, `db:wipe`, table drops, truncation, or bulk delete/reseed operations that erase records from `users`, `customer_profiles`, `staff_profiles`, or authentication-support tables. Prefer additive migrations and idempotent seeders.
 - Before a schema or bulk data command, verify that it will not erase existing accounts. If an account-preserving approach is not available, stop and ask the user before proceeding.
-- Hostinger databases should be managed through hPanel and phpMyAdmin unless a later hosting plan provides a better workflow.
+- Preserve the inherited MariaDB database as a read-only migration source until the Supabase cutover is verified and accepted.
 - Keep production database credentials outside committed source files.
 - Separate local database configuration from production database configuration.
 - Document database creation, import/export, migrations, and seed steps once the schema exists.
@@ -68,7 +73,7 @@ Design and develop a centralized Spa Appointment and Management System for Casa 
 ## Low-Maintenance Operations Strategy
 
 - Approved direction: design the system for a business without 24/7 IT support.
-- Use Hostinger shared/web hosting by default instead of VPS to avoid server administration responsibilities.
+- Use Supabase managed PostgreSQL and a signed APK to keep the mobile variant low-maintenance.
 - Keep RFM promotions and sentiment analytics simple, rule-based, and application-driven.
 - Avoid analytics designs that require separate AI services, background workers, custom schedulers, or manual monitoring to remain useful.
 - Design for recovery instead of constant monitoring by relying on backups, database exports, and documented restore steps.
@@ -83,10 +88,10 @@ Design and develop a centralized Spa Appointment and Management System for Casa 
 - Prefer small, focused changes that are easy to inspect.
 - End every completed work session by committing that session's scoped changes and pushing the current branch. Do not include unrelated pre-existing worktree changes; if committing or pushing is blocked, report the blocker before ending the session.
 - Keep project-specific setup notes in this file as the application takes shape.
-- Use Laravel 12, PHP 8.2+, Blade, Tailwind CSS through Vite, and MariaDB/MySQL unless a later planning decision changes the stack.
+- Keep Laravel 12 and the existing Blade application; add Vue 3, TypeScript, Tailwind CSS, Capacitor, Sanctum, and PostgreSQL according to the mobile plan.
 - Use Laravel Sail as the primary local development runtime, but prefer direct `docker compose` commands on this Windows machine because `vendor\bin\sail.bat` depends on a working Bash/WSL shim.
 - Keep the container's PHP dependencies in the `sail-vendor` Docker volume; after first creation or a Composer lock change, run `docker compose exec -T laravel.test composer install` in addition to the host install.
-- Keep Hostinger shared/web hosting compatibility in mind; Docker is not the production target.
+- Treat Docker and the Cloudflare quick tunnel as the demonstration backend runtime; the mobile UI itself must be bundled into the APK.
 - Keep Apache/XAMPP compatibility as a fallback local workflow only.
 - Use Node/npm for frontend asset builds only; do not require a production Node.js runtime for the MVP.
 - Use Turbo Drive only for safe same-origin GET links and filter forms; keep state-changing forms, exports, and panel links on their existing Laravel request paths.
