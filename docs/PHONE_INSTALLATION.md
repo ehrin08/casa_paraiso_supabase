@@ -43,7 +43,9 @@ From the repository root:
 .\scripts\mobile-demo.ps1 -Action Start
 ```
 
-If one authorized phone is connected, the helper opens the pairing link automatically. Otherwise enter the displayed Quick Tunnel URL and eight-digit code in the app. Google Cloud must authorize the exact displayed mobile callback ending in `/auth/google/mobile/callback`; the callback changes whenever the Quick Tunnel rotates.
+The helper prints a temporary `APK download` URL and its SHA-256 checksum. Open the URL in the Android phone browser to install the signed app without USB; Android may ask you to allow installs from that browser. The download exists only while the demo is active and the signed release artifact is present.
+
+If one authorized phone is connected, the helper opens the pairing link automatically. Otherwise open the app and enter the displayed Quick Tunnel URL and eight-digit code. Google Cloud must authorize the exact displayed mobile callback ending in `/auth/google/mobile/callback`; the callback changes whenever the Quick Tunnel rotates.
 
 Sign in, exercise the appropriate role workspace, and stop the public tunnel afterward:
 

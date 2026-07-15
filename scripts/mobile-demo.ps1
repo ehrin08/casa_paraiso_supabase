@@ -11,6 +11,7 @@ Import-Module (Join-Path $PSScriptRoot 'CasaDocker.psm1') -Force
 $projectRoot = Get-CasaProjectPath
 $envPath = Join-Path $projectRoot '.env'
 $statePath = Join-Path $projectRoot 'storage\app\private\mobile-demo-state.json'
+$apkPath = Join-Path $projectRoot 'mobile\android\app\build\outputs\apk\release\app-release.apk'
 $managedKeys = @('APP_URL', 'APP_DEBUG', 'SESSION_SECURE_COOKIE', 'TRUSTED_HOSTS', 'MOBILE_DEMO_PAIRING_ENABLED')
 
 function Get-DotEnvState {
@@ -76,14 +77,46 @@ function Ensure-InstanceId {
 }
 
 function Get-TunnelUrl {
+    param([string] $Since)
+
     for ($attempt = 0; $attempt -lt 45; $attempt++) {
-        $logs = Invoke-CasaCompose -Arguments @('logs', '--no-color', 'cloudflared')
+        $logs = Invoke-CasaCompose -Arguments @('logs', '--no-color', '--since', $Since, 'cloudflared')
         $urls = [regex]::Matches(($logs -join "`n"), 'https://[a-z0-9-]+\.trycloudflare\.com') | ForEach-Object Value
         if ($urls) { return $urls | Select-Object -Last 1 }
+        if (($logs -join "`n") -match 'failed to (unmarshal|request).*quick tunnel|error unmarshaling quicktunnel') {
+            throw 'Cloudflare rejected the Quick Tunnel request.'
+        }
         Start-Sleep -Seconds 1
     }
 
     throw 'Cloudflared did not publish a Quick Tunnel URL within 45 seconds.'
+}
+
+function Start-QuickTunnel {
+    for ($attempt = 1; $attempt -le 3; $attempt++) {
+        try {
+            Invoke-CasaCompose -Arguments @('--profile', 'tunnel', 'rm', '-s', '-f', 'cloudflared') | Out-Null
+            $startedAt = (Get-Date).ToUniversalTime().AddSeconds(-1).ToString('o')
+            Invoke-CasaCompose -Arguments @('--profile', 'tunnel', 'up', '-d', '--force-recreate', 'cloudflared') | Out-Null
+            return Get-TunnelUrl -Since $startedAt
+        } catch {
+            if ($attempt -eq 3) { throw }
+            Start-Sleep -Seconds 2
+        }
+    }
+}
+
+function Wait-MobileMeta {
+    param([string] $Url)
+
+    for ($attempt = 0; $attempt -lt 15; $attempt++) {
+        Start-Sleep -Seconds 2
+        try {
+            return Invoke-RestMethod -Uri "$Url/api/v1/meta" -Headers @{ Accept = 'application/json' } -TimeoutSec 10
+        } catch {
+            if ($attempt -eq 14) { throw }
+        }
+    }
 }
 
 function Invoke-Laravel {
@@ -132,18 +165,22 @@ if (-not (Test-Path $envPath)) {
 
 switch ($Action) {
     'Start' {
+        if (-not (Test-Path $apkPath)) {
+            throw 'The signed APK is missing. Run .\scripts\build-mobile-release.ps1 before starting the phone demo.'
+        }
         Save-EnvironmentState
         Ensure-InstanceId
         try {
             Invoke-CasaCompose -EnsureEngine -Arguments @('up', '-d', 'laravel.test', 'mariadb', 'mailpit') | Out-Null
-            Invoke-CasaCompose -Arguments @('--profile', 'tunnel', 'up', '-d', 'cloudflared') | Out-Null
-            $url = Get-TunnelUrl
+            $url = Start-QuickTunnel
             Configure-TunnelEnvironment $url
-            $meta = Invoke-RestMethod -Uri "$url/api/v1/meta" -Headers @{ Accept = 'application/json' } -TimeoutSec 10
+            $meta = Wait-MobileMeta -Url $url
             if ($meta.data.service -ne 'casa-paraiso-mobile-api' -or -not $meta.data.pairing.enabled) { throw 'The tunnel did not return a pairing-enabled mobile API.' }
             $pairing = (Invoke-Laravel @('php', 'artisan', 'casa:mobile-pairing-code', '--json') | Select-Object -Last 1) | ConvertFrom-Json
             $sent = Send-PairingDeepLink -Url $url -Code $pairing.code
             Write-Output "Tunnel URL: $url"
+            Write-Output "APK download: $url/api/v1/demo/Casa-Paraiso-Mobile.apk"
+            Write-Output "APK SHA-256: $((Get-FileHash -LiteralPath $apkPath -Algorithm SHA256).Hash)"
             Write-Output "Pairing code: $($pairing.code)"
             Write-Output "Expires: $($pairing.expires_at)"
             Write-Output "Google web callback: $url/auth/google/callback"
@@ -154,7 +191,9 @@ switch ($Action) {
                 Write-Output 'Enter the URL and code manually in the Android app.'
             }
         } catch {
+            try { Invoke-CasaCompose -Arguments @('--profile', 'tunnel', 'stop', 'cloudflared') | Out-Null } catch { }
             Restore-EnvironmentState
+            try { Invoke-Laravel @('php', 'artisan', 'config:clear') | Out-Null } catch { }
             throw
         }
     }

@@ -20,7 +20,7 @@ The release consists of a signed Capacitor APK with a bundled Vue frontend, a ve
 - Local PostgreSQL 17 runs beside MariaDB on the dedicated engine. The Laravel suite passes on PostgreSQL, MySQL-only expressions are portable, and `casa:transfer-to-postgres` provides dry-run, guarded apply, full-row validation, and sequence verification. A local transfer preserved all 20 accounts and related business records and passed the read-only CRUD integrity audit.
 - Mobile Google authentication now uses the system browser, server/device-bound state, SHA-256 PKCE, a five-minute single-use exchange code, secure verifier storage, and the `casaparaiso://oauth/callback` deep link. Only the final Laravel Sanctum token enters secure device storage; neither bearer nor Google authorization tokens appear in callback URLs.
 - Release signing is configured for version `1.0.0` (code `1`). A 4096-bit release key is stored outside Git under the Windows user profile, and the repeatable build helper synchronizes Capacitor, assembles the universal APK, verifies Android v2/v3 signatures, writes a checksum, and optionally installs through ADB.
-- `scripts/mobile-demo.ps1` owns tunnel start, rotation, environment hardening/restoration, metadata checks, code issuance, optional ADB delivery, and shutdown.
+- `scripts/mobile-demo.ps1` owns tunnel start, rotation, environment hardening/restoration, metadata checks, temporary signed-APK browser delivery, code issuance, optional ADB pairing, and shutdown.
 - Pairing does not grant an authenticated application session; it only identifies the backend. Dedicated Supabase provisioning/cutover, live Google-provider acceptance, secure signing-key backup, and physical-device acceptance remain later milestones.
 
 ## Architecture

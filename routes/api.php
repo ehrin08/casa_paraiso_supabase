@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\V1\MobileCustomerAppointmentController;
 use App\Http\Controllers\Api\V1\MobileCustomerBookingController;
 use App\Http\Controllers\Api\V1\MobileCustomerFeedbackController;
 use App\Http\Controllers\Api\V1\MobileCustomerProfileController;
+use App\Http\Controllers\Api\V1\MobileDemoApkController;
 use App\Http\Controllers\Api\V1\MobileGoogleAuthController;
 use App\Http\Controllers\Api\V1\MobileMetaController;
 use App\Http\Controllers\Api\V1\MobileReceptionAppointmentController;
@@ -32,6 +33,10 @@ use App\Http\Controllers\Api\V1\PairingVerificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
+    Route::get('/demo/Casa-Paraiso-Mobile.apk', MobileDemoApkController::class)
+        ->middleware('throttle:6,1')
+        ->name('api.v1.demo.apk');
+
     Route::get('/meta', MobileMetaController::class)
         ->middleware('throttle:mobile-meta')
         ->name('api.v1.meta');
