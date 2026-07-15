@@ -10,10 +10,11 @@ The release consists of a signed Capacitor APK with a bundled Vue frontend, a ve
 
 - A dedicated Ubuntu 24.04 WSL2 Docker Engine and guarded PowerShell workflow isolate this repository from Docker Desktop and the inherited project.
 - The isolated MariaDB demo database has an account-preserving, read-only-source clone workflow with source/destination account-count verification.
-- `/api/v1/meta` and `/api/v1/pairings/verify` implement the pairing-only API milestone with exact Quick Tunnel host validation, server UUID binding, five-minute single-use codes, HMAC-digested cache storage, CORS restrictions, and rate limits.
-- `mobile/` is a bundled Vue 3/TypeScript/Tailwind/Pinia/Capacitor 8 Android project. It validates server metadata, accepts manual or `casaparaiso://pair` input, stores only non-secret pairing state, reports network/revalidation failures, and has no remote `server.url`.
+- `/api/v1/meta` and `/api/v1/pairings/verify` implement the pairing milestone with exact Quick Tunnel host validation, server UUID binding, five-minute single-use codes, HMAC-digested cache storage, CORS restrictions, and rate limits.
+- Laravel Sanctum now provides `POST /api/v1/auth/login`, `GET /api/v1/auth/me`, and `POST /api/v1/auth/logout`. Email/password login issues a scoped, 30-day device token; inactive and unverified accounts are rejected, and tokens are revoked on logout and security-sensitive identity changes.
+- `mobile/` is a bundled Vue 3/TypeScript/Tailwind/Pinia/Capacitor 8 Android project. It validates server metadata, accepts manual or `casaparaiso://pair` input, stores pairing state in Preferences, stores the bearer token in Android Keystore-backed secure storage, and routes authenticated users to a role-specific workspace shell without a remote `server.url`.
 - `scripts/mobile-demo.ps1` owns tunnel start, rotation, environment hardening/restoration, metadata checks, code issuance, optional ADB delivery, and shutdown.
-- Pairing does not grant an authenticated application session. Sanctum, role workspaces, mobile Google exchange, PostgreSQL/Supabase cutover, release signing, and physical-device acceptance remain later milestones.
+- Pairing does not grant an authenticated application session; it only identifies the backend. Mobile Google exchange, feature-complete role workspaces, PostgreSQL/Supabase cutover, release signing, and physical-device acceptance remain later milestones.
 
 ## Architecture
 

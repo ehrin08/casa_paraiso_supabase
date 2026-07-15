@@ -1,15 +1,7 @@
 @import "tailwindcss";
 
-@theme {
-  --color-violet-950: #29113c;
-  --color-violet-800: #5e2d7d;
-}
-
-* { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; }
-.field { width: 100%; min-height: 48px; border: 1px solid #d6d3d1; border-radius: 0.75rem; padding: 0.75rem 0.875rem; font: inherit; outline: none; }
-.field:focus { border-color: #5e2d7d; box-shadow: 0 0 0 3px rgb(94 45 125 / 18%); }
-.primary-button, .secondary-button { min-height: 48px; width: 100%; border-radius: 0.75rem; padding: 0.75rem 1rem; font-weight: 700; }
-.primary-button { background: #5e2d7d; color: white; }
-.primary-button:disabled { cursor: not-allowed; opacity: 0.55; }
-.secondary-button { border: 1px solid #5e2d7d; color: #5e2d7d; background: white; }
+@theme { --color-casa-palm: #4F6A4E; --color-casa-ink: #232620; }
+* { box-sizing: border-box; } body { margin: 0; min-width: 320px; color: #232620; font-family: Arial, sans-serif; background: #F5F0E7; }
+.screen { min-height: 100dvh; padding: max(2rem, env(safe-area-inset-top)) 1.25rem max(2rem, env(safe-area-inset-bottom)); display: grid; place-items: center; }
+.panel { width: min(100%, 28rem); background: #FFFCF7; border: 1px solid #DCD2C2; border-radius: 1.5rem; padding: 1.5rem; box-shadow: 0 12px 32px rgb(35 38 32 / 10%); } .brand { color:#334736; font-family:Georgia,serif; font-size:1.5rem; font-weight:700; margin:0 0 1rem; }
+h1 { margin: .25rem 0 .75rem; font-size: 2rem; } p { line-height: 1.55; color: #67675F; }.eyebrow { color:#7A3E14; font-size:.75rem; font-weight:700; letter-spacing:.15em; text-transform:uppercase; }.stack { display:grid; gap:1rem; margin-top:1.5rem; } label { display:grid; gap:.45rem; font-weight:700; }.field,.primary { min-height:48px; border-radius:.75rem; font:inherit; }.field { border:1px solid #DCD2C2; padding:.75rem; background:#fff; }.field:focus { outline:3px solid rgb(79 106 78 / 22%); border-color:#4F6A4E; }.primary { border:0; padding:.75rem 1rem; background:#4F6A4E; color:#fff; font-weight:700; cursor:pointer; }.primary:disabled { opacity:.55; cursor:not-allowed; }.alert { padding:.75rem; border-radius:.75rem; background:#fff0ee; color:#8c2f26; }.link { display:block; margin-top:1rem; color:#7A3E14; }

@@ -21,7 +21,7 @@ class MobileMetaController
                 'instance_id' => config('casa.mobile.instance_id'),
                 'timezone' => config('app.timezone'),
                 'server_time' => now(config('app.timezone'))->toIso8601String(),
-                'supported_auth' => [],
+                'supported_auth' => ['password'],
                 'pairing' => [
                     'protocol' => config('casa.mobile.pairing_protocol'),
                     'enabled' => $pairing->isConfigured(),

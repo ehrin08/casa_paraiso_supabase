@@ -25,6 +25,7 @@ return [
         'demo_enabled' => (bool) env('MOBILE_DEMO_PAIRING_ENABLED', false),
         'pairing_cache_store' => env('MOBILE_PAIRING_CACHE_STORE', 'file'),
         'pairing_ttl_seconds' => 300,
+        'token_ttl_days' => 30,
     ],
     'business_hours' => [
         'summary' => 'Open every day',

@@ -39,7 +39,7 @@ class MobilePairingApiTest extends TestCase
             ->assertJsonPath('data.timezone', 'Asia/Manila')
             ->assertJsonPath('data.pairing.protocol', 1)
             ->assertJsonPath('data.pairing.enabled', true)
-            ->assertJsonPath('data.supported_auth', []);
+            ->assertJsonPath('data.supported_auth', ['password']);
     }
 
     public function test_meta_requires_a_configured_instance_identity(): void
