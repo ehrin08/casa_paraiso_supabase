@@ -2,6 +2,7 @@
 import { onMounted } from 'vue'
 import { formatBookingDay, formatPeso } from '../lib/appointments'
 import { useCustomerBookingStore } from '../stores/customerBooking'
+import MobileModalSheet from '../components/MobileModalSheet.vue'
 
 const emit = defineEmits<{ close: []; booked: [message: string] }>()
 const booking = useCustomerBookingStore()
@@ -15,11 +16,7 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <section class="booking-sheet" role="dialog" aria-modal="true" aria-labelledby="booking-title">
-    <header class="booking-header">
-      <div><p class="eyebrow">Reserve your spot</p><h2 id="booking-title">Book an appointment</h2></div>
-      <button class="close-button" aria-label="Close booking" @click="emit('close')">×</button>
-    </header>
+  <MobileModalSheet :open="true" title="Book an appointment" eyebrow="Reserve your spot" labelled-by="booking-title" @close="emit('close')">
 
     <div v-if="booking.loading" class="booking-loading" role="status">Preparing services and rewards…</div>
     <form v-else-if="booking.options" class="booking-form" @submit.prevent="submit">
@@ -94,7 +91,7 @@ async function submit(): Promise<void> {
       </button>
     </form>
     <p v-else-if="booking.error" class="alert" role="alert">{{ booking.error }}</p>
-  </section>
+  </MobileModalSheet>
 </template>
 
 <style scoped>

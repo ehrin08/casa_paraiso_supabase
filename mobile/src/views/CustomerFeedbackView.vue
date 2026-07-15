@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { PhArrowClockwise } from '@phosphor-icons/vue'
 import { formatAppointmentDate } from '../lib/appointments'
 import type { EligibleFeedbackAppointment } from '../lib/api'
 import { useCustomerFeedbackStore } from '../stores/customerFeedback'
@@ -33,7 +34,7 @@ async function submit(): Promise<void> {
   <section class="customer-page" aria-labelledby="feedback-title">
     <header class="page-heading">
       <div><p class="eyebrow">Share your experience</p><h1 id="feedback-title">Feedback</h1><p>Your comments help Casa Paraiso care for every visit.</p></div>
-      <button class="icon-button" aria-label="Refresh feedback" :disabled="store.loading" @click="store.load(store.meta.current_page)">↻</button>
+      <button class="icon-button" aria-label="Refresh feedback" :disabled="store.loading" @click="store.load(store.meta.current_page)"><PhArrowClockwise :size="23" weight="bold" aria-hidden="true" /></button>
     </header>
 
     <div class="summary-strip" aria-label="Feedback summary">
@@ -73,7 +74,7 @@ async function submit(): Promise<void> {
       </nav>
     </template>
 
-    <section v-if="selected" class="feedback-sheet" role="dialog" aria-modal="true" aria-labelledby="rate-title">
+    <section v-if="selected" v-mobile-modal="() => selected = null" class="feedback-sheet" role="dialog" aria-modal="true" aria-labelledby="rate-title">
       <header><div><p class="eyebrow">{{ selected.service?.name }}</p><h2 id="rate-title">How was your visit?</h2></div><button aria-label="Close feedback" @click="selected = null">×</button></header>
       <form @submit.prevent="submit">
         <fieldset><legend>Your rating</legend><div class="rating-row">

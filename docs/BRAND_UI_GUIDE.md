@@ -44,7 +44,17 @@ Casa Brass is decorative and should not carry small text. Use Brass Light for me
 - Admin and staff surfaces use 14–16px radii, compact metrics, and information-dense tables.
 - Primary controls have a minimum 44px target size.
 - Customer appointment and feedback history use responsive cards. Operational record lists remain tables with keyboard-focusable horizontal scrolling.
-- Admin and staff use a persistent desktop sidebar and mobile drawer. Customers use a desktop sidebar and mobile bottom navigation for Appointments, Feedback, and Profile.
+- In the Blade application, Admin and staff use a persistent desktop sidebar and mobile drawer. Customers use a desktop sidebar and mobile bottom navigation for Appointments, Feedback, and Profile.
+- In the bundled Capacitor application, every role uses the same safe-area-aware top app bar and role-scoped bottom navigation. Customer has three destinations, Receptionist and Therapist have four, and Admin/Super Administrator have five.
+
+### Capacitor Mobile Application
+
+- Bundle Manrope and Cormorant Garamond with the application; mobile typography and icons must never require runtime network access.
+- Use semantic Casa color, spacing, radius, shadow, safe-area, motion, and layer tokens from the mobile global stylesheet. Customer screens may use the editorial display face; operational headings use Manrope.
+- Use Phosphor SVG icons for navigation and structural actions. Bottom-navigation targets are at least 48dp, selected destinations use the filled icon weight, and every icon retains a visible or accessible text label.
+- Keep primary role navigation fixed above the bottom safe area. Nested workspace navigation uses sticky, horizontally scrollable segmented controls and must not obscure page headings or content.
+- Full-screen mobile sheets lock background scrolling, trap focus, restore focus when closed, and close through their visible control, Escape, or Android Back before navigation occurs.
+- Phone portrait is primary. Verify 320px small phones, the Pixel reference viewport, 375px landscape, and 768px tablets; viewport-level horizontal overflow is not allowed.
 
 ## Authenticated Density Scale
 

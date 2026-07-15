@@ -5,13 +5,23 @@ import App from './App.vue'
 import { usePairingStore } from './stores/pairing'
 import { useAuthStore } from './stores/auth'
 import { router } from './router'
+import { mobileModalDirective } from './components/mobileModalDirective'
+import { installLegacyModalObserver } from './components/legacyModalObserver'
+import '@fontsource/manrope/latin-400.css'
+import '@fontsource/manrope/latin-600.css'
+import '@fontsource/manrope/latin-700.css'
+import '@fontsource/manrope/latin-800.css'
+import '@fontsource/cormorant-garamond/latin-600.css'
+import '@fontsource/cormorant-garamond/latin-700.css'
 import './style.css'
 
 const app = createApp(App)
 const pinia = createPinia()
 app.use(pinia)
 app.use(router)
+app.directive('mobile-modal', mobileModalDirective)
 app.mount('#app')
+installLegacyModalObserver()
 
 const pairing = usePairingStore(pinia)
 const auth = useAuthStore(pinia)

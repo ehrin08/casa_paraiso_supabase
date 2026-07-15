@@ -14,6 +14,7 @@ const accounts = [
 ] as const
 
 function emptyApi(path: string): unknown {
+  if (path === '/api/v1/customer/booking-options') return { data: { services: [{ id: 1, name: 'Signature Massage', description: 'A restorative full-body treatment.', duration_minutes: 60, price: '1200.00', therapists: [{ id: 1, name: 'Therapist' }] }], addons: [{ code: 'foot_spa', name: 'Foot Spa', price: '350.00', duration_minutes: 0 }], vouchers: [], booking_window: { timezone: 'Asia/Manila', opens_at: '13:00', closes_at: '00:00', slot_interval_minutes: 30, lead_time_minutes: 30, initial_month: '2026-07' } } }
   if (path === '/api/v1/reception/dashboard') return { data: { summary: { today: 0, upcoming: 0, customers: 0, payments_today: '0.00' }, today_appointments: [] } }
   if (path === '/api/v1/staff/dashboard') return { data: { profile: { id: 1, name: 'Therapist', specialization: 'Massage' }, summary: { assigned_today: 0, upcoming: 0, completed_today: 0, feedback: 0 }, commissions: { pending: '0.00', paid: '0.00', net: '0.00' }, today_appointments: [] } }
   if (path === '/api/v1/admin/dashboard') return { data: { summary: { today: 0, upcoming: 0, payments_today: '0.00', today_appointments: 0, upcoming_appointments: 0, today_revenue: '0.00', new_feedback: 0, available_rewards: 0, customers: 0, active_services: 0, bookable_therapists: 0 }, today_appointments: [], upcoming_appointments: [], is_super_admin: true } }
@@ -66,16 +67,30 @@ async function pairAndSignIn(page: Page, email: string): Promise<void> {
 }
 
 for (const account of accounts) {
-  test(`${account.role} workspace navigation is usable and accessible`, async ({ page }) => {
+  test(`${account.role} workspace navigation is usable and accessible`, async ({ page }, testInfo) => {
     await pairAndSignIn(page, account.email)
     const navigation = page.getByRole('navigation', { name: account.navigation })
     await expect(navigation).toBeVisible()
 
+    const navigationButtons = navigation.getByRole('button')
+    for (let index = 0; index < await navigationButtons.count(); index += 1) {
+      const box = await navigationButtons.nth(index).boundingBox()
+      expect(box?.height ?? 0).toBeGreaterThanOrEqual(48)
+    }
+
     for (const tab of account.tabs) {
       await navigation.getByRole('button', { name: tab }).click()
-      await expect(navigation.getByRole('button', { name: tab })).toBeVisible()
+      await expect(navigation.getByRole('button', { name: tab })).toHaveAttribute('aria-current', 'page')
+      const viewportFits = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)
+      expect(viewportFits).toBe(true)
       const results = await new AxeBuilder({ page }).analyze()
       expect(results.violations).toEqual([])
+
+      if (testInfo.project.name === 'android-pixel-7') {
+        if (account.role === 'customer' && tab === 'Appointments') await expect(page).toHaveScreenshot('customer-appointments.png')
+        if (account.role === 'receptionist' && tab === 'Today') await expect(page).toHaveScreenshot('reception-dashboard.png')
+        if (account.role === 'admin' && tab === 'Insights') await expect(page).toHaveScreenshot('admin-insights.png')
+      }
     }
 
     if (account.role === 'super_admin') {
@@ -86,3 +101,28 @@ for (const account of accounts) {
 
   })
 }
+
+test('connection and sign-in screens remain phone-first', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'android-pixel-7', 'Visual onboarding coverage uses the reference Android viewport.')
+  await mockBackend(page)
+  await page.goto('/')
+  await expect(page).toHaveScreenshot('connect-phone.png')
+  await page.getByLabel('Casa Paraiso link').fill(server)
+  await page.getByRole('button', { name: 'Connect' }).click()
+  await expect(page).toHaveScreenshot('sign-in-phone.png')
+})
+
+test('full-screen booking sheet manages focus and dismissal', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'android-pixel-7', 'Modal interaction coverage uses the reference Android viewport.')
+  await pairAndSignIn(page, 'customer@example.test')
+  const trigger = page.getByRole('button', { name: 'Book an appointment' })
+  await trigger.click()
+  const dialog = page.getByRole('dialog', { name: 'Book an appointment' })
+  await expect(dialog).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Close' })).toBeFocused()
+  await expect.poll(() => page.evaluate(() => document.body.style.overflow)).toBe('hidden')
+  await expect(page).toHaveScreenshot('customer-booking-form.png')
+  await page.keyboard.press('Escape')
+  await expect(dialog).toHaveCount(0)
+  await expect(trigger).toBeFocused()
+})
