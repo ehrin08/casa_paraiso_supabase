@@ -3,14 +3,22 @@ import { onMounted, ref } from 'vue'
 import { appointmentStatusLabel, formatAppointmentDate, formatPeso } from '../lib/appointments'
 import type { MobileAppointment } from '../lib/api'
 import { useCustomerAppointmentsStore } from '../stores/customerAppointments'
+import CustomerBookingView from './CustomerBookingView.vue'
 
 const store = useCustomerAppointmentsStore()
 const openId = ref<number | null>(null)
+const bookingOpen = ref(false)
 
 onMounted(() => store.load())
 
 function confirmCancel(appointment: MobileAppointment): void {
   if (window.confirm(`Cancel ${appointment.appointment_number}? This will release the reserved time.`)) void store.cancel(appointment)
+}
+
+async function booked(message: string): Promise<void> {
+  bookingOpen.value = false
+  store.notice = message
+  await store.load(1)
 }
 </script>
 
@@ -24,6 +32,8 @@ function confirmCancel(appointment: MobileAppointment): void {
       </div>
       <button class="icon-button" aria-label="Refresh appointments" :disabled="store.loading" @click="store.load(store.meta.current_page)">↻</button>
     </header>
+
+    <button class="primary book-button" @click="bookingOpen = true">Book an appointment</button>
 
     <div class="summary-strip" aria-label="Appointment summary">
       <div><strong>{{ store.summary.upcoming }}</strong><span>Upcoming</span></div>
@@ -78,7 +88,8 @@ function confirmCancel(appointment: MobileAppointment): void {
 
     <div v-else class="empty-state">
       <h2>No appointments found</h2>
-      <p>Try another status, or book your next Casa Paraiso visit when booking becomes available here.</p>
+      <p>Try another status, or reserve your next Casa Paraiso visit now.</p>
+      <button class="primary" @click="bookingOpen = true">Reserve your spot</button>
     </div>
 
     <nav v-if="store.meta.last_page > 1" class="pager" aria-label="Appointment pages">
@@ -86,6 +97,7 @@ function confirmCancel(appointment: MobileAppointment): void {
       <span>Page {{ store.meta.current_page }} of {{ store.meta.last_page }}</span>
       <button :disabled="store.loading || store.meta.current_page >= store.meta.last_page" @click="store.load(store.meta.current_page + 1)">Next</button>
     </nav>
+    <CustomerBookingView v-if="bookingOpen" @close="bookingOpen = false" @booked="booked" />
   </section>
 </template>
 
@@ -93,6 +105,7 @@ function confirmCancel(appointment: MobileAppointment): void {
 .customer-workspace { width: min(100%, 42rem); margin: 0 auto; padding: max(1.25rem, env(safe-area-inset-top)) 1rem calc(6rem + env(safe-area-inset-bottom)); }
 .customer-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
 .customer-heading h1 { font-family: Georgia, serif; color: #334736; }
+.book-button { width: 100%; margin-top: 1rem; }
 .intro { margin: 0; }
 .icon-button { width: 48px; min-width: 48px; height: 48px; border-radius: 999px; border: 1px solid #dcd2c2; background: #fffcf7; color: #334736; font-size: 1.5rem; }
 .summary-strip { display: grid; grid-template-columns: repeat(3, 1fr); margin: 1.25rem 0; overflow: hidden; border: 1px solid #dcd2c2; border-radius: 1rem; background: #fffcf7; }

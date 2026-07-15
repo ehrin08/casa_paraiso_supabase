@@ -1,13 +1,17 @@
 <?php
 
 use App\Http\Middleware\AddSecurityHeaders;
+use App\Http\Middleware\EnsureMobileUserIsEligible;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\EnsureUserIsActive;
-use App\Http\Middleware\EnsureMobileUserIsEligible;
 use App\Http\Middleware\EnsureUserIsSuperAdmin;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -37,5 +41,43 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (ValidationException $exception, Request $request) {
+            if (! $request->is('api/v1/*')) {
+                return null;
+            }
+
+            return response()->json(['error' => [
+                'code' => 'VALIDATION_FAILED',
+                'message' => 'The submitted information is invalid.',
+                'fields' => $exception->errors(),
+            ]], 422)->header('Cache-Control', 'no-store');
+        });
+
+        $exceptions->render(function (AuthenticationException $exception, Request $request) {
+            if (! $request->is('api/v1/*')) {
+                return null;
+            }
+
+            return response()->json(['error' => [
+                'code' => 'UNAUTHENTICATED',
+                'message' => 'Sign in to continue.',
+            ]], 401)->header('Cache-Control', 'no-store');
+        });
+
+        $exceptions->render(function (HttpExceptionInterface $exception, Request $request) {
+            if (! $request->is('api/v1/*')) {
+                return null;
+            }
+
+            $status = $exception->getStatusCode();
+            [$code, $message] = match ($status) {
+                403 => ['FORBIDDEN', 'You do not have permission to perform this action.'],
+                404 => ['NOT_FOUND', 'The requested record was not found.'],
+                429 => ['TOO_MANY_REQUESTS', 'Too many requests. Please wait and try again.'],
+                default => ['REQUEST_FAILED', 'The request could not be completed.'],
+            };
+
+            return response()->json(['error' => compact('code', 'message')], $status)
+                ->header('Cache-Control', 'no-store');
+        });
     })->create();

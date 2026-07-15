@@ -25,6 +25,25 @@ export interface AppointmentListResponse {
   summary: { upcoming: number; completed: number; cancelled: number }
   meta: { current_page: number; last_page: number; per_page: number; total: number; from: number | null; to: number | null }
 }
+export interface BookingTherapist { id: number; name: string | null }
+export interface BookingService {
+  id: number
+  name: string
+  description: string | null
+  duration_minutes: number
+  price: string
+  therapists: BookingTherapist[]
+}
+export interface BookingAddon { code: string; name: string; price: string; duration_minutes: number }
+export interface BookingVoucher { id: number; code: string; name: string; expires_at: string | null }
+export interface BookingOptions {
+  services: BookingService[]
+  addons: BookingAddon[]
+  vouchers: BookingVoucher[]
+  booking_window: { timezone: string; opens_at: string; closes_at: string; slot_interval_minutes: number; lead_time_minutes: number; initial_month: string }
+}
+export interface AvailabilitySlot { starts_at: string; ends_at: string; time: string; label: string; staff_count: number }
+export interface BookingAvailability { month: string; service_id: number; preferred_staff_profile_id: number | null; dates: Record<string, AvailabilitySlot[]> }
 
 let client: AxiosInstance | null = null
 let token = ''
@@ -54,4 +73,26 @@ export async function customerAppointments(params: { page?: number; status?: str
 }
 export async function cancelCustomerAppointment(id: number): Promise<{ data: MobileAppointment; message: string }> {
   return (await getClient().patch(`/customer/appointments/${id}/cancel`)).data
+}
+export async function customerBookingOptions(): Promise<BookingOptions> {
+  return (await getClient().get('/customer/booking-options')).data.data
+}
+export async function customerAvailability(params: {
+  service_id: number
+  preferred_staff_profile_id?: number
+  promotion_suggestion_id?: number
+  addon_codes?: string[]
+  month: string
+}): Promise<BookingAvailability> {
+  return (await getClient().get('/customer/availability', { params })).data.data
+}
+export async function createCustomerAppointment(payload: {
+  service_id: number
+  preferred_staff_profile_id?: number
+  promotion_suggestion_id?: number
+  addon_codes?: string[]
+  requested_start_at: string
+  customer_notes?: string
+}): Promise<{ data: MobileAppointment; message: string }> {
+  return (await getClient().post('/customer/appointments', payload)).data
 }

@@ -52,6 +52,21 @@ class MobilePairingApiTest extends TestCase
         }
     }
 
+    public function test_capacitor_can_preflight_authenticated_appointment_mutations(): void
+    {
+        $origin = 'capacitor://localhost';
+
+        $this->call('OPTIONS', '/api/v1/customer/appointments/1/cancel', server: [
+            'HTTP_ORIGIN' => $origin,
+            'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'PATCH',
+            'HTTP_ACCESS_CONTROL_REQUEST_HEADERS' => 'authorization,content-type',
+        ])
+            ->assertNoContent()
+            ->assertHeader('Access-Control-Allow-Origin', $origin)
+            ->assertHeaderContains('Access-Control-Allow-Methods', 'PATCH')
+            ->assertHeaderContains('Access-Control-Allow-Headers', 'authorization');
+    }
+
     public function test_meta_requires_a_configured_instance_identity(): void
     {
         config(['casa.mobile.instance_id' => null]);

@@ -18,3 +18,16 @@ export function formatAppointmentDate(value: string | null): string {
     minute: '2-digit',
   }).format(new Date(value))
 }
+
+export function formatBookingDay(value: string): string {
+  return new Intl.DateTimeFormat('en-PH', {
+    timeZone: 'Asia/Manila',
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  }).format(new Date(`${value}T12:00:00+08:00`))
+}
+
+export function bookingExpectedAmount(servicePrice: string, addonPrices: string[]): string {
+  return (Number(servicePrice) + addonPrices.reduce((total, price) => total + Number(price), 0)).toFixed(2)
+}

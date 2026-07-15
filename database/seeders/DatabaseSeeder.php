@@ -36,6 +36,7 @@ class DatabaseSeeder extends Seeder
                 'phone' => '09170000001',
                 'role' => User::ROLE_ADMIN,
                 'is_active' => true,
+                'email_verified_at' => now(),
                 'password' => Hash::make('password'),
             ],
         );
@@ -55,6 +56,7 @@ class DatabaseSeeder extends Seeder
                 'phone' => '09170000002',
                 'role' => User::ROLE_STAFF,
                 'is_active' => true,
+                'email_verified_at' => now(),
                 'password' => Hash::make('password'),
             ],
         );
@@ -66,6 +68,7 @@ class DatabaseSeeder extends Seeder
                 'phone' => '09170000004',
                 'role' => User::ROLE_STAFF,
                 'is_active' => true,
+                'email_verified_at' => now(),
                 'password' => Hash::make('password'),
             ],
         );
@@ -77,6 +80,7 @@ class DatabaseSeeder extends Seeder
                 'phone' => '09170000003',
                 'role' => User::ROLE_CUSTOMER,
                 'is_active' => true,
+                'email_verified_at' => now(),
                 'password' => Hash::make('password'),
             ],
         );
@@ -88,6 +92,7 @@ class DatabaseSeeder extends Seeder
                 'phone' => '09170000005',
                 'role' => User::ROLE_CUSTOMER,
                 'is_active' => true,
+                'email_verified_at' => now(),
                 'password' => Hash::make('password'),
             ],
         );
