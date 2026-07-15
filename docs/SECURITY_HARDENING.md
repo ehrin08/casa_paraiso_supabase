@@ -4,7 +4,7 @@
 
 This checklist is the release gate for the Laravel application. The application-level baseline is implemented and covered by feature tests. Production environment, hosting, TLS, backup, and recovery items must be rechecked on the actual Hostinger target before launch.
 
-This document never authorizes a database write. Migrations, imports, restores, reseeding, and record changes remain subject to the exact-operation approval gate in `AGENTS.md`.
+Database work follows the account-preservation and environment rules in `AGENTS.md`; this checklist does not override them.
 
 ## Implemented Application Controls
 
@@ -14,6 +14,7 @@ This document never authorizes a database write. Migrations, imports, restores, 
 - [x] Rotate sessions during authentication and invalidate sessions through the existing account-security workflows.
 - [x] Use Laravel password hashing, password reset, email verification, and time-limited Google identity confirmation.
 - [x] Apply named rate limiters to registration, password recovery/reset, password confirmation/update, Google identity callbacks, and account deletion flows.
+- [x] Keep mobile Google OAuth in the system browser with device/server-bound state, SHA-256 PKCE, five-minute single-use exchange codes, and no bearer token in callback URLs.
 - [x] Add `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, and `Cross-Origin-Opener-Policy` headers to browser responses.
 - [x] Support HTTPS URL enforcement and HSTS through environment-controlled settings. HSTS is emitted only for secure requests when enabled.
 - [x] Support explicit production host allow-listing through `TRUSTED_HOSTS`.

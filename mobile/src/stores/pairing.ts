@@ -16,6 +16,7 @@ export const usePairingStore = defineStore('pairing', () => {
   const status = ref<'unpaired' | 'validating' | 'verifying' | 'paired' | 'unreachable' | 'mismatch'>('unpaired')
   const error = ref('')
   const online = ref(true)
+  const supportedAuth = ref<string[]>([])
 
   async function hydrate(): Promise<void> {
     online.value = (await Network.getStatus()).connected
@@ -44,6 +45,7 @@ export const usePairingStore = defineStore('pairing', () => {
     try {
       const meta = await fetchMeta(url.value)
       validateMeta(meta, instanceId.value)
+      supportedAuth.value = meta.data.supported_auth
       status.value = 'paired'
     } catch (reason) {
       const message = reason instanceof Error ? reason.message : 'The saved server cannot be reached.'
@@ -58,6 +60,7 @@ export const usePairingStore = defineStore('pairing', () => {
     try {
       const normalized = normalizeBackendUrl(url.value)
       const meta = await fetchMeta(normalized)
+      supportedAuth.value = meta.data.supported_auth
       if (!meta.data.pairing.enabled) throw new Error('Pairing is not enabled on this tunnel. Start the demo helper again.')
       if (!/^\d{8}$/.test(code.value)) throw new Error('Enter the eight-digit pairing code.')
       status.value = 'verifying'
@@ -84,5 +87,5 @@ export const usePairingStore = defineStore('pairing', () => {
     error.value = ''
   }
 
-  return { url, code, instanceId, pairedAt, status, error, online, hydrate, revalidate, pair, acceptDeepLink }
+  return { url, code, instanceId, pairedAt, status, error, online, supportedAuth, hydrate, revalidate, pair, acceptDeepLink }
 })

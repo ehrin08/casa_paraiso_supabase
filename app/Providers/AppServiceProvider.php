@@ -2,8 +2,8 @@
 
 namespace App\Providers;
 
-use App\Observers\RevokeMobileTokensOnIdentityChange;
 use App\Models\User;
+use App\Observers\RevokeMobileTokensOnIdentityChange;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
@@ -83,6 +83,21 @@ class AppServiceProvider extends ServiceProvider
             return [
                 Limit::perMinute(5)->by('minute:'.$key)->response($response),
                 Limit::perHour(20)->by('hour:'.$request->ip())->response($response),
+            ];
+        });
+
+        RateLimiter::for('mobile-google', function (Request $request): array {
+            $key = 'mobile-google:'.$request->ip();
+            $response = fn (): Response => response()->json([
+                'error' => [
+                    'code' => 'RATE_LIMITED',
+                    'message' => 'Too many Google sign-in attempts. Please wait before trying again.',
+                ],
+            ], 429)->header('Cache-Control', 'no-store');
+
+            return [
+                Limit::perMinute(10)->by('minute:'.$key)->response($response),
+                Limit::perHour(30)->by('hour:'.$key)->response($response),
             ];
         });
 

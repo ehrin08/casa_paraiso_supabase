@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\V1\MobileCustomerAppointmentController;
 use App\Http\Controllers\Api\V1\MobileCustomerBookingController;
 use App\Http\Controllers\Api\V1\MobileCustomerFeedbackController;
 use App\Http\Controllers\Api\V1\MobileCustomerProfileController;
+use App\Http\Controllers\Api\V1\MobileGoogleAuthController;
 use App\Http\Controllers\Api\V1\MobileMetaController;
 use App\Http\Controllers\Api\V1\MobileReceptionAppointmentController;
 use App\Http\Controllers\Api\V1\MobileReceptionCustomerController;
@@ -42,6 +43,14 @@ Route::prefix('v1')->group(function (): void {
     Route::post('/auth/login', [MobileAuthController::class, 'login'])
         ->middleware('throttle:mobile-login')
         ->name('api.v1.auth.login');
+
+    Route::get('/auth/google/redirect', [MobileGoogleAuthController::class, 'redirect'])
+        ->middleware('throttle:mobile-google')
+        ->name('api.v1.auth.google.redirect');
+
+    Route::post('/auth/google/exchange', [MobileGoogleAuthController::class, 'exchange'])
+        ->middleware('throttle:mobile-google')
+        ->name('api.v1.auth.google.exchange');
 
     Route::middleware(['auth:sanctum', 'active_mobile'])->group(function (): void {
         Route::get('/auth/me', [MobileAuthController::class, 'me'])->name('api.v1.auth.me');

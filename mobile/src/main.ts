@@ -15,15 +15,29 @@ app.mount('#app')
 
 const pairing = usePairingStore(pinia)
 const auth = useAuthStore(pinia)
-void auth.hydrate().then(() => {
-  if (auth.user) void router.replace(`/workspace/${auth.user.workspace}`)
-  else if (pairing.status === 'paired') void router.replace('/sign-in')
-})
 
-void CapacitorApp.addListener('appUrlOpen', ({ url }) => {
+async function handleAppUrl(url: string): Promise<void> {
+  if (await auth.completeGoogleSignIn(url)) {
+    if (auth.user) await router.replace(`/workspace/${auth.user.workspace}`)
+    else await router.replace('/sign-in')
+    return
+  }
   pairing.acceptDeepLink(url)
+}
+
+const ready = auth.hydrate().then(async () => {
+  const launch = await CapacitorApp.getLaunchUrl()
+  if (launch?.url) await handleAppUrl(launch.url)
+  if (auth.user) await router.replace(`/workspace/${auth.user.workspace}`)
+  else if (pairing.status === 'paired') await router.replace('/sign-in')
 })
 
-void CapacitorApp.getLaunchUrl().then((result) => {
-  if (result?.url) pairing.acceptDeepLink(result.url)
+void CapacitorApp.addListener('appUrlOpen', async ({ url }) => {
+  await ready
+  await handleAppUrl(url)
+  if (auth.user) await router.replace(`/workspace/${auth.user.workspace}`)
+  else if (pairing.status === 'paired') await router.replace('/sign-in')
+  else {
+    await router.replace('/connect')
+  }
 })

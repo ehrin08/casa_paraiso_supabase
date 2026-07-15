@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\MobileGoogleAuthController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
@@ -27,6 +28,10 @@ Route::middleware('guest')->group(function () {
     Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
     Route::post('reset-password', [NewPasswordController::class, 'store'])->middleware('throttle:guest-sensitive')->name('password.store');
 });
+
+Route::get('auth/google/mobile/callback', [MobileGoogleAuthController::class, 'callback'])
+    ->middleware('throttle:mobile-google')
+    ->name('auth.google.mobile.callback');
 
 Route::middleware(['auth', 'active'])->group(function () {
     Route::get('verify-email', EmailVerificationPromptController::class)->name('verification.notice');

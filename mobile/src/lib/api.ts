@@ -187,6 +187,9 @@ function getClient(): AxiosInstance { if (!client) throw new Error('Pair this ph
 export async function login(payload: { email: string; password: string; device_id: string; device_name: string }): Promise<{ token: string; expires_at: string; user: MobileUser }> {
   return (await getClient().post('/auth/login', payload)).data.data
 }
+export async function exchangeGoogle(payload: { instance_id: string; device_id: string; device_name: string; code: string; code_verifier: string }): Promise<{ token: string; expires_at: string; user: MobileUser }> {
+  return (await getClient().post('/auth/google/exchange', payload)).data.data
+}
 export async function me(): Promise<MobileUser> { return (await getClient().get('/auth/me')).data.data }
 export async function logout(): Promise<void> { await getClient().post('/auth/logout') }
 export async function customerAppointments(params: { page?: number; status?: string } = {}): Promise<AppointmentListResponse> {

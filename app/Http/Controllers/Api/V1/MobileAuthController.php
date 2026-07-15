@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Models\User;
+use App\Services\MobileTokenIssuer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,7 +14,7 @@ use Illuminate\Validation\ValidationException;
 
 class MobileAuthController
 {
-    public function login(Request $request): JsonResponse
+    public function login(Request $request, MobileTokenIssuer $tokens): JsonResponse
     {
         $data = $request->validate([
             'email' => ['required', 'string', 'email', 'max:255'],
@@ -36,23 +37,13 @@ class MobileAuthController
             return $this->error('EMAIL_UNVERIFIED', 'Verify your email address before using the mobile app.', 403);
         }
 
-        $name = 'android:'.$data['device_id'];
-        $user->tokens()->where('name', $name)->delete();
-        $token = $user->createToken($name, ['mobile'], now()->addDays((int) config('casa.mobile.token_ttl_days', 30)));
-
-        return response()->json([
-            'data' => [
-                'token' => $token->plainTextToken,
-                'token_type' => 'Bearer',
-                'expires_at' => $token->accessToken->expires_at?->timezone(config('app.timezone'))->toIso8601String(),
-                'user' => $this->user($user),
-            ],
-        ])->header('Cache-Control', 'no-store');
+        return response()->json(['data' => $tokens->issue($user, $data['device_id'])])
+            ->header('Cache-Control', 'no-store');
     }
 
-    public function me(Request $request): JsonResponse
+    public function me(Request $request, MobileTokenIssuer $tokens): JsonResponse
     {
-        return response()->json(['data' => $this->user($request->user())])->header('Cache-Control', 'no-store');
+        return response()->json(['data' => $tokens->user($request->user())])->header('Cache-Control', 'no-store');
     }
 
     public function logout(Request $request): JsonResponse
@@ -87,24 +78,6 @@ class MobileAuthController
         return response()->json([
             'message' => 'Password updated. Sign in again on this phone.',
         ])->header('Cache-Control', 'no-store');
-    }
-
-    private function user(User $user): array
-    {
-        return [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'phone' => $user->phone,
-            'role' => $user->role,
-            'workspace' => match ($user->role) {
-                User::ROLE_SUPER_ADMIN, User::ROLE_ADMIN => 'admin',
-                User::ROLE_RECEPTIONIST => 'reception',
-                User::ROLE_STAFF => 'staff',
-                default => 'customer',
-            },
-            'email_verified' => $user->hasVerifiedEmail(),
-        ];
     }
 
     private function error(string $code, string $message, int $status): JsonResponse

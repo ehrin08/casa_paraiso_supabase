@@ -1,7 +1,9 @@
 import { Preferences } from '@capacitor/preferences'
+import { Browser } from '@capacitor/browser'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { apiError, configureApi, login, logout, me, setToken, type MobileUser } from '../lib/api'
+import { apiError, configureApi, exchangeGoogle, login, logout, me, setToken, type MobileUser } from '../lib/api'
+import { beginGoogleAuthorization, clearGooglePending, isGoogleCallback, readGoogleCallback } from '../lib/googleAuth'
 import { clearSession, readSession, writeSession } from '../lib/session'
 import { usePairingStore } from './pairing'
 
@@ -51,6 +53,45 @@ export const useAuthStore = defineStore('auth', () => {
     } catch (reason) { error.value = apiError(reason).message; return false } finally { working.value = false }
   }
 
+  async function startGoogleSignIn(): Promise<void> {
+    const pairing = usePairingStore()
+    if (pairing.status !== 'paired') { error.value = 'Pair this phone before signing in.'; return }
+    if (!pairing.supportedAuth.includes('google')) { error.value = 'Google sign-in is not configured on this server.'; return }
+    working.value = true; error.value = ''
+    try {
+      const id = await deviceId()
+      const url = await beginGoogleAuthorization(pairing.url, pairing.instanceId, id, 'Casa Paraiso Android')
+      await Browser.open({ url })
+    } catch (reason) { error.value = reason instanceof Error ? reason.message : 'Google sign-in could not start.' }
+    finally { working.value = false }
+  }
+
+  async function completeGoogleSignIn(url: string): Promise<boolean> {
+    if (!isGoogleCallback(url)) return false
+    const pairing = usePairingStore()
+    working.value = true; error.value = ''
+    try {
+      await Browser.close().catch(() => undefined)
+      const callback = await readGoogleCallback(url, pairing.instanceId)
+      const id = await deviceId()
+      configureApi(pairing.url)
+      const response = await exchangeGoogle({
+        instance_id: pairing.instanceId,
+        device_id: id,
+        device_name: 'Casa Paraiso Android',
+        code: callback.code,
+        code_verifier: callback.verifier,
+      })
+      await writeSession({ token: response.token, expiresAt: response.expires_at, instanceId: pairing.instanceId })
+      setToken(response.token); user.value = response.user
+    } catch (reason) {
+      const failure = apiError(reason)
+      error.value = failure.code === 'UNKNOWN_ERROR' && reason instanceof Error ? reason.message : failure.message
+    }
+    finally { await clearGooglePending(); working.value = false }
+    return true
+  }
+
   async function signOut(): Promise<boolean> {
     working.value = true; error.value = ''
     try { await logout(); await clear(); return true }
@@ -62,5 +103,5 @@ export const useAuthStore = defineStore('auth', () => {
   function applyProfile(name: string, phone: string | null): void {
     if (user.value) user.value = { ...user.value, name, phone }
   }
-  return { user, booting, working, error, authenticated, hydrate, signIn, signOut, clear, applyProfile }
+  return { user, booting, working, error, authenticated, hydrate, signIn, startGoogleSignIn, completeGoogleSignIn, signOut, clear, applyProfile }
 })

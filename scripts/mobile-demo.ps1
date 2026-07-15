@@ -146,7 +146,8 @@ switch ($Action) {
             Write-Output "Tunnel URL: $url"
             Write-Output "Pairing code: $($pairing.code)"
             Write-Output "Expires: $($pairing.expires_at)"
-            Write-Output "Google callback: $url/auth/google/callback"
+            Write-Output "Google web callback: $url/auth/google/callback"
+            Write-Output "Google mobile callback: $url/auth/google/mobile/callback"
             if ($sent) {
                 Write-Output 'Pairing link sent through ADB.'
             } else {

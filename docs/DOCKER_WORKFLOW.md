@@ -149,7 +149,17 @@ $env:ANDROID_HOME = Join-Path $env:LOCALAPPDATA 'Android\Sdk'
 .\android\gradlew.bat -p android assembleDebug
 ```
 
-Capacitor 8 compiles and targets API 36 with minimum API 24. Install `platforms;android-36` and the matching build tools through Android's `sdkmanager` if the local SDK is missing them. The debug APK is generated under `mobile/android/app/build/outputs/apk/debug/` and is ignored by Git. Release signing remains a later milestone; keep all keystores and passwords outside the repository.
+Capacitor 8 compiles and targets API 36 with minimum API 24. Install `platforms;android-36` and the matching build tools through Android's `sdkmanager` if the local SDK is missing them. The debug APK is generated under `mobile/android/app/build/outputs/apk/debug/` and is ignored by Git.
+
+For the signed version `1.0.0` release APK, follow [`PHONE_INSTALLATION.md`](PHONE_INSTALLATION.md). The one-time initializer creates a 4096-bit key under `%USERPROFILE%\.casa-paraiso`; subsequent builds reuse it and verify the APK before reporting its SHA-256 checksum:
+
+```powershell
+.\scripts\build-mobile-release.ps1 -InitializeSigning
+.\scripts\build-mobile-release.ps1
+.\scripts\build-mobile-release.ps1 -Install
+```
+
+Never delete or replace the external signing directory after distributing the APK. Android requires the same key for in-place updates.
 
 ## Environment Defaults
 
