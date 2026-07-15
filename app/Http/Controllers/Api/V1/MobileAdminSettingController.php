@@ -22,7 +22,7 @@ class MobileAdminSettingController
         if (! ApplicationSetting::tableAvailable()) {
             throw ValidationException::withMessages(['settings' => 'The application settings migration must be applied before settings can be saved.']);
         }
-        ApplicationSetting::query()->updateOrCreate(['id' => 1], [...$request->validated(), 'updated_by' => $request->user()->id]);
+        ApplicationSetting::updateCurrent([...$request->validated(), 'updated_by' => $request->user()->id]);
 
         return response()->json(['message' => 'Business settings updated.'])->header('Cache-Control', 'no-store');
     }

@@ -29,6 +29,18 @@ class DatabaseSeeder extends Seeder
             throw new \LogicException('Demo data must not be seeded in production. Run migrations without --seed.');
         }
 
+        User::firstOrCreate(
+            ['email' => strtolower((string) config('auth.super_admin_email'))],
+            [
+                'name' => 'Casa Paraiso Super Admin',
+                'phone' => '09170000000',
+                'role' => User::ROLE_SUPER_ADMIN,
+                'is_active' => true,
+                'email_verified_at' => now(),
+                'password' => Hash::make('password'),
+            ],
+        );
+
         $admin = User::updateOrCreate(
             ['email' => 'admin@casaparaiso.test'],
             [
@@ -53,8 +65,7 @@ class DatabaseSeeder extends Seeder
             ],
         );
 
-        ApplicationSetting::query()->updateOrCreate(
-            ['id' => 1],
+        ApplicationSetting::updateCurrent(
             [
                 ...ApplicationSetting::defaults(),
                 'updated_by' => $admin->id,

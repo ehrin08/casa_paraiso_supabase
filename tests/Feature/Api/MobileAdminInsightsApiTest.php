@@ -67,7 +67,7 @@ class MobileAdminInsightsApiTest extends TestCase
             'business_address' => 'San Pablo City',
             'default_payment_method' => Transaction::METHOD_CASH,
         ])->assertOk();
-        $this->assertDatabaseHas('application_settings', ['id' => 1, 'business_name' => 'Casa Paraiso Mobile']);
+        $this->assertDatabaseHas('application_settings', ['business_name' => 'Casa Paraiso Mobile']);
     }
 
     private function token(User $user): string

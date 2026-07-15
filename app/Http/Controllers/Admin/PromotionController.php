@@ -62,8 +62,7 @@ class PromotionController extends Controller
         $data = $request->validated();
 
         DB::transaction(function () use ($data, $request): void {
-            ApplicationSetting::query()->updateOrCreate(
-                ['id' => 1],
+            ApplicationSetting::updateCurrent(
                 [
                     'business_name' => ApplicationSetting::current()->business_name,
                     'contact_email' => ApplicationSetting::current()->contact_email,

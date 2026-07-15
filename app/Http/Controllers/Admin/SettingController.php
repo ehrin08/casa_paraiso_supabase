@@ -28,10 +28,7 @@ class SettingController extends Controller
             ]);
         }
 
-        ApplicationSetting::query()->updateOrCreate(
-            ['id' => 1],
-            [...$request->validated(), 'updated_by' => $request->user()->id],
-        );
+        ApplicationSetting::updateCurrent([...$request->validated(), 'updated_by' => $request->user()->id]);
 
         return back()->with('status', 'settings-updated');
     }

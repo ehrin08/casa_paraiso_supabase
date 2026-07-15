@@ -53,7 +53,7 @@ class MobileAdminPromotionController
         $data = $request->validated();
         DB::transaction(function () use ($data, $request): void {
             $current = ApplicationSetting::current();
-            ApplicationSetting::query()->updateOrCreate(['id' => 1], ['business_name' => $current->business_name, 'contact_email' => $current->contact_email, 'contact_phone' => $current->contact_phone, 'business_address' => $current->business_address, 'default_payment_method' => $current->default_payment_method, 'promotion_voucher_validity_days' => $data['promotion_voucher_validity_days'], 'updated_by' => $request->user()->id]);
+            ApplicationSetting::updateCurrent(['business_name' => $current->business_name, 'contact_email' => $current->contact_email, 'contact_phone' => $current->contact_phone, 'business_address' => $current->business_address, 'default_payment_method' => $current->default_payment_method, 'promotion_voucher_validity_days' => $data['promotion_voucher_validity_days'], 'updated_by' => $request->user()->id]);
             foreach ($data['groups'] as $key => $group) {
                 RfmSegment::query()->where('preset_key', $key)->update(['addon_code' => $group['addon_code'], 'is_active' => (bool) $group['is_active']]);
             }

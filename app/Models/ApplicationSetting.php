@@ -31,6 +31,21 @@ class ApplicationSetting extends Model
         return self::query()->first() ?? new self(self::defaults());
     }
 
+    /** @param array<string, mixed> $attributes */
+    public static function updateCurrent(array $attributes): self
+    {
+        $settings = self::query()->first() ?? new self;
+
+        if (! $settings->exists) {
+            $settings->setAttribute($settings->getKeyName(), 1);
+        }
+
+        $settings->fill($attributes);
+        $settings->save();
+
+        return $settings;
+    }
+
     public static function tableAvailable(): bool
     {
         return Schema::hasTable((new self)->getTable());
