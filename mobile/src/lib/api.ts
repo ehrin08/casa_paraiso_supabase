@@ -44,6 +44,39 @@ export interface BookingOptions {
 }
 export interface AvailabilitySlot { starts_at: string; ends_at: string; time: string; label: string; staff_count: number }
 export interface BookingAvailability { month: string; service_id: number; preferred_staff_profile_id: number | null; dates: Record<string, AvailabilitySlot[]> }
+export interface EligibleFeedbackAppointment {
+  id: number
+  appointment_number: string
+  completed_at: string | null
+  service: { id: number; name: string } | null
+  therapist: AppointmentParty | null
+}
+export interface MobileFeedback {
+  id: number
+  rating: number
+  comment: string | null
+  sentiment: 'positive' | 'neutral' | 'negative'
+  submitted_at: string | null
+  service: { id: number; name: string } | null
+  appointment: { id: number; appointment_number: string; completed_at: string | null } | null
+}
+export interface FeedbackListResponse {
+  data: MobileFeedback[]
+  eligible_appointments: EligibleFeedbackAppointment[]
+  summary: { awaiting_feedback: number; submitted: number }
+  meta: { current_page: number; last_page: number; per_page: number; total: number; from: number | null; to: number | null }
+}
+export interface CustomerProfileData {
+  name: string
+  email: string
+  phone: string | null
+  address: string | null
+  contact_preference: string | null
+  customer_code: string
+  has_password: boolean
+  google_linked: boolean
+  contact_preferences: Array<{ value: string; label: string }>
+}
 
 let client: AxiosInstance | null = null
 let token = ''
@@ -95,4 +128,19 @@ export async function createCustomerAppointment(payload: {
   customer_notes?: string
 }): Promise<{ data: MobileAppointment; message: string }> {
   return (await getClient().post('/customer/appointments', payload)).data
+}
+export async function customerFeedback(page = 1): Promise<FeedbackListResponse> {
+  return (await getClient().get('/customer/feedback', { params: { page } })).data
+}
+export async function submitCustomerFeedback(payload: { appointment_id: number; rating: number; comment?: string }): Promise<{ data: MobileFeedback; message: string }> {
+  return (await getClient().post('/customer/feedback', payload)).data
+}
+export async function customerProfile(): Promise<CustomerProfileData> {
+  return (await getClient().get('/customer/profile')).data.data
+}
+export async function updateCustomerProfile(payload: { name: string; phone?: string; address?: string; contact_preference?: string }): Promise<{ data: CustomerProfileData; message: string }> {
+  return (await getClient().patch('/customer/profile', payload)).data
+}
+export async function updatePassword(payload: { current_password: string; password: string; password_confirmation: string }): Promise<{ message: string }> {
+  return (await getClient().patch('/auth/password', payload)).data
 }

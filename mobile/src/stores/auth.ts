@@ -59,5 +59,8 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function clear(): Promise<void> { user.value = null; setToken(''); await clearSession() }
-  return { user, booting, working, error, authenticated, hydrate, signIn, signOut, clear }
+  function applyProfile(name: string, phone: string | null): void {
+    if (user.value) user.value = { ...user.value, name, phone }
+  }
+  return { user, booting, working, error, authenticated, hydrate, signIn, signOut, clear, applyProfile }
 })

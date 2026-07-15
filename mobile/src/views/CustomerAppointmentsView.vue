@@ -6,6 +6,7 @@ import { useCustomerAppointmentsStore } from '../stores/customerAppointments'
 import CustomerBookingView from './CustomerBookingView.vue'
 
 const store = useCustomerAppointmentsStore()
+const emit = defineEmits<{ feedback: [appointmentId: number] }>()
 const openId = ref<number | null>(null)
 const bookingOpen = ref(false)
 
@@ -81,7 +82,7 @@ async function booked(message: string): Promise<void> {
           <button v-if="appointment.can_cancel" class="danger-button" :disabled="store.cancellingId === appointment.id" @click="confirmCancel(appointment)">
             {{ store.cancellingId === appointment.id ? 'Cancelling…' : 'Cancel appointment' }}
           </button>
-          <p v-else-if="appointment.can_submit_feedback" class="next-action">Feedback will be available in the next mobile module.</p>
+          <button v-else-if="appointment.can_submit_feedback" class="feedback-button" @click="emit('feedback', appointment.id)">Leave feedback</button>
         </div>
       </article>
     </div>
@@ -120,7 +121,7 @@ async function booked(message: string): Promise<void> {
 .appointment-main { min-width: 0; display: grid; gap: .25rem; }.appointment-main strong,.appointment-main small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.appointment-main small { color: #67675f; }
 .status-badge { width: fit-content; border-radius: 999px; padding: .18rem .5rem; background: #e9f2e8; color: #334736; font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }.status-badge[data-status="cancelled"],.status-badge[data-status="no_show"] { background: #f3e4df; color: #7a3e14; }.status-badge[data-status="completed"] { background: #eee8da; color: #655021; }
 .appointment-details { border-top: 1px solid #dcd2c2; padding: 1rem; }.appointment-details dl { display: grid; gap: .65rem; margin: 0; }.appointment-details dl div { display: flex; justify-content: space-between; gap: 1rem; }.appointment-details dt { color: #67675f; }.appointment-details dd { margin: 0; text-align: right; font-weight: 700; }.appointment-details p { font-size: .9rem; }
-.danger-button,.pager button { min-height: 48px; border-radius: .75rem; font: inherit; font-weight: 700; }.danger-button { width: 100%; border: 1px solid #a04a3c; background: #fff7f5; color: #8c2f26; }.danger-button:disabled,.pager button:disabled { opacity: .5; }.next-action { padding: .75rem; border-radius: .75rem; background: #f3ebdd; }
+.danger-button,.feedback-button,.pager button { min-height: 48px; border-radius: .75rem; font: inherit; font-weight: 700; }.danger-button,.feedback-button { width: 100%; }.danger-button { border: 1px solid #a04a3c; background: #fff7f5; color: #8c2f26; }.feedback-button { border: 1px solid #4f6a4e; background: #e9f2e8; color: #334736; }.danger-button:disabled,.pager button:disabled { opacity: .5; }
 .empty-state { padding: 2rem 1rem; border: 1px dashed #bfb3a2; border-radius: 1rem; text-align: center; background: #fffcf7; }.empty-state h2 { margin: 0; font-family: Georgia, serif; color: #334736; }
 .pager { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: .5rem; margin-top: 1rem; }.pager button { border: 1px solid #dcd2c2; background: #fffcf7; color: #334736; }.pager span { font-size: .8rem; color: #67675f; text-align: center; }
 @media (min-width: 640px) { .customer-workspace { padding-inline: 1.5rem; }.summary-strip span { font-size: .85rem; } }

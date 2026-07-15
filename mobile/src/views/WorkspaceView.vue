@@ -1,21 +1,28 @@
 <script setup lang="ts">
-import { computed, watchEffect } from 'vue'
+import { computed, ref, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import CustomerAppointmentsView from './CustomerAppointmentsView.vue'
+import CustomerFeedbackView from './CustomerFeedbackView.vue'
+import CustomerProfileView from './CustomerProfileView.vue'
 import { useAuthStore } from '../stores/auth'
 const auth = useAuthStore(); const router = useRouter()
+const customerTab = ref<'appointments' | 'feedback' | 'profile'>('appointments')
+const feedbackAppointmentId = ref<number | null>(null)
 const title = computed(() => ({ admin: 'Admin workspace', reception: 'Reception workspace', staff: 'Therapist workspace', customer: 'My appointments' }[auth.user?.workspace ?? 'customer']))
 watchEffect(() => { if (!auth.user) void router.replace('/sign-in'); else if (router.currentRoute.value.params.workspace !== auth.user.workspace) void router.replace(`/workspace/${auth.user.workspace}`) })
 async function leave() { if (await auth.signOut()) await router.replace('/sign-in') }
+function openFeedback(appointmentId: number) { feedbackAppointmentId.value = appointmentId; customerTab.value = 'feedback' }
 </script>
 <template>
   <main v-if="auth.user?.workspace === 'customer'" class="workspace-screen">
     <p v-if="auth.error" class="floating-alert alert" role="alert">{{ auth.error }}</p>
-    <CustomerAppointmentsView />
+    <CustomerAppointmentsView v-if="customerTab === 'appointments'" @feedback="openFeedback" />
+    <CustomerFeedbackView v-else-if="customerTab === 'feedback'" :appointment-id="feedbackAppointmentId" />
+    <CustomerProfileView v-else />
     <nav class="customer-dock" aria-label="Customer navigation">
-      <button class="active" aria-current="page" aria-label="Appointments"><span aria-hidden="true">◷</span><small>Appointments</small></button>
-      <button disabled aria-label="Feedback, coming soon"><span aria-hidden="true">☆</span><small>Feedback</small></button>
-      <button :disabled="auth.working" aria-label="Sign out" @click="leave"><span aria-hidden="true">↗</span><small>{{ auth.working ? 'Leaving…' : 'Sign out' }}</small></button>
+      <button :class="{ active: customerTab === 'appointments' }" :aria-current="customerTab === 'appointments' ? 'page' : undefined" aria-label="Appointments" @click="customerTab = 'appointments'"><span aria-hidden="true">◷</span><small>Appointments</small></button>
+      <button :class="{ active: customerTab === 'feedback' }" :aria-current="customerTab === 'feedback' ? 'page' : undefined" aria-label="Feedback" @click="feedbackAppointmentId = null; customerTab = 'feedback'"><span aria-hidden="true">☆</span><small>Feedback</small></button>
+      <button :class="{ active: customerTab === 'profile' }" :aria-current="customerTab === 'profile' ? 'page' : undefined" aria-label="Profile" @click="customerTab = 'profile'"><span aria-hidden="true">○</span><small>Profile</small></button>
     </nav>
   </main>
   <main v-else class="screen">

@@ -5,7 +5,11 @@ namespace App\Http\Controllers\Api\V1;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 
 class MobileAuthController
 {
@@ -56,6 +60,33 @@ class MobileAuthController
         $request->user()?->currentAccessToken()?->delete();
 
         return response()->json([], 204)->header('Cache-Control', 'no-store');
+    }
+
+    public function password(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'current_password' => ['required', 'string', 'max:1024'],
+            'password' => ['required', Password::defaults(), 'confirmed'],
+        ]);
+
+        DB::transaction(function () use ($request, $data): void {
+            $user = User::query()->lockForUpdate()->findOrFail($request->user()->id);
+
+            if (blank($user->password) || ! Hash::check($data['current_password'], $user->password)) {
+                throw ValidationException::withMessages([
+                    'current_password' => __('The current password is incorrect.'),
+                ]);
+            }
+
+            $user->forceFill([
+                'password' => Hash::make($data['password']),
+                'remember_token' => Str::random(60),
+            ])->save();
+        });
+
+        return response()->json([
+            'message' => 'Password updated. Sign in again on this phone.',
+        ])->header('Cache-Control', 'no-store');
     }
 
     private function user(User $user): array
