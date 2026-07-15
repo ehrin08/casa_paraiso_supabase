@@ -8,6 +8,7 @@
     "build": "vue-tsc -b && vite build",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "playwright test",
     "android:sync": "npm run build && npx cap sync android",
     "android:open": "npx cap open android"
   },
@@ -31,12 +32,13 @@
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@capacitor/cli": "^8.0.0",
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/vite": "^4.1.12",
     "@types/node": "^24.0.0",
     "@vitejs/plugin-vue": "^6.0.0",
     "@vue/tsconfig": "^0.7.0",
-    "playwright": "^1.55.0",
     "tailwindcss": "^4.1.12",
     "typescript": "^5.8.3",
     "vite": "^7.0.6",
