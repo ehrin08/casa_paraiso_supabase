@@ -61,14 +61,14 @@ class ReportController extends Controller
         }, $filename, ['Content-Type' => 'text/csv']);
     }
 
-    private function type(Request $request): string
+    protected function type(Request $request): string
     {
         $type = (string) $request->query('type', 'appointments');
 
         return in_array($type, self::TYPES, true) ? $type : 'appointments';
     }
 
-    private function query(string $type, Request $request): Builder
+    protected function query(string $type, Request $request): Builder
     {
         return match ($type) {
             'transactions' => $this->transactionQuery($request),
@@ -268,7 +268,7 @@ class ReportController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function summary(): array
+    protected function summary(): array
     {
         return [
             'appointments' => Appointment::query()->count(),
@@ -281,7 +281,7 @@ class ReportController extends Controller
     /**
      * @return array<int, string>
      */
-    private function csvHeader(string $type): array
+    protected function csvHeader(string $type): array
     {
         return match ($type) {
             'transactions' => ['Number', 'Customer', 'Service', 'Amount', 'Status', 'Method', 'Paid At'],
@@ -295,7 +295,7 @@ class ReportController extends Controller
     /**
      * @return array<int, string|int|float|null>
      */
-    private function csvRow(string $type, mixed $record): array
+    protected function csvRow(string $type, mixed $record): array
     {
         $row = match ($type) {
             'transactions' => [$record->transaction_number, $record->customerProfile?->user?->name, $record->service?->name, $record->amount, $record->payment_status, $record->payment_method, $record->paid_at?->toDateTimeString()],
@@ -317,7 +317,7 @@ class ReportController extends Controller
         return $value;
     }
 
-    private function validateFilters(Request $request): void
+    protected function validateFilters(Request $request): void
     {
         $request->validate([
             'type' => ['sometimes', Rule::in(self::TYPES)],

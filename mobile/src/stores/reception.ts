@@ -29,6 +29,7 @@ import {
 const emptyMeta = () => ({ current_page: 1, last_page: 1, per_page: 15, total: 0, from: null as number | null, to: null as number | null })
 
 export const useReceptionStore = defineStore('reception', () => {
+  const endpointPrefix = ref<'reception' | 'admin'>('reception')
   const dashboard = ref<{ summary: { today: number; upcoming: number; customers: number; payments_today: string }; today_appointments: OperationalAppointment[] } | null>(null)
   const appointments = ref<OperationalAppointment[]>([])
   const appointmentSummary = ref({ confirmed: 0, completed: 0, cancelled: 0 })
@@ -54,42 +55,46 @@ export const useReceptionStore = defineStore('reception', () => {
   const notice = ref('')
   const fields = ref<Record<string, string[]>>({})
 
-  async function loadDashboard(): Promise<void> { await run(async () => { dashboard.value = await receptionDashboard() }) }
+  function configurePrefix(prefix: 'reception' | 'admin'): void {
+    if (endpointPrefix.value === prefix) return
+    endpointPrefix.value = prefix; appointmentOptions.value = null; transactionOptions.value = null; clearMessages()
+  }
+  async function loadDashboard(): Promise<void> { await run(async () => { dashboard.value = await receptionDashboard(endpointPrefix.value) }) }
   async function loadAppointments(page = 1): Promise<void> {
     await run(async () => {
-      const response = await receptionAppointments({ page, status: appointmentStatus.value || undefined, date: appointmentDate.value || undefined, q: appointmentSearch.value.trim() || undefined })
+      const response = await receptionAppointments({ page, status: appointmentStatus.value || undefined, date: appointmentDate.value || undefined, q: appointmentSearch.value.trim() || undefined }, endpointPrefix.value)
       appointments.value = response.data; appointmentSummary.value = response.summary; appointmentMeta.value = response.meta
     })
   }
-  async function loadAppointmentOptions(): Promise<void> { if (!appointmentOptions.value) await run(async () => { appointmentOptions.value = await receptionAppointmentOptions() }) }
+  async function loadAppointmentOptions(): Promise<void> { if (!appointmentOptions.value) await run(async () => { appointmentOptions.value = await receptionAppointmentOptions(endpointPrefix.value) }) }
   async function findTherapists(serviceId: number, startsAt: string, addonCodes: string[], appointmentId?: number): Promise<void> {
     working.value = true; clearMessages()
-    try { availableTherapists.value = await receptionAvailableTherapists({ service_id: serviceId, starts_at: startsAt, appointment_id: appointmentId, addon_codes: addonCodes }) }
+    try { availableTherapists.value = await receptionAvailableTherapists({ service_id: serviceId, starts_at: startsAt, appointment_id: appointmentId, addon_codes: addonCodes }, endpointPrefix.value) }
     catch (reason) { capture(reason); availableTherapists.value = [] }
     finally { working.value = false }
   }
   async function saveAppointment(payload: Record<string, unknown>, id?: number): Promise<boolean> {
-    return mutate(async () => id ? updateReceptionAppointment(id, payload) : createReceptionAppointment(payload), async () => { await Promise.all([loadAppointments(1), loadDashboard()]) })
+    return mutate(async () => id ? updateReceptionAppointment(id, payload, endpointPrefix.value) : createReceptionAppointment(payload, endpointPrefix.value), async () => { await Promise.all([loadAppointments(1), loadDashboard()]) })
   }
   async function outcome(appointment: OperationalAppointment, status: 'cancelled' | 'no_show', reason?: string): Promise<boolean> {
-    return mutate(() => setReceptionAppointmentOutcome(appointment.id, status, reason), async () => { await Promise.all([loadAppointments(appointmentMeta.value.current_page), loadDashboard()]) })
+    return mutate(() => setReceptionAppointmentOutcome(appointment.id, status, reason, endpointPrefix.value), async () => { await Promise.all([loadAppointments(appointmentMeta.value.current_page), loadDashboard()]) })
   }
   async function complete(appointment: OperationalAppointment, payload: Record<string, unknown>): Promise<boolean> {
-    return mutate(() => completeReceptionAppointment(appointment.id, payload), async () => { await Promise.all([loadAppointments(appointmentMeta.value.current_page), loadDashboard(), loadTransactions(1)]) })
+    return mutate(() => completeReceptionAppointment(appointment.id, payload, endpointPrefix.value), async () => { await Promise.all([loadAppointments(appointmentMeta.value.current_page), loadDashboard(), loadTransactions(1)]) })
   }
   async function loadCustomers(page = 1): Promise<void> {
-    await run(async () => { const response = await receptionCustomers({ page, q: customerSearch.value.trim() || undefined }); customers.value = response.data; customerMeta.value = response.meta })
+    await run(async () => { const response = await receptionCustomers({ page, q: customerSearch.value.trim() || undefined }, endpointPrefix.value); customers.value = response.data; customerMeta.value = response.meta })
   }
-  async function openCustomer(id: number): Promise<void> { await run(async () => { selectedCustomer.value = await receptionCustomer(id) }) }
+  async function openCustomer(id: number): Promise<void> { await run(async () => { selectedCustomer.value = await receptionCustomer(id, endpointPrefix.value) }) }
   async function saveCustomer(id: number, payload: Record<string, unknown>): Promise<boolean> {
-    return mutate(() => updateReceptionCustomer(id, payload), async () => { selectedCustomer.value = await receptionCustomer(id); await loadCustomers(customerMeta.value.current_page) })
+    return mutate(() => updateReceptionCustomer(id, payload, endpointPrefix.value), async () => { selectedCustomer.value = await receptionCustomer(id, endpointPrefix.value); await loadCustomers(customerMeta.value.current_page) })
   }
   async function loadTransactions(page = 1): Promise<void> {
-    await run(async () => { const response = await receptionTransactions({ page, payment_status: transactionStatus.value || undefined, q: transactionSearch.value.trim() || undefined }); transactions.value = response.data; transactionSummary.value = response.summary; transactionMeta.value = response.meta })
+    await run(async () => { const response = await receptionTransactions({ page, payment_status: transactionStatus.value || undefined, q: transactionSearch.value.trim() || undefined }, endpointPrefix.value); transactions.value = response.data; transactionSummary.value = response.summary; transactionMeta.value = response.meta })
   }
-  async function loadTransactionOptions(): Promise<void> { if (!transactionOptions.value) await run(async () => { transactionOptions.value = await receptionTransactionOptions() }) }
+  async function loadTransactionOptions(): Promise<void> { if (!transactionOptions.value) await run(async () => { transactionOptions.value = await receptionTransactionOptions(endpointPrefix.value) }) }
   async function saveTransaction(payload: Record<string, unknown>, id?: number): Promise<boolean> {
-    return mutate(async () => id ? updateReceptionTransaction(id, payload) : createReceptionTransaction(payload), async () => { await Promise.all([loadTransactions(1), loadDashboard()]) })
+    return mutate(async () => id ? updateReceptionTransaction(id, payload, endpointPrefix.value) : createReceptionTransaction(payload, endpointPrefix.value), async () => { await Promise.all([loadTransactions(1), loadDashboard()]) })
   }
 
   async function run(task: () => Promise<void>): Promise<void> {
@@ -107,7 +112,7 @@ export const useReceptionStore = defineStore('reception', () => {
   return {
     dashboard, appointments, appointmentSummary, appointmentMeta, appointmentStatus, appointmentDate, appointmentSearch, appointmentOptions, availableTherapists,
     customers, customerMeta, customerSearch, selectedCustomer, transactions, transactionSummary, transactionMeta, transactionStatus, transactionSearch, transactionOptions,
-    loading, working, error, notice, fields, loadDashboard, loadAppointments, loadAppointmentOptions, findTherapists, saveAppointment, outcome, complete,
+    endpointPrefix, configurePrefix, loading, working, error, notice, fields, loadDashboard, loadAppointments, loadAppointmentOptions, findTherapists, saveAppointment, outcome, complete,
     loadCustomers, openCustomer, saveCustomer, loadTransactions, loadTransactionOptions, saveTransaction, clearMessages,
   }
 })

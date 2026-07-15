@@ -2,12 +2,14 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { useReceptionStore } from '../stores/reception'
 import ReceptionAppointmentsView from './ReceptionAppointmentsView.vue'
 import ReceptionCustomersView from './ReceptionCustomersView.vue'
 import ReceptionDashboardView from './ReceptionDashboardView.vue'
 import ReceptionPaymentsView from './ReceptionPaymentsView.vue'
 
 const tab=ref<'dashboard'|'appointments'|'customers'|'payments'>('dashboard');const auth=useAuthStore();const router=useRouter()
+const reception=useReceptionStore();reception.configurePrefix('reception')
 async function leave():Promise<void>{if(await auth.signOut())await router.replace('/sign-in')}
 </script>
 <template><main class="reception-shell"><div class="account-bar"><span>{{auth.user?.name}}</span><button :disabled="auth.working" @click="leave">{{auth.working?'Leaving…':'Sign out'}}</button></div><p v-if="auth.error" class="floating-alert alert">{{auth.error}}</p><ReceptionDashboardView v-if="tab==='dashboard'" @navigate="tab=$event"/><ReceptionAppointmentsView v-else-if="tab==='appointments'"/><ReceptionCustomersView v-else-if="tab==='customers'"/><ReceptionPaymentsView v-else/><nav class="ops-dock" aria-label="Receptionist navigation"><button :class="{active:tab==='dashboard'}" :aria-current="tab==='dashboard'?'page':undefined" @click="tab='dashboard'"><span>⌂</span><small>Today</small></button><button :class="{active:tab==='appointments'}" :aria-current="tab==='appointments'?'page':undefined" @click="tab='appointments'"><span>◷</span><small>Bookings</small></button><button :class="{active:tab==='customers'}" :aria-current="tab==='customers'?'page':undefined" @click="tab='customers'"><span>♙</span><small>Customers</small></button><button :class="{active:tab==='payments'}" :aria-current="tab==='payments'?'page':undefined" @click="tab='payments'"><span>₱</span><small>Payments</small></button></nav></main></template>

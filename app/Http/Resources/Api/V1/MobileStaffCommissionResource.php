@@ -19,6 +19,7 @@ class MobileStaffCommissionResource extends JsonResource
             'earned_at' => $this->timestamp($this->earned_at),
             'paid_at' => $this->timestamp($this->paid_at),
             'notes' => $this->notes,
+            'therapist' => $this->staffProfile ? ['id' => $this->staffProfile->id, 'name' => $this->staffProfile->user?->name] : null,
             'appointment' => $this->appointment ? [
                 'id' => $this->appointment->id,
                 'appointment_number' => $this->appointment->appointment_number,

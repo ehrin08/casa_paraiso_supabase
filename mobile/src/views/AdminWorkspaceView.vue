@@ -1,0 +1,15 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
+import AdminControlView from './AdminControlView.vue'
+import AdminDashboardView from './AdminDashboardView.vue'
+import AdminInsightsView from './AdminInsightsView.vue'
+import AdminManagementView from './AdminManagementView.vue'
+import AdminOperationsView from './AdminOperationsView.vue'
+const tab=ref<'dashboard'|'operations'|'manage'|'insights'|'control'>('dashboard');const auth=useAuthStore();const router=useRouter()
+async function leave():Promise<void>{if(await auth.signOut())await router.replace('/sign-in')}
+function openDashboardTarget(target:'operations'|'staff'|'services'):void{tab.value=target==='operations'?'operations':'manage'}
+</script>
+<template><main class="admin-shell"><div class="account-bar"><span>{{auth.user?.name}}</span><button :disabled="auth.working" @click="leave">{{auth.working?'Leaving…':'Sign out'}}</button></div><p v-if="auth.error" class="floating-alert alert">{{auth.error}}</p><AdminDashboardView v-if="tab==='dashboard'" @navigate="openDashboardTarget"/><AdminOperationsView v-else-if="tab==='operations'"/><AdminManagementView v-else-if="tab==='manage'"/><AdminInsightsView v-else-if="tab==='insights'"/><AdminControlView v-else/><nav class="dock" aria-label="Administrator navigation"><button :class="{active:tab==='dashboard'}" @click="tab='dashboard'"><span>⌂</span><small>Today</small></button><button :class="{active:tab==='operations'}" @click="tab='operations'"><span>◷</span><small>Ops</small></button><button :class="{active:tab==='manage'}" @click="tab='manage'"><span>♙</span><small>Manage</small></button><button :class="{active:tab==='insights'}" @click="tab='insights'"><span>⌁</span><small>Insights</small></button><button :class="{active:tab==='control'}" @click="tab='control'"><span>⚙</span><small>Control</small></button></nav></main></template>
+<style scoped>.admin-shell{min-height:100dvh}.account-bar{position:fixed;z-index:20;top:max(.5rem,env(safe-area-inset-top));right:.6rem;display:flex;align-items:center;gap:.5rem;padding:.3rem .35rem .3rem .65rem;border:1px solid #dcd2c2;border-radius:999px;background:rgb(255 252 247 / 94%);box-shadow:0 4px 14px rgb(35 38 32 / 9%)}.account-bar span{max-width:9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.75rem;font-weight:700}.account-bar button{min-height:36px;border:0;border-radius:999px;background:#f3ebdd;color:#7a3e14;font-weight:800}.floating-alert{position:fixed;z-index:22;top:4rem;right:.75rem;left:.75rem}.dock{position:fixed;z-index:20;right:0;bottom:0;left:0;display:grid;grid-template-columns:repeat(5,1fr);padding:.4rem .25rem max(.4rem,env(safe-area-inset-bottom));border-top:1px solid #dcd2c2;background:rgb(255 252 247 / 96%);box-shadow:0 -8px 24px rgb(35 38 32 / 8%);backdrop-filter:blur(12px)}.dock button{min-height:50px;display:grid;place-items:center;gap:.1rem;border:0;border-radius:.7rem;background:transparent;color:#67675f}.dock button.active{background:#e9f2e8;color:#334736}.dock span{font-size:1.05rem}.dock small{font-size:.61rem;font-weight:800}</style>

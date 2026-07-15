@@ -10,7 +10,7 @@ class CustomerUpdateRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->isReceptionist() ?? false;
+        return ($this->user()?->isReceptionist() || $this->user()?->isAdmin()) ?? false;
     }
 
     public function rules(): array
