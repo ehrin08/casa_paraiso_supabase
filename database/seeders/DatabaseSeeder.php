@@ -41,6 +41,18 @@ class DatabaseSeeder extends Seeder
             ],
         );
 
+        User::updateOrCreate(
+            ['email' => 'reception@casaparaiso.test'],
+            [
+                'name' => 'Demo Receptionist',
+                'phone' => '09170000006',
+                'role' => User::ROLE_RECEPTIONIST,
+                'is_active' => true,
+                'email_verified_at' => now(),
+                'password' => Hash::make('password'),
+            ],
+        );
+
         ApplicationSetting::query()->updateOrCreate(
             ['id' => 1],
             [

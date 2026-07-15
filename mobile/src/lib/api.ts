@@ -77,6 +77,64 @@ export interface CustomerProfileData {
   google_linked: boolean
   contact_preferences: Array<{ value: string; label: string }>
 }
+export interface OperationalAppointment {
+  id: number
+  appointment_number: string
+  status: 'confirmed' | 'completed' | 'cancelled' | 'no_show'
+  starts_at: string | null
+  ends_at: string | null
+  customer_notes: string | null
+  internal_notes: string | null
+  customer: { id: number; customer_code: string; name: string | null; phone: string | null } | null
+  service: { id: number; name: string; duration_minutes: number; price: string } | null
+  therapist: AppointmentParty | null
+  preferred_therapist: AppointmentParty | null
+  addons: Array<{ code: string; name: string; price: string; duration_minutes: number }>
+  expected_amount: string
+  transaction: { id: number; transaction_number: string; amount: string; payment_status: string } | null
+  actions: { can_edit: boolean; can_cancel: boolean; can_mark_no_show: boolean; can_finish: boolean }
+}
+export interface ReceptionAppointmentOptions {
+  customers: Array<{ id: number; customer_code: string; name: string | null; phone: string | null }>
+  services: Array<{ id: number; name: string; duration_minutes: number; price: string }>
+  addons: BookingAddon[]
+  payment_statuses: string[]
+  payment_methods: string[]
+  default_payment_method: string
+  initial_start_at: string
+}
+export interface OperationalTransaction {
+  id: number
+  transaction_number: string
+  amount: string
+  payment_status: string
+  payment_method: string | null
+  paid_at: string | null
+  notes: string | null
+  customer: { id: number; customer_code: string; name: string | null } | null
+  service: { id: number; name: string } | null
+  appointment: { id: number; appointment_number: string } | null
+  recorded_by: string | null
+}
+export interface ReceptionCustomerSummary { id: number; customer_code: string; name: string | null; phone: string | null; appointments_count: number; transactions_count: number }
+export interface ReceptionCustomerDetail extends ReceptionCustomerSummary {
+  email: string | null
+  address: string | null
+  contact_preference: string | null
+  notes: string | null
+  contact_preferences: Array<{ value: string; label: string }>
+  appointments: Array<{ id: number; appointment_number: string; status: string; starts_at: string | null; service: string | null; therapist: string | null }>
+  transactions: Array<{ id: number; transaction_number: string; amount: string; payment_status: string; service: string | null; paid_at: string | null }>
+  feedback: Array<{ id: number; rating: number; comment: string | null; sentiment: string; service: string | null; submitted_at: string | null }>
+}
+export interface ReceptionTransactionOptions {
+  customers: Array<{ id: number; customer_code: string; name: string | null }>
+  services: Array<{ id: number; name: string }>
+  appointments: Array<{ id: number; appointment_number: string; customer_profile_id: number; service_id: number; customer_name: string | null; service_name: string | null; expected_amount: string }>
+  payment_statuses: string[]
+  payment_methods: string[]
+  default_payment_method: string
+}
 
 let client: AxiosInstance | null = null
 let token = ''
@@ -144,3 +202,22 @@ export async function updateCustomerProfile(payload: { name: string; phone?: str
 export async function updatePassword(payload: { current_password: string; password: string; password_confirmation: string }): Promise<{ message: string }> {
   return (await getClient().patch('/auth/password', payload)).data
 }
+export async function receptionDashboard(): Promise<{ summary: { today: number; upcoming: number; customers: number; payments_today: string }; today_appointments: OperationalAppointment[] }> {
+  return (await getClient().get('/reception/dashboard')).data.data
+}
+export async function receptionAppointments(params: { page?: number; status?: string; date?: string; q?: string } = {}) {
+  return (await getClient().get('/reception/appointments', { params })).data as { data: OperationalAppointment[]; summary: { confirmed: number; completed: number; cancelled: number }; meta: AppointmentListResponse['meta'] }
+}
+export async function receptionAppointmentOptions(): Promise<ReceptionAppointmentOptions> { return (await getClient().get('/reception/appointment-options')).data.data }
+export async function receptionAvailableTherapists(params: { service_id: number; starts_at: string; appointment_id?: number; addon_codes?: string[] }): Promise<BookingTherapist[]> { return (await getClient().get('/reception/available-therapists', { params })).data.data }
+export async function createReceptionAppointment(payload: Record<string, unknown>) { return (await getClient().post('/reception/appointments', payload)).data as { data: OperationalAppointment; message: string } }
+export async function updateReceptionAppointment(id: number, payload: Record<string, unknown>) { return (await getClient().patch(`/reception/appointments/${id}`, payload)).data as { data: OperationalAppointment; message: string } }
+export async function setReceptionAppointmentOutcome(id: number, status: 'cancelled' | 'no_show', reason?: string) { return (await getClient().post(`/reception/appointments/${id}/outcome`, { status, reason })).data as { data: OperationalAppointment; message: string } }
+export async function completeReceptionAppointment(id: number, payload: Record<string, unknown>) { return (await getClient().post(`/reception/appointments/${id}/complete`, payload)).data as { data: OperationalTransaction; message: string } }
+export async function receptionCustomers(params: { page?: number; q?: string } = {}) { return (await getClient().get('/reception/customers', { params })).data as { data: ReceptionCustomerSummary[]; meta: AppointmentListResponse['meta'] } }
+export async function receptionCustomer(id: number): Promise<ReceptionCustomerDetail> { return (await getClient().get(`/reception/customers/${id}`)).data.data }
+export async function updateReceptionCustomer(id: number, payload: Record<string, unknown>) { return (await getClient().patch(`/reception/customers/${id}`, payload)).data as { data: ReceptionCustomerSummary; message: string } }
+export async function receptionTransactions(params: { page?: number; payment_status?: string; q?: string } = {}) { return (await getClient().get('/reception/transactions', { params })).data as { data: OperationalTransaction[]; summary: { paid: string; unpaid_count: number; partial_count: number }; meta: AppointmentListResponse['meta'] } }
+export async function receptionTransactionOptions(): Promise<ReceptionTransactionOptions> { return (await getClient().get('/reception/transaction-options')).data.data }
+export async function createReceptionTransaction(payload: Record<string, unknown>) { return (await getClient().post('/reception/transactions', payload)).data as { data: OperationalTransaction; message: string } }
+export async function updateReceptionTransaction(id: number, payload: Record<string, unknown>) { return (await getClient().patch(`/reception/transactions/${id}`, payload)).data as { data: OperationalTransaction; message: string } }

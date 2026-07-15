@@ -56,6 +56,7 @@ When sources disagree, identify whether the question concerns intended or curren
 - Application behavior is covered primarily by Laravel feature tests under `tests/Feature`; factories exist for all business models.
 - The mobile foundation now includes pairing, Sanctum device-token authentication, and role workspace shells. `/api/v1/meta`, `/api/v1/pairings/verify`, `POST /api/v1/auth/login`, `GET /api/v1/auth/me`, and `POST /api/v1/auth/logout` are implemented; pairing establishes server identity only, while the app keeps a 30-day mobile bearer token in native secure storage.
 - The customer mobile workspace now provides the complete appointment-first slice: owned appointment history/details, status filtering, fixed pagination, pre-start cancellation, transactional booking with eligible therapist preferences, paid add-ons, available RFM vouchers and live month availability, one-per-completed-visit feedback with sentiment classification, and profile/contact/password management. The customer bottom bar exposes Appointments, Feedback, and Profile. `MobileCustomerAppointmentController`, `MobileCustomerBookingController`, `MobileCustomerFeedbackController`, `MobileCustomerProfileController`, `MobileAppointmentResource`, `MobileFeedbackResource`, and the matching `mobile/src/stores` and `mobile/src/views` customer modules are the primary entry points.
+- The receptionist mobile workspace now covers the front-desk dashboard, appointment search/filter/detail and creation, therapist availability, appointment updates/outcomes/completion, customer contact/history editing, and manual transaction search/create/update. Its bottom bar exposes Today, Bookings, Customers, and Payments. `MobileReceptionDashboardController`, `MobileReceptionAppointmentController`, `MobileReceptionCustomerController`, `MobileReceptionTransactionController`, `MobileOperationalAppointmentResource`, `MobileTransactionResource`, and the matching reception store/views are the primary entry points.
 - The dedicated engine and Compose project are isolated from Docker Desktop. The account-preserving clone compares account/profile counts against the read-only inherited source and refuses to overwrite a differing account-bearing destination.
 - Admin Settings persists editable business identity/contact details and a payment-form default while displaying code-controlled operating and security safeguards.
 - The Phase 11 application security baseline and checklist are implemented. Target-host validation, Hostinger delivery preparation, and the non-technical handover/operations manual remain incomplete.
@@ -111,7 +112,7 @@ Key identity entry points are `routes/auth.php`, the shared profile routes in `r
 
 - `routes/web.php` owns public, shared profile, admin, staff, and customer workspaces. Read its middleware groups before changing access.
 - `routes/auth.php` owns registration, login, Google OAuth, verification, password reset, confirmation, and logout.
-- `routes/api.php` owns the versioned mobile surface: pairing metadata/verification, Sanctum-protected mobile authentication/password change, and customer appointment, availability, booking, cancellation, feedback, and profile endpoints.
+- `routes/api.php` owns the versioned mobile surface: pairing metadata/verification, Sanctum-protected mobile authentication/password change, customer appointment/booking/feedback/profile endpoints, and receptionist dashboard/appointment/customer/transaction endpoints.
 - `app/Http/Controllers/{Admin,Reception,Staff,Customer}` separates role-specific request handling.
 - `app/Http/Requests` contains workflow validation; business invariants that require transactions, locks, or cross-record checks live in services.
 - `app/Models` contains state vocabulary, casts, and relationships.
@@ -243,7 +244,7 @@ Primary UI sources are `docs/BRAND_UI_GUIDE.md`, `docs/TECH_STACK.md`, `resource
 | Authenticated UI, lists, calendars, or accessibility | `BRAND_UI_GUIDE.md`, `TECH_STACK.md` | Shared components/layouts, CSS/JS, pagination view, provider, relevant role view | `CompactWorkspacePaginationTest`, `InteractiveListControlsTest`, `ModalInfrastructureTest`, `RoleWorkspaceTest` |
 | Public content, packages, or business hours | `BRAND_UI_GUIDE.md`, `MVP_SCOPE.md` | `config/casa.php`, landing view, service seeding and service views | `ExampleTest`, `AdminServiceManagementTest`, `DatabaseFoundationTest` |
 | Docker, Hostinger, or handover | `TECH_STACK.md`, `DOCKER_WORKFLOW.md`, roadmap phase 11 | `compose.yaml`, Composer/npm manifests, `.env.example`, public entry point | Build/test commands and clean-checkout review |
-| Mobile pairing, authentication, customer workflows, tunnel, or Android shell | `MOBILE_SUPABASE_PLAN.md`, `DOCKER_WORKFLOW.md` | `routes/api.php`, `MobilePairing`, mobile API controllers/resources, API middleware, `mobile/src`, `scripts/mobile-demo.ps1` | `MobilePairingApiTest`, `MobileAuthApiTest`, `MobileCustomerAppointmentApiTest`, `MobileCustomerBookingApiTest`, `MobileCustomerFeedbackApiTest`, `MobileCustomerProfileApiTest`, mobile unit tests, Android `assembleDebug` |
+| Mobile pairing, authentication, customer/receptionist workflows, tunnel, or Android shell | `MOBILE_SUPABASE_PLAN.md`, `DOCKER_WORKFLOW.md` | `routes/api.php`, `MobilePairing`, mobile API controllers/resources, API middleware, `mobile/src`, `scripts/mobile-demo.ps1` | `MobilePairingApiTest`, `MobileAuthApiTest`, mobile customer and receptionist API tests, mobile unit tests, Android `assembleDebug` |
 
 ## Verification and Database Safety
 
@@ -272,10 +273,10 @@ Database migrations, seeders, imports, and targeted data repairs are permitted i
 
 ## Known Gaps
 
-- Pairing, Sanctum device-token authentication, secure token storage, role workspace shells, and the complete customer appointment/booking/feedback/profile vertical slice are implemented. The remaining feature-complete role workspaces, mobile Google exchange, and release signing remain pending.
+- Pairing, Sanctum device-token authentication, secure token storage, role workspace shells, and the complete customer and receptionist vertical slices are implemented. Therapist, admin, and super-administrator feature-complete workspaces, mobile Google exchange, and release signing remain pending.
 - Supabase project provisioning, PostgreSQL portability fixes, account-preserving data transfer, and cutover verification remain pending.
 - The Quick Tunnel pairing flow is implemented and live-verified; the mobile Google OAuth callback/exchange workflow remains pending.
-- The automated four-workspace smoke suite passes. Pairing, password sign-in, customer booking options, live availability, slot selection, feedback history, profile display/update, navigation, and sign-out were also verified through a phone-sized in-app browser against a Cloudflare Quick Tunnel on 2026-07-15.
+- The automated four-workspace smoke suite passes. Pairing, password sign-in, customer booking options, live availability, slot selection, feedback history, profile display/update, navigation, and sign-out were verified through a phone-sized in-app browser against a Cloudflare Quick Tunnel on 2026-07-15. Receptionist dashboard, booking creation/options and lists, customer search/detail/edit fields, payment lists, and payment-entry options were likewise live-verified without mutating records.
 - Mobile and Supabase security checks require validation against the final APK, tunnel, and database configuration.
 - Record-level CRUD repair status belongs only in its dedicated repair documents and must be rechecked read-only before any separately approved action.
 

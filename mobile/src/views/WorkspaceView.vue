@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import CustomerAppointmentsView from './CustomerAppointmentsView.vue'
 import CustomerFeedbackView from './CustomerFeedbackView.vue'
 import CustomerProfileView from './CustomerProfileView.vue'
+import ReceptionWorkspaceView from './ReceptionWorkspaceView.vue'
 import { useAuthStore } from '../stores/auth'
 const auth = useAuthStore(); const router = useRouter()
 const customerTab = ref<'appointments' | 'feedback' | 'profile'>('appointments')
@@ -25,6 +26,7 @@ function openFeedback(appointmentId: number) { feedbackAppointmentId.value = app
       <button :class="{ active: customerTab === 'profile' }" :aria-current="customerTab === 'profile' ? 'page' : undefined" aria-label="Profile" @click="customerTab = 'profile'"><span aria-hidden="true">○</span><small>Profile</small></button>
     </nav>
   </main>
+  <ReceptionWorkspaceView v-else-if="auth.user?.workspace === 'reception'" />
   <main v-else class="screen">
     <section class="panel">
       <p class="eyebrow">{{ auth.user?.role }}</p><h1>{{ title }}</h1>
