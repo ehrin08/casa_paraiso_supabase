@@ -38,8 +38,8 @@ The user explicitly approved the documented operations on 2026-07-12. The repair
 ### Execution
 
 ```powershell
-docker compose exec -T laravel.test php artisan casa:repair-approved-appointment-references
-docker compose exec -T laravel.test php artisan casa:repair-approved-appointment-references --execute
+.\scripts\casa-docker.ps1 compose exec -T laravel.test php artisan casa:repair-approved-appointment-references
+.\scripts\casa-docker.ps1 compose exec -T laravel.test php artisan casa:repair-approved-appointment-references --execute
 ```
 
 The first command was a read-only dry run. The second command applied both approved operational changes atomically through the appointment workflow.

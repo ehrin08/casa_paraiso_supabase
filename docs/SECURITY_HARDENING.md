@@ -72,11 +72,11 @@ A strict Content Security Policy is deferred until inline Alpine expressions and
 Run application checks against the isolated test database:
 
 ```powershell
-docker compose exec -T --user sail laravel.test php artisan test
-docker compose exec -T laravel.test npm run build
-docker compose exec -T --user sail laravel.test php artisan view:cache
-docker compose exec -T --user sail laravel.test php artisan view:clear
-docker compose exec -T laravel.test vendor/bin/pint --test
+.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test php artisan test
+.\scripts\casa-docker.ps1 compose exec -T laravel.test npm run build
+.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test php artisan view:cache
+.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test php artisan view:clear
+.\scripts\casa-docker.ps1 compose exec -T laravel.test vendor/bin/pint --test
 ```
 
 Representative coverage includes `SecurityHardeningTest`, `RoleWorkspaceTest`, `AuthenticatedWorkspaceSmokeTest`, authentication tests, and role-specific workflow suites.

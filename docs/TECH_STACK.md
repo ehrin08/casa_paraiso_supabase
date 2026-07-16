@@ -12,7 +12,7 @@ Casa Paraiso should be built as a production-ready Laravel monolith that stays c
 - Database workflow: Laravel migrations and seeders
 - Package management: Composer for PHP dependencies, npm for frontend build dependencies
 - Authentication: Laravel Breeze email/password authentication with email verification, plus Laravel Socialite Google OAuth
-- Primary local development: Docker with Laravel Sail services managed through direct Docker Compose commands
+- Primary local development: Docker Desktop with Laravel Sail services managed through `scripts/casa-docker.ps1`
 - Fallback local development: XAMPP / Apache
 - Production hosting: Hostinger shared/web hosting by default
 
@@ -79,10 +79,10 @@ Turbo Drive 8 is approved as the targeted navigation enhancement for the Blade a
 
 For primary Docker/Sail development:
 
-- Confirm Docker and Docker Compose are available.
-- Start services with `docker compose up -d`.
+- Confirm Docker Desktop is running with the `desktop-linux` context available.
+- Start services with `.\scripts\casa-docker.ps1 start`.
 - Use the Sail MariaDB service for local database work.
-- Use `docker compose exec laravel.test ...` for Composer, npm, Artisan, migrations, and tests.
+- Use `.\scripts\casa-docker.ps1 compose exec laravel.test ...` for Composer, npm, Artisan, migrations, and tests.
 - Avoid `.\vendor\bin\sail.bat` on this machine unless Bash/WSL is repaired.
 
 For XAMPP fallback:
@@ -98,21 +98,21 @@ Current local environment observed during planning:
 - Composer: 2.9.7
 - Node: 24.15.0
 - npm: 11.12.1
-- Docker: 29.4.2
+- Docker: 29.6.1
 - Docker Compose: 5.1.3
 
 ## Verification Commands After Scaffolding
 
 Use these commands once the Laravel project exists:
 
-```bash
-docker compose up -d
-docker compose exec -T laravel.test composer install
-docker compose restart laravel.test
-docker compose exec -T laravel.test npm install
-docker compose exec -T laravel.test npm run build
-docker compose exec -T --user sail laravel.test php artisan migrate
-docker compose exec -T --user sail laravel.test php artisan test
+```powershell
+.\scripts\casa-docker.ps1 start
+.\scripts\casa-docker.ps1 compose exec -T laravel.test composer install
+.\scripts\casa-docker.ps1 compose restart laravel.test
+.\scripts\casa-docker.ps1 compose exec -T laravel.test npm install
+.\scripts\casa-docker.ps1 compose exec -T laravel.test npm run build
+.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test php artisan migrate
+.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test php artisan test
 ```
 
 Demo seeding is restricted to local and testing environments. Production deployments must run migrations without `--seed` so predictable demo credentials are never installed or reset.

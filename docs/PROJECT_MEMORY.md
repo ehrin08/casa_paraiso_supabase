@@ -1,6 +1,6 @@
 # Casa Paraiso Project Memory
 
-> Last reviewed: 2026-07-15
+> Last reviewed: 2026-07-16
 > Review basis: current repository working tree
 > Role: fast orientation for agents and developers; not an independent source of truth
 
@@ -44,7 +44,7 @@ When sources disagree, identify whether the question concerns intended or curren
 - The inherited Laravel/Blade/MariaDB implementation remains the functional baseline; this repository now has an isolated cloned demo database and mobile pairing foundation.
 - The approved target is a bundled Capacitor Android application using Vue 3 and TypeScript, with Laravel retained as the authenticated API and business-logic backend and Supabase PostgreSQL as the authoritative database after cutover.
 - All five roles remain in scope: customer, receptionist, therapist, admin, and super administrator.
-- The demonstration backend runs on the dedicated `CasaParaisoDocker` WSL2 Docker Engine and a Cloudflare Quick Tunnel. The bundled APK pairs by pasting the verified tunnel or APK download link; no separate PIN is required.
+- The demonstration backend runs in the Docker Desktop Compose project `casa-paraiso-supabase-desktop` with a profile-gated Cloudflare Quick Tunnel. The bundled APK pairs by pasting the verified tunnel or APK download link; no separate PIN is required.
 - The implementation and migration sequence is authoritative in [`MOBILE_SUPABASE_PLAN.md`](MOBILE_SUPABASE_PLAN.md). Inherited Hostinger/MariaDB documents describe the baseline unless and until they are reconciled as implementation work lands.
 
 ## Current Project State
@@ -62,8 +62,8 @@ When sources disagree, identify whether the question concerns intended or curren
 - The admin and protected super-administrator mobile workspace now covers operational dashboards; booking, customer, and payment operations; therapist, service, recurring-schedule, exception, and dated weekly-roster management; feedback, rewards, commissions, and native-share CSV reports; business settings; and protected user access. Its bottom bar exposes Today, Ops, Manage, Insights, and Control. `MobileAdminDashboardController`, the `MobileAdmin*` API controllers, `/api/v1/admin`, and the matching `mobile/src/stores/admin*` and `mobile/src/views/Admin*` modules are the primary entry points. Regular admins cannot access user provisioning or role/activation controls.
 - The mobile interface now uses bundled Manrope/Cormorant Garamond fonts, semantic Casa design tokens, Phosphor icons, a shared safe-area-aware app bar and three-to-five-item role dock, sticky segmented subnavigation, responsive form/list rules, and shared focus-managed sheets and confirmations. Browser prompts are no longer used for appointment outcomes or commission payouts.
 - `mobile/e2e/role-workspaces.spec.ts` runs deterministic Playwright workflows for all five roles at 320px small-phone, Pixel 7, 375px landscape, and 768px tablet viewports. It applies axe scans after every main tab, asserts navigation target size and viewport fit, verifies modal focus/dismissal, and maintains reference visual snapshots. Keep this suite alongside Vitest and live Quick Tunnel acceptance.
-- The dedicated engine and Compose project are isolated from Docker Desktop. The account-preserving clone compares account/profile counts against the read-only inherited source and refuses to overwrite a differing account-bearing destination.
-- PostgreSQL 17 now runs beside MariaDB in the dedicated Compose project. `casa:transfer-to-postgres` is dry-run-first, preserves identity and business rows in foreign-key order, accepts only the exact migration-owned RFM baseline on an otherwise empty target, resets sequences, and supports a read-only full-row `--validate` pass. The verified local transfer preserved 20 accounts and passed the CRUD integrity audit.
+- The primary Compose project now runs on Docker Desktop through the guarded `scripts/casa-docker.ps1` wrapper. Its MariaDB and PostgreSQL data were restored from logical backups and matched canonical source-data hashes; the prior dedicated WSL2 engine remains stopped as a rollback copy. The account-preserving clone still compares account/profile counts against the read-only inherited source and refuses to overwrite a differing account-bearing destination.
+- PostgreSQL 17 now runs beside MariaDB in the Docker Desktop Compose project. `casa:transfer-to-postgres` is dry-run-first, preserves identity and business rows in foreign-key order, accepts only the exact migration-owned RFM baseline on an otherwise empty target, resets sequences, and supports a read-only full-row `--validate` pass. The verified local transfer preserved 20 accounts and passed the CRUD integrity audit.
 - Admin Settings persists editable business identity/contact details and a payment-form default while displaying code-controlled operating and security safeguards.
 - The Phase 11 application security baseline and checklist are implemented. Target-host validation, Hostinger delivery preparation, and the non-technical handover/operations manual remain incomplete.
 - CRUD audit and repair information is tracked separately in [`CRUD_REMEDIATION_CHECKLIST.md`](CRUD_REMEDIATION_CHECKLIST.md) and [`CRUD_DATA_REPAIR_PLAN.md`](CRUD_DATA_REPAIR_PLAN.md). Never copy its record-level findings here or infer approval to execute a repair.
@@ -77,7 +77,8 @@ When sources disagree, identify whether the question concerns intended or curren
 | Views | Blade templates with reusable Blade components |
 | Frontend | Existing Blade/Tailwind UI plus a bundled Vue 3/TypeScript/Tailwind/Pinia/Capacitor 8 Android pairing, sign-in, and role-shell app |
 | Data | MariaDB/MySQL migration source; verified local PostgreSQL 17 target; dedicated Supabase PostgreSQL production target |
-| Primary local runtime | Dedicated Ubuntu WSL2 Docker Engine through `scripts/casa-docker.ps1`; bare Compose is intentionally avoided |
+| Primary local runtime | Docker Desktop `desktop-linux` through `scripts/casa-docker.ps1`, using Compose project `casa-paraiso-supabase-desktop`; bare Compose is intentionally avoided |
+| Local runtime rollback | Preserved `CasaParaisoDocker` WSL2 engine through `scripts/casa-dedicated-docker.ps1`; never run concurrently with Docker Desktop |
 | Local fallback | XAMPP/Apache with compatible PHP and MariaDB/MySQL |
 | Delivery target | Signed Android APK; local Laravel demo backend through a Cloudflare quick tunnel |
 | Timezone | `Asia/Manila` |
@@ -275,11 +276,11 @@ Set-Location mobile; npm run build; npm test
 Set-Location mobile; npm run test:e2e
 ```
 
-Sentiment reclassification is dry-run by default: `docker compose exec -T --user sail laravel.test php artisan casa:reclassify-sentiment`; use `--apply` only after reviewing its transition counts and taking the appropriate database backup/export.
+Sentiment reclassification is dry-run by default: `.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test php artisan casa:reclassify-sentiment`; use `--apply` only after reviewing its transition counts and taking the appropriate database backup/export.
 
 Run dependency installation only when dependencies changed or the environment is new; follow `AGENTS.md` and `DOCKER_WORKFLOW.md`.
 
-Run in-container Artisan commands through `.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test ...` so the guarded dedicated engine is used and CLI-created logs and cache artifacts remain writable by the `sail` web process. The single and daily log channels create files with mode `0664`.
+Run in-container Artisan commands through `.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test ...` so the guarded Docker Desktop project is used and CLI-created logs and cache artifacts remain writable by the `sail` web process. The single and daily log channels create files with mode `0664`.
 
 Database migrations, seeders, imports, and targeted data repairs are permitted in the intended environment. Preserve existing accounts: never use `migrate:fresh`, `db:wipe`, table drops, truncation, or bulk delete/reseed work that erases `users`, `customer_profiles`, `staff_profiles`, or authentication-support records. Prefer additive migrations and idempotent seeders; if an account-preserving route is unavailable, stop and ask the user. Tests must remain isolated from non-test databases.
 

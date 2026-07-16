@@ -1,12 +1,12 @@
-# Casa Paraiso Dedicated Docker Workflow
+# Casa Paraiso Docker Desktop Workflow
 
 ## Purpose
 
-This repository uses its own Docker Engine inside the Ubuntu 24.04 WSL2 distribution `CasaParaisoDocker`. It does not use Docker Desktop and does not share images, containers, networks, or volumes with the inherited `C:\casa_paraiso` project.
+This repository uses Docker Desktop's `desktop-linux` engine through `scripts\casa-docker.ps1`. The wrapper verifies the daemon identity and fixes the Compose project name to `casa-paraiso-supabase-desktop`, keeping it separate from the inherited `C:\casa_paraiso` project and from older partial volumes.
 
-Application source remains in `C:\casa_paraiso_supabase`. Docker data lives inside the dedicated WSL distribution. A small hidden `wsl.exe` keepalive owned by the project scripts keeps the on-demand daemon and demo tunnel alive between commands; `stop` removes it.
+Application source remains in `C:\casa_paraiso_supabase`. Docker Desktop owns the active images, containers, networks, and named volumes. The prior `CasaParaisoDocker` WSL2 engine remains installed with its stopped pre-migration volumes as a rollback copy; access it only through `scripts\casa-dedicated-docker.ps1` after stopping Docker Desktop services because both stacks publish the same loopback ports.
 
-The inherited Docker Desktop MariaDB stack is a read-only migration source. Never stop, recreate, seed, or otherwise mutate it from this repository.
+The inherited `casa_paraiso` Docker Desktop MariaDB stack is a read-only migration source. Never start, recreate, seed, or otherwise mutate it from this repository.
 
 ## Services and Local Ports
 
@@ -19,25 +19,28 @@ The inherited Docker Desktop MariaDB stack is a read-only migration source. Neve
 
 Composer dependencies inside the app use the `sail-vendor` named volume. MariaDB data uses `sail-mariadb`, and PostgreSQL data uses `sail-postgres`. Published host ports bind only to loopback.
 
-## Provision the Dedicated Engine
+## Docker Desktop and Rollback Engine
 
-Run once from an elevated or normal PowerShell session. The script imports Ubuntu 24.04 into `C:\WSL\CasaParaisoDocker`, installs Docker Engine and Compose, enables systemd, labels the daemon, and verifies its identity.
-
-```powershell
-.\scripts\provision-casa-docker.ps1 -Action Install
-```
-
-Read-only verification:
+Start Docker Desktop before using the project. Read-only verification of the active project and daemon identity is available through:
 
 ```powershell
-.\scripts\provision-casa-docker.ps1 -Action Verify
+.\scripts\casa-docker.ps1 status
 ```
 
-Every project Compose command checks for the daemon label `com.casaparaiso.engine=dedicated` and refuses an unexpected engine.
+The wrapper always targets Docker context `desktop-linux` and Compose project `casa-paraiso-supabase-desktop`, regardless of the shell's current Docker context.
+
+The former dedicated engine is retained only for rollback inspection. Stop the Docker Desktop project before using it:
+
+```powershell
+.\scripts\casa-docker.ps1 stop
+.\scripts\casa-dedicated-docker.ps1 status
+```
+
+`provision-casa-docker.ps1` and `CasaDedicatedDocker.psm1` remain for that rollback engine; they are no longer the primary workflow.
 
 ## First Project Start
 
-The host Composer install is needed because Sail's build context comes from `vendor/laravel/sail`. The container install then populates the Linux-backed vendor volume.
+The host Composer install is needed because Sail's build context comes from `vendor/laravel/sail`. The container install then populates Docker Desktop's Linux-backed vendor volume.
 
 ```powershell
 composer install
@@ -55,7 +58,7 @@ Never use `migrate:fresh`, `db:wipe`, table drops, truncation, or a destructive 
 
 ## Account-Preserving Inherited Data Clone
 
-Run only after confirming `C:\casa_paraiso` is the intended read-only Docker Desktop source:
+Run only after confirming the inherited `casa_paraiso` containers and volumes in Docker Desktop are the intended read-only source:
 
 ```powershell
 .\scripts\clone-inherited-db.ps1 -Apply
@@ -93,7 +96,7 @@ For Supabase, set `MIGRATION_TARGET_DB_URL` to the migration/import account's Su
 ## Daily Commands
 
 ```powershell
-# Start the daemon keepalive and project services
+# Start the Docker Desktop project services
 .\scripts\casa-docker.ps1 start
 
 # Inspect services
@@ -105,11 +108,11 @@ For Supabase, set `MIGRATION_TARGET_DB_URL` to the migration/import account's Su
 .\scripts\casa-docker.ps1 compose exec -T laravel.test npm run build
 .\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test php artisan test
 
-# Stop services, daemon, and WSL keepalive
+# Stop project services; Docker Desktop itself remains running
 .\scripts\casa-docker.ps1 stop
 ```
 
-Do not use bare `docker compose` for this repository. The wrapper is the engine-isolation guard.
+Do not use bare `docker compose` for this repository. The wrapper is the Docker Desktop identity and project-name guard.
 
 ## Quick Tunnel and Secure Pairing
 
@@ -119,7 +122,7 @@ Start a demo session:
 .\scripts\mobile-demo.ps1 -Action Start
 ```
 
-The helper requires an existing signed release APK, starts the dedicated stack and tunnel, temporarily hardens the ignored `.env`, validates `/api/v1/meta`, prints a temporary APK download URL plus the connection link and Google callback, and sends a URL-only `casaparaiso://pair` deep link when exactly one ADB device is available. The APK download route is disabled whenever the demo pairing flag is off.
+The helper requires an existing signed release APK, starts the Docker Desktop stack and profile-gated `cloudflared` container, temporarily hardens the ignored `.env`, validates `/api/v1/meta`, prints a temporary APK download URL plus the connection link and Google callback, and sends a URL-only `casaparaiso://pair` deep link when exactly one ADB device is available. The APK download route is disabled whenever the demo pairing flag is off.
 
 The app accepts the bare connection URL or the APK download URL, reduces it to an exact HTTPS `*.trycloudflare.com` origin, validates the Casa Paraiso service identity and instance UUID through the rate-limited metadata endpoint, and persists only the verified URL, instance UUID, and pairing timestamp in Capacitor Preferences. Pairing grants no authenticated session; password or Google sign-in remains required.
 
@@ -130,7 +133,7 @@ Rotate or inspect the demo:
 .\scripts\mobile-demo.ps1 -Action Status
 ```
 
-Always stop after the demonstration. This closes the public tunnel, restores the prior `.env` values, clears Laravel configuration, stops services and the daemon, and removes the WSL keepalive:
+Always stop after the demonstration. This closes the public tunnel, restores the prior `.env` values, clears Laravel configuration, and stops the Docker Desktop project services:
 
 ```powershell
 .\scripts\mobile-demo.ps1 -Action Stop
@@ -163,7 +166,7 @@ Never delete or replace the external signing directory after distributing the AP
 
 ## Environment Defaults
 
-The dedicated local `.env` uses:
+The Docker Desktop local `.env` uses:
 
 ```env
 APP_URL=http://localhost:18001
@@ -197,4 +200,4 @@ Secrets, the generated server UUID, pairing state, dumps, build outputs, and loc
 
 Docker and the Quick Tunnel are the approved demonstration backend, not the final hosted production backend. The Android UI is bundled into the APK and must never use Capacitor `server.url` to wrap a remote web page. Local PostgreSQL portability and transfer are verified; provisioning the dedicated Supabase project, production hosting, release signing, and physical-device acceptance remain delivery milestones.
 
-XAMPP remains a fallback for inherited browser comparison only. It must not share or replace the dedicated project database.
+XAMPP remains a fallback for inherited browser comparison only. It must not share or replace the Docker Desktop project database. The preserved dedicated WSL2 engine is a rollback copy, not a concurrently active development environment.

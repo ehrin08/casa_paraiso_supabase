@@ -44,7 +44,8 @@ Design and develop a centralized Spa Appointment and Management System for Casa 
 ## Working Directory
 
 - Root: `C:\casa_paraiso_supabase`
-- Primary local server context: the dedicated `CasaParaisoDocker` WSL2 Docker Engine, managed through `scripts\casa-docker.ps1`
+- Primary local server context: Docker Desktop's `desktop-linux` engine, managed through `scripts\casa-docker.ps1`
+- Rollback local server context: the preserved `CasaParaisoDocker` WSL2 Docker Engine, managed through `scripts\casa-dedicated-docker.ps1`
 - Fallback local server context: XAMPP / Apache
 - Git repository is initialized.
 
@@ -54,8 +55,9 @@ Design and develop a centralized Spa Appointment and Management System for Casa 
 - Mobile frontend: bundled Vue 3 and TypeScript application; do not ship a remote `server.url` wrapper.
 - Backend: the existing Laravel application exposed through a versioned, authenticated JSON API while retaining Blade as a fallback.
 - Database target: a dedicated Supabase PostgreSQL project in Singapore.
-- Demonstration backend: the local Docker Laravel service exposed through a Cloudflare quick tunnel and paired dynamically by the app.
-- Primary local development environment: the dedicated WSL2 Docker Engine and Laravel Sail services managed through `scripts\casa-docker.ps1`.
+- Demonstration backend: the local Docker Desktop Laravel service exposed through a Cloudflare quick tunnel and paired dynamically by the app.
+- Primary local development environment: Docker Desktop and Laravel Sail services managed through `scripts\casa-docker.ps1`.
+- The prior dedicated WSL2 engine remains a stopped rollback copy; do not run it concurrently with Docker Desktop because the published ports are intentionally identical.
 - Fallback local development environment: XAMPP / Apache.
 - Do not expose database credentials or Supabase privileged keys to the mobile application.
 - Keep the inherited web application working during migration so the source database and browser workflows remain available for rollback and comparison.
@@ -89,9 +91,10 @@ Design and develop a centralized Spa Appointment and Management System for Casa 
 - End every completed work session by committing that session's scoped changes and pushing the current branch. Do not include unrelated pre-existing worktree changes; if committing or pushing is blocked, report the blocker before ending the session.
 - Keep project-specific setup notes in this file as the application takes shape.
 - Keep Laravel 12 and the existing Blade application; add Vue 3, TypeScript, Tailwind CSS, Capacitor, Sanctum, and PostgreSQL according to the mobile plan.
-- Use Laravel Sail on the dedicated `CasaParaisoDocker` WSL2 engine. Route Compose operations through `scripts\casa-docker.ps1`; its daemon-label check prevents accidental Docker Desktop use.
+- Use Laravel Sail on Docker Desktop's `desktop-linux` engine. Route Compose operations through `scripts\casa-docker.ps1`; it verifies the Docker Desktop daemon and fixes the Compose project name to `casa-paraiso-supabase-desktop`.
+- Use `scripts\casa-dedicated-docker.ps1` only for an explicit rollback inspection after stopping the Docker Desktop project; never run both local stacks concurrently.
 - Keep the container's PHP dependencies in the `sail-vendor` Docker volume; after first creation or a Composer lock change, run `.\scripts\casa-docker.ps1 compose exec -T laravel.test composer install` in addition to the host install.
-- Treat Docker and the Cloudflare quick tunnel as the demonstration backend runtime; the mobile UI itself must be bundled into the APK.
+- Treat Docker Desktop and the Cloudflare quick tunnel as the demonstration backend runtime; the mobile UI itself must be bundled into the APK.
 - Keep Apache/XAMPP compatibility as a fallback local workflow only.
 - Use Node/npm for frontend asset builds only; do not require a production Node.js runtime for the MVP.
 - Use Turbo Drive only for safe same-origin GET links and filter forms; keep state-changing forms, exports, and panel links on their existing Laravel request paths.

@@ -4,7 +4,7 @@ param(
     [string] $Action = 'Verify'
 )
 
-Import-Module (Join-Path $PSScriptRoot 'CasaDocker.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'CasaDedicatedDocker.psm1') -Force
 
 $distro = 'CasaParaisoDocker'
 $location = 'C:\WSL\CasaParaisoDocker'

@@ -14,22 +14,13 @@ switch ($Action) {
         Invoke-CasaCompose -EnsureEngine -Arguments @('up', '-d') | Write-Output
     }
     'stop' {
-        Invoke-CasaCompose -Arguments @('stop') | Write-Output
-        Stop-CasaDockerEngine
+        Invoke-CasaCompose -Arguments @('--profile', 'tunnel', 'stop') | Write-Output
     }
     'status' {
-        if (-not (Test-CasaDistro)) {
-            Write-Output 'CasaParaisoDocker is not installed.'
-            exit 1
-        }
-
-        $service = Invoke-CasaWsl -User root -Arguments @('systemctl', 'is-active', 'docker') -IgnoreExitCode
-        Write-Output "Docker service: $(($service -join '').Trim())"
-
-        if ((($service -join '').Trim()) -eq 'active') {
-            Assert-CasaDockerEngine
-            Invoke-CasaCompose -Arguments @('ps', '--all') | Write-Output
-        }
+        Assert-CasaDockerEngine
+        Write-Output 'Docker engine: Docker Desktop (desktop-linux)'
+        Write-Output "Compose project: $(Get-CasaComposeProjectName)"
+        Invoke-CasaCompose -Arguments @('ps', '--all') | Write-Output
     }
     'compose' {
         if (-not $ComposeArguments) {
