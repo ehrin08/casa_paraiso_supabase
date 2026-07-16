@@ -141,6 +141,27 @@ class TransferDatabaseToPostgresTest extends TestCase
         $this->assertSame([91], DB::connection('transfer_target_test')->table('rfm_segments')->pluck('id')->all());
     }
 
+    public function test_apply_rolls_back_when_in_transaction_validation_detects_a_mutated_row(): void
+    {
+        $this->seedSourceUser();
+        DB::connection('transfer_target_test')->unprepared(<<<'SQL'
+            CREATE TRIGGER mutate_user_email
+            AFTER INSERT ON users
+            BEGIN
+                UPDATE users SET email = 'mutated@example.com' WHERE id = NEW.id;
+            END
+            SQL);
+
+        $this->artisan('casa:transfer-to-postgres', [
+            '--source' => 'transfer_source_test',
+            '--target' => 'transfer_target_test',
+            '--apply' => true,
+        ])->expectsOutputToContain('Transfer rolled back: Record mismatch for users.')
+            ->assertFailed();
+
+        $this->assertSame(0, DB::connection('transfer_target_test')->table('users')->count());
+    }
+
     private function createTransferSchemas(string $connection): void
     {
         foreach (self::TABLES as $table) {

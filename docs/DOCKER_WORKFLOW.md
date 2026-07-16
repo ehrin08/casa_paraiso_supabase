@@ -8,11 +8,13 @@ Application source remains in `C:\casa_paraiso_supabase`. Docker Desktop owns th
 
 The inherited `casa_paraiso` Docker Desktop MariaDB stack is a read-only migration source. Never start, recreate, seed, or otherwise mutate it from this repository.
 
+The isolated MariaDB service in this repository is also frozen as the verified 2026-07-17 Supabase rollback source. Do not migrate, seed, or write new business records to it after cutover.
+
 ## Services and Local Ports
 
 - `laravel.test`: Sail PHP 8.2 at `http://localhost:18001`
 - `mariadb`: isolated migration/demo database at `127.0.0.1:13307`
-- `pgsql`: PostgreSQL 17 migration target at `127.0.0.1:15432`
+- `pgsql`: isolated PostgreSQL 17 portability/test service at `127.0.0.1:15432`
 - `mailpit`: SMTP `11026`, dashboard `http://localhost:18025`
 - `cloudflared`: profile-gated rotating Quick Tunnel
 - Vite: `127.0.0.1:15173`
@@ -79,7 +81,7 @@ Use `-KeepDump` only when a temporary ignored SQL artifact is needed for diagnos
 
 ## MariaDB-to-PostgreSQL Transfer
 
-The local PostgreSQL service retains a separate database and volume. Migrate its empty schema, preview the transfer, apply it once, then run the read-only comparison and integrity audit:
+The local PostgreSQL service retains a separate database and volume for transfer rehearsal. With an explicitly local migration target, migrate its empty schema, preview the transfer, apply it once, then run the read-only comparison and integrity audit:
 
 ```powershell
 .\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test sh -lc 'DB_CONNECTION=pgsql DB_HOST=pgsql DB_PORT=5432 DB_DATABASE=casa_paraiso DB_USERNAME=sail DB_PASSWORD=password php artisan migrate --force'
@@ -91,7 +93,48 @@ The local PostgreSQL service retains a separate database and volume. Migrate its
 
 `casa:transfer-to-postgres` reads `migration_source` and `migration_target` from the uncommitted environment. It is dry-run-first, uses a read-only source transaction, refuses target business data, copies identity and business tables in foreign-key order, preserves IDs and credential hashes, repairs PostgreSQL sequences, and never transfers runtime sessions, tokens, queues, caches, reset tokens, migration history, or obsolete adjustment data. A fresh migration creates five deterministic RFM preset rows; the command recognizes only that exact migration baseline and replaces it transactionally during `--apply`. `--validate` performs a full-row comparison and sequence check without writing.
 
-For Supabase, set `MIGRATION_TARGET_DB_URL` to the migration/import account's Supavisor session-pooler connection string and keep `MIGRATION_TARGET_DB_SSLMODE=require`. Never commit that URL or expose it to the APK.
+`--apply` performs the complete row, count, credential/Google identity, and sequence validation inside the target transaction. Any mismatch throws before commit and rolls back every imported row. `--validate` repeats the same comparison independently after commit.
+
+### Production Supabase Target
+
+The approved production database is the existing **Casa Paraiso** project (`pnichczvgkdxnhcezqyn`) in Sydney. Application objects live in the private `casa` schema:
+
+- `casa_migrator` owns `casa` and runs Laravel migrations/imports;
+- `casa_runtime` is Laravel's normal connection and has only schema usage, table DML, and sequence usage;
+- `PUBLIC`, `anon`, `authenticated`, and `service_role` have no schema or table access;
+- the Data API is disabled, SSL enforcement is enabled, and Supabase Auth is not used;
+- both roles connect through `aws-0-ap-southeast-2.pooler.supabase.com:5432` using usernames suffixed with `.pnichczvgkdxnhcezqyn`.
+
+Keep passwords, the downloaded Supabase CA, and dumps in ignored storage. The relevant uncommitted values are:
+
+```dotenv
+MIGRATION_SOURCE_DB_HOST=mariadb
+MIGRATION_SOURCE_DB_PORT=3306
+MIGRATION_TARGET_DB_HOST=aws-0-ap-southeast-2.pooler.supabase.com
+MIGRATION_TARGET_DB_PORT=5432
+MIGRATION_TARGET_DB_DATABASE=postgres
+MIGRATION_TARGET_DB_USERNAME=casa_migrator.pnichczvgkdxnhcezqyn
+MIGRATION_TARGET_DB_SEARCH_PATH=casa,public
+MIGRATION_TARGET_DB_SSLMODE=verify-full
+MIGRATION_TARGET_DB_SSLROOTCERT=/var/www/html/storage/app/private/supabase/prod-ca-2021.crt
+
+DB_CONNECTION=pgsql
+DB_HOST=aws-0-ap-southeast-2.pooler.supabase.com
+DB_PORT=5432
+DB_DATABASE=postgres
+DB_USERNAME=casa_runtime.pnichczvgkdxnhcezqyn
+DB_SEARCH_PATH=casa,public
+DB_SSLMODE=verify-full
+DB_SSLROOTCERT=/var/www/html/storage/app/private/supabase/prod-ca-2021.crt
+```
+
+Run production schema changes only through the migrator connection:
+
+```powershell
+.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test php artisan migrate --database=migration_target --force
+```
+
+The 2026-07-17 cutover used the current MariaDB source directly under maintenance, followed by dry-run, transactional apply, independent validation, CRUD integrity, runtime DML/denied-DDL probes, role workspace smoke tests, and checksumed pre/post exports. Evidence remains ignored under `storage/app/private/supabase/cutover`. Keep MariaDB read-only: before any new Supabase business write, rollback is an environment switch; after one, use a reviewed reverse-data migration.
 
 ## Daily Commands
 
@@ -183,10 +226,14 @@ POSTGRES_DB=casa_paraiso
 POSTGRES_USER=sail
 POSTGRES_PASSWORD=password
 FORWARD_PGSQL_PORT=15432
+LOCAL_MARIADB_DATABASE=casa_paraiso
+LOCAL_MARIADB_USERNAME=sail
+LOCAL_MARIADB_PASSWORD=password
 MIGRATION_SOURCE_DB_HOST=mariadb
 MIGRATION_SOURCE_DB_DATABASE=casa_paraiso
 MIGRATION_TARGET_DB_HOST=pgsql
 MIGRATION_TARGET_DB_DATABASE=casa_paraiso
+MIGRATION_TARGET_DB_SEARCH_PATH=public
 MIGRATION_TARGET_DB_SSLMODE=prefer
 MAIL_HOST=mailpit
 MAIL_PORT=1025
@@ -194,10 +241,10 @@ FORWARD_MAILPIT_PORT=11026
 FORWARD_MAILPIT_DASHBOARD_PORT=18025
 ```
 
-Secrets, the generated server UUID, pairing state, dumps, build outputs, and local Android SDK paths are ignored.
+These are clean-checkout local defaults, not the current production database connection. `phpunit.xml` force-pins tests to the isolated local `pgsql/testing` database even when the ignored `.env` points Laravel at Supabase. Secrets, the Supabase CA, generated server UUID, pairing state, dumps, build outputs, and local Android SDK paths are ignored.
 
 ## Deployment Boundary
 
-Docker and the Quick Tunnel are the approved demonstration backend, not the final hosted production backend. The Android UI is bundled into the APK and must never use Capacitor `server.url` to wrap a remote web page. Local PostgreSQL portability and transfer are verified; provisioning the dedicated Supabase project, production hosting, release signing, and physical-device acceptance remain delivery milestones.
+Docker and the Quick Tunnel are the approved demonstration backend, not the final hosted production backend. The Android UI is bundled into the APK and must never use Capacitor `server.url` to wrap a remote web page. Supabase provisioning, restricted-role setup, verified-TLS cutover, and data acceptance are complete; production backend hosting, live Google-provider acceptance, signing-key backup, and physical-device acceptance remain delivery milestones.
 
 XAMPP remains a fallback for inherited browser comparison only. It must not share or replace the Docker Desktop project database. The preserved dedicated WSL2 engine is a rollback copy, not a concurrently active development environment.

@@ -1,7 +1,7 @@
 # Casa Paraiso Project Memory
 
-> Last reviewed: 2026-07-16
-> Review basis: current repository working tree
+> Last reviewed: 2026-07-17
+> Review basis: current repository working tree plus verified Casa Paraiso Supabase cutover
 > Role: fast orientation for agents and developers; not an independent source of truth
 
 ## Purpose
@@ -41,7 +41,7 @@ When sources disagree, identify whether the question concerns intended or curren
 ## Standalone Mobile Variant
 
 - This repository was separated from `casa_paraiso` so mobile and database migration work cannot accidentally affect the original project.
-- The inherited Laravel/Blade/MariaDB implementation remains the functional baseline; this repository now has an isolated cloned demo database and mobile pairing foundation.
+- The inherited Laravel/Blade/MariaDB implementation remains the functional baseline; its isolated MariaDB copy is now frozen as the read-only rollback source for the completed Supabase cutover.
 - The approved target is a bundled Capacitor Android application using Vue 3 and TypeScript, with Laravel retained as the authenticated API and business-logic backend and Supabase PostgreSQL as the authoritative database after cutover.
 - All five roles remain in scope: customer, receptionist, therapist, admin, and super administrator.
 - The demonstration backend runs in the Docker Desktop Compose project `casa-paraiso-supabase-desktop` with a profile-gated Cloudflare Quick Tunnel. The bundled APK pairs by pasting the verified tunnel or APK download link; no separate PIN is required.
@@ -62,10 +62,11 @@ When sources disagree, identify whether the question concerns intended or curren
 - The admin and protected super-administrator mobile workspace now covers operational dashboards; booking, customer, and payment operations; therapist, service, recurring-schedule, exception, and dated weekly-roster management; feedback, rewards, commissions, and native-share CSV reports; business settings; and protected user access. Its bottom bar exposes Today, Ops, Manage, Insights, and Control. `MobileAdminDashboardController`, the `MobileAdmin*` API controllers, `/api/v1/admin`, and the matching `mobile/src/stores/admin*` and `mobile/src/views/Admin*` modules are the primary entry points. Regular admins cannot access user provisioning or role/activation controls.
 - The mobile interface now uses bundled Manrope/Cormorant Garamond fonts, semantic Casa design tokens, Phosphor icons, a shared safe-area-aware app bar and three-to-five-item role dock, sticky segmented subnavigation, responsive form/list rules, and shared focus-managed sheets and confirmations. Browser prompts are no longer used for appointment outcomes or commission payouts.
 - `mobile/e2e/role-workspaces.spec.ts` runs deterministic Playwright workflows for all five roles at 320px small-phone, Pixel 7, 375px landscape, and 768px tablet viewports. It applies axe scans after every main tab, asserts navigation target size and viewport fit, verifies modal focus/dismissal, and maintains reference visual snapshots. Keep this suite alongside Vitest and live Quick Tunnel acceptance.
-- The primary Compose project now runs on Docker Desktop through the guarded `scripts/casa-docker.ps1` wrapper. Its MariaDB and PostgreSQL data were restored from logical backups and matched canonical source-data hashes; the prior dedicated WSL2 engine remains stopped as a rollback copy. The account-preserving clone still compares account/profile counts against the read-only inherited source and refuses to overwrite a differing account-bearing destination.
-- PostgreSQL 17 now runs beside MariaDB in the Docker Desktop Compose project. `casa:transfer-to-postgres` is dry-run-first, preserves identity and business rows in foreign-key order, accepts only the exact migration-owned RFM baseline on an otherwise empty target, resets sequences, and supports a read-only full-row `--validate` pass. The verified local transfer preserved 20 accounts and passed the CRUD integrity audit.
+- The primary Compose project runs on Docker Desktop through the guarded `scripts/casa-docker.ps1` wrapper. MariaDB is the frozen 2026-07-17 rollback source; local PostgreSQL 17 is reserved for isolated tests and portability rehearsal; the prior dedicated WSL2 engine remains stopped as an additional rollback copy.
+- The existing Supabase **Casa Paraiso** project (`pnichczvgkdxnhcezqyn`) in Sydney is now authoritative. Application data lives in the private `casa` schema; `casa_migrator` owns DDL/imports and `casa_runtime` has DML/sequence access only. SSL enforcement and `verify-full` CA validation are active, the Data API is disabled, and Supabase API roles have no application-schema access.
+- `casa:transfer-to-postgres` is dry-run-first, preserves identity and business rows in foreign-key order, accepts only the exact migration-owned RFM baseline on an otherwise empty target, resets sequences, and validates every row/count/identity/sequence before commit. The production transfer preserved 21 accounts, passed independent validation and CRUD integrity, and produced checksumed pre/post cutover exports.
 - Admin Settings persists editable business identity/contact details and a payment-form default while displaying code-controlled operating and security safeguards.
-- The Phase 11 application security baseline and checklist are implemented. Target-host validation, Hostinger delivery preparation, and the non-technical handover/operations manual remain incomplete.
+- The Phase 11 application and Supabase database security baselines are implemented. Final Laravel hosting, live Google-provider validation, signing-key backup, and the non-technical handover/operations manual remain incomplete.
 - CRUD audit and repair information is tracked separately in [`CRUD_REMEDIATION_CHECKLIST.md`](CRUD_REMEDIATION_CHECKLIST.md) and [`CRUD_DATA_REPAIR_PLAN.md`](CRUD_DATA_REPAIR_PLAN.md). Never copy its record-level findings here or infer approval to execute a repair.
 
 ## Stack and Operating Boundaries
@@ -76,7 +77,7 @@ When sources disagree, identify whether the question concerns intended or curren
 | Authentication | Laravel Breeze/Socialite plus password login and Sanctum scoped device tokens; mobile Google PKCE exchange implemented |
 | Views | Blade templates with reusable Blade components |
 | Frontend | Existing Blade/Tailwind UI plus a bundled Vue 3/TypeScript/Tailwind/Pinia/Capacitor 8 Android pairing, sign-in, and role-shell app |
-| Data | MariaDB/MySQL migration source; verified local PostgreSQL 17 target; dedicated Supabase PostgreSQL production target |
+| Data | Existing Casa Paraiso Supabase PostgreSQL 17 project in Sydney, private `casa` schema; frozen MariaDB rollback source; local PostgreSQL for isolated tests |
 | Primary local runtime | Docker Desktop `desktop-linux` through `scripts/casa-docker.ps1`, using Compose project `casa-paraiso-supabase-desktop`; bare Compose is intentionally avoided |
 | Local runtime rollback | Preserved `CasaParaisoDocker` WSL2 engine through `scripts/casa-dedicated-docker.ps1`; never run concurrently with Docker Desktop |
 | Local fallback | XAMPP/Apache with compatible PHP and MariaDB/MySQL |
@@ -250,7 +251,7 @@ Primary UI sources are `docs/BRAND_UI_GUIDE.md`, `docs/TECH_STACK.md`, `resource
 | Admin Settings or security hardening | `SCREEN_FLOW.md`, `SECURITY_HARDENING.md`, `TECH_STACK.md` | `ApplicationSetting`, Admin setting controller/request/view, security middleware, providers, auth routes, environment example | `AdminSettingsTest`, `SecurityHardeningTest`, `AuthenticatedWorkspaceSmokeTest` |
 | Feedback, sentiment, RFM, promotions, or reports | `MVP_SCOPE.md`, roadmap phases 8–10 | Related models/services, admin/customer/staff controllers, report export | `InsightRemediationTest`, `PhaseFiveToTenWorkflowTest` |
 | Schema, factories, seeders, or data integrity | `DATABASE_DESIGN.md`, `AGENTS.md` | `database/migrations`, factories, `DatabaseSeeder`, audit command; use additive/account-preserving operations | `DatabaseFoundationTest`, `SeederSafetyTest`, `CrudIntegrityCommandTest` |
-| PostgreSQL portability or data transfer | `MOBILE_SUPABASE_PLAN.md`, `DOCKER_WORKFLOW.md`, `AGENTS.md` | `compose.yaml`, `config/database.php`, `TransferDatabaseToPostgres`, portable query call sites | `TransferDatabaseToPostgresTest`, `CrudIntegrityCommandTest`, full Laravel suite on PostgreSQL |
+| PostgreSQL, Supabase roles/TLS, or data transfer | `MOBILE_SUPABASE_PLAN.md`, `DOCKER_WORKFLOW.md`, `AGENTS.md` | `compose.yaml`, `config/database.php`, `TransferDatabaseToPostgres`, additive migrations, portable query call sites | `TransferDatabaseToPostgresTest`, `DatabaseTestIsolationTest`, `CrudIntegrityCommandTest`, full Laravel suite on local PostgreSQL |
 | Authenticated UI, lists, calendars, or accessibility | `BRAND_UI_GUIDE.md`, `TECH_STACK.md` | Shared components/layouts, CSS/JS, pagination view, provider, relevant role view | `CompactWorkspacePaginationTest`, `InteractiveListControlsTest`, `ModalInfrastructureTest`, `RoleWorkspaceTest` |
 | Public content, packages, or business hours | `BRAND_UI_GUIDE.md`, `MVP_SCOPE.md` | `config/casa.php`, landing view, service seeding and service views | `ExampleTest`, `AdminServiceManagementTest`, `DatabaseFoundationTest` |
 | Docker, Hostinger, or handover | `TECH_STACK.md`, `DOCKER_WORKFLOW.md`, roadmap phase 11 | `compose.yaml`, Composer/npm manifests, `.env.example`, public entry point | Build/test commands and clean-checkout review |
@@ -287,11 +288,11 @@ Database migrations, seeders, imports, and targeted data repairs are permitted i
 ## Known Gaps
 
 - Pairing, password and Google device-token authentication, secure token/PKCE storage, complete five-role workspaces, and repeatable release signing are implemented. Google Cloud credentials and live provider acceptance remain pending.
-- Local PostgreSQL portability, account-preserving transfer, full-row comparison, sequence alignment, and integrity verification are complete. Dedicated Singapore Supabase project provisioning, restricted production roles/TLS configuration, backup, production transfer, and cutover acceptance remain pending.
+- Supabase provisioning and the account-preserving Sydney cutover are complete, including restricted roles, private schema, verified TLS, disabled Data API, full-row/sequence validation, checksumed exports, live role smoke tests, and clean security/unindexed-foreign-key advisor results. Keep MariaDB read-only until acceptance; ongoing export retention and a restore rehearsal remain pending.
 - The Quick Tunnel pairing flow is implemented and live-verified. While demo pairing is active, the same temporary tunnel exposes the existing signed APK for browser installation; the route returns 404 when the demo flag is off or the artifact is missing. Mobile Google OAuth callback/exchange behavior is covered by backend and client tests, but the local environment has no Google client credentials, so live provider acceptance remains pending.
 - The automated five-workspace smoke suite passes. Pairing, password sign-in, customer booking options, live availability, slot selection, feedback history, profile display/update, navigation, and sign-out were verified through a phone-sized in-app browser against a Cloudflare Quick Tunnel on 2026-07-15. Receptionist dashboard, booking creation/options and lists, customer search/detail/edit fields, payment lists, and payment-entry options were likewise live-verified without mutating records. Therapist dashboard, assigned schedule and detail actions, served-customer history, related-review empty state, commission totals/history, and related payments were also live-verified without mutating records.
 - Admin Today, Ops, Manage, Insights, Control, native report sharing entry points, and the protected super-administrator User Access boundary were live-verified through the phone-sized bundled client and Quick Tunnel on 2026-07-15. The universal version `1.0.0` release APK builds with API 36, verifies with Android v2/v3 signatures, and was installed on an Android API 34 emulator. URL-only connection, password sign-in, workspace navigation, and persisted pairing/authentication were accepted there; signing-key backup remains outstanding.
-- Mobile and Supabase security checks require validation against the final APK, tunnel, and database configuration.
+- Supabase database and live tunnel security checks are complete for the current configuration. Final live Google-provider acceptance and signing-key backup remain pending.
 - Record-level CRUD repair status belongs only in its dedicated repair documents and must be rechecked read-only before any separately approved action.
 
 ## Maintenance Contract

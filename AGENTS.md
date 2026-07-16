@@ -54,7 +54,8 @@ Design and develop a centralized Spa Appointment and Management System for Casa 
 - Primary deliverable: a signed Android APK built with Capacitor.
 - Mobile frontend: bundled Vue 3 and TypeScript application; do not ship a remote `server.url` wrapper.
 - Backend: the existing Laravel application exposed through a versioned, authenticated JSON API while retaining Blade as a fallback.
-- Database target: a dedicated Supabase PostgreSQL project in Singapore.
+- Database target: the existing Supabase project **Casa Paraiso** (`pnichczvgkdxnhcezqyn`) in Sydney (`ap-southeast-2`). This explicitly replaces the earlier Singapore preference.
+- Production application data lives in the private `casa` schema. `casa_migrator` owns schema changes/imports; `casa_runtime` is the Laravel runtime and has table DML plus sequence usage only.
 - Demonstration backend: the local Docker Desktop Laravel service exposed through a Cloudflare quick tunnel and paired dynamically by the app.
 - Primary local development environment: Docker Desktop and Laravel Sail services managed through `scripts\casa-docker.ps1`.
 - The prior dedicated WSL2 engine remains a stopped rollback copy; do not run it concurrently with Docker Desktop because the published ports are intentionally identical.
@@ -68,6 +69,7 @@ Design and develop a centralized Spa Appointment and Management System for Casa 
 - Preserve existing accounts. Never use `migrate:fresh`, `db:wipe`, table drops, truncation, or bulk delete/reseed operations that erase records from `users`, `customer_profiles`, `staff_profiles`, or authentication-support tables. Prefer additive migrations and idempotent seeders.
 - Before a schema or bulk data command, verify that it will not erase existing accounts. If an account-preserving approach is not available, stop and ask the user before proceeding.
 - Preserve the inherited MariaDB database as a read-only migration source until the Supabase cutover is verified and accepted.
+- Run production schema changes only through the configured `migration_target` connection and `casa_migrator`; the runtime role must continue to fail DDL.
 - Keep production database credentials outside committed source files.
 - Separate local database configuration from production database configuration.
 - Document database creation, import/export, migrations, and seed steps once the schema exists.
@@ -117,7 +119,7 @@ Current application verification:
 - Laravel app: `.\scripts\casa-docker.ps1 start`, then open `http://localhost:18001`
 - PHP dependencies after creating the volume: `.\scripts\casa-docker.ps1 compose exec -T laravel.test composer install`, then restart `laravel.test`
 - Frontend assets: `.\scripts\casa-docker.ps1 compose exec -T laravel.test npm run build`
-- Database schema updates: `.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test php artisan migrate`
+- Production/Supabase schema updates: `.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test php artisan migrate --database=migration_target --force`
 - Seed data only when the seeder is account-preserving: `.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test php artisan db:seed`
 - Tests: `.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test php artisan test`
 - Mobile: from `mobile`, run `npm run build`, `npm test`, `npm run android:sync`, and `android\gradlew.bat -p android assembleDebug` with Android SDK API 36 available.

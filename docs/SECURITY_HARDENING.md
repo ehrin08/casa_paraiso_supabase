@@ -2,7 +2,7 @@
 
 ## Purpose And Status
 
-This checklist is the release gate for the Laravel application. The application-level baseline is implemented and covered by feature tests. Production environment, hosting, TLS, backup, and recovery items must be rechecked on the actual Hostinger target before launch.
+This checklist is the release gate for the Laravel application and Android-backed mobile variant. The application baseline and the Supabase database cutover are implemented. Remaining production-host, Google-provider, retention, restore, and handover items must still be accepted before launch.
 
 Database work follows the account-preservation and environment rules in `AGENTS.md`; this checklist does not override them.
 
@@ -21,6 +21,10 @@ Database work follows the account-preservation and environment rules in `AGENTS.
 - [x] Keep environment files, local backups, and generated testing artifacts outside version control.
 - [x] Keep production demo seeding disabled in `DatabaseSeeder`.
 - [x] Restrict Admin Settings to Admin and Super Administrator; keep user provisioning exclusive to the protected Super Administrator.
+- [x] Keep Supabase application data in the private `casa` schema and deny `PUBLIC`, `anon`, `authenticated`, and `service_role` access.
+- [x] Separate `casa_migrator` schema ownership from the DML-only `casa_runtime` Laravel role; the runtime DDL denial is acceptance-tested.
+- [x] Use the Sydney Supavisor session pooler on port 5432 with `verify-full`, the Supabase CA, and project-level SSL enforcement.
+- [x] Disable the unused Supabase Data API and keep Supabase Auth, Storage, Realtime, and privileged keys out of the APK.
 
 ## Production Environment Gate
 
@@ -40,10 +44,19 @@ SESSION_SAME_SITE=lax
 SESSION_ENCRYPT=true
 
 LOG_LEVEL=warning
+
+DB_CONNECTION=pgsql
+DB_HOST=aws-0-ap-southeast-2.pooler.supabase.com
+DB_PORT=5432
+DB_DATABASE=postgres
+DB_USERNAME=casa_runtime.pnichczvgkdxnhcezqyn
+DB_SEARCH_PATH=casa,public
+DB_SSLMODE=verify-full
+DB_SSLROOTCERT=/var/www/html/storage/app/private/supabase/prod-ca-2021.crt
 ```
 
 - [ ] Generate a unique production `APP_KEY`; never reuse a published or sample key.
-- [ ] Use a least-privilege database account scoped to the production database.
+- [x] Use the least-privilege `casa_runtime` account scoped to the private `casa` schema.
 - [ ] Configure production mail, Google OAuth, database, and protected Super Administrator credentials only in the hosting environment.
 - [ ] Verify HTTPS and certificate renewal before enabling HSTS. Keep HSTS disabled until every approved host works over HTTPS.
 - [ ] Point the web document root to Laravel's `public` directory; application source, `.env`, storage data, and vendor internals must not be web-accessible.
@@ -55,7 +68,9 @@ Laravel's deployment guidance requires the web server to direct requests to `pub
 
 ## Hosting And Data Protection Gate
 
-- [ ] Confirm Hostinger backups cover the application files and MariaDB database and document the retention period.
+- [x] Create checksumed, ignored MariaDB pre-cutover and Supabase post-cutover exports.
+- [x] Keep the cutover MariaDB database frozen as a read-only rollback source.
+- [ ] Agree the ongoing Supabase export/backup retention period and protected off-machine storage location.
 - [ ] Complete one restore rehearsal in a non-production environment before launch.
 - [ ] Store manual SQL exports outside the public web root with restricted access and an agreed retention/deletion schedule.
 - [ ] Confirm production logs do not contain passwords, reset tokens, OAuth tokens, session IDs, full payment notes, or unnecessary customer data.
@@ -81,6 +96,8 @@ Run application checks against the isolated test database:
 
 Representative coverage includes `SecurityHardeningTest`, `RoleWorkspaceTest`, `AuthenticatedWorkspaceSmokeTest`, authentication tests, and role-specific workflow suites.
 
-Migration execution is deliberately separate. Before running a migration command, identify the target database and exact command and obtain explicit approval under `AGENTS.md`.
+Migration execution is deliberately separate. Identify the target database and exact account-preserving command first. Production schema changes must use `--database=migration_target` as `casa_migrator`; ordinary Laravel requests run as `casa_runtime`. Stop for direction only when no account-preserving approach exists.
+
+After any production schema change, recheck Supabase security and performance advisors. The 2026-07-17 cutover closed all security and unindexed-foreign-key findings; immediate `unused_index` notices are expected until the new database receives representative workload statistics.
 
 Laravel supports named route rate limiters and `throttle` middleware as used by this application: <https://laravel.com/docs/12.x/routing#rate-limiting>. Trusted proxy and host configuration is documented in Laravel's request guidance: <https://laravel.com/docs/12.x/requests#configuring-trusted-hosts>.

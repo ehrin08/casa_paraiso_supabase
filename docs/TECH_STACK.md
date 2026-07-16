@@ -2,19 +2,22 @@
 
 ## Approved Stack
 
-Casa Paraiso should be built as a production-ready Laravel monolith that stays compatible with Hostinger shared/web hosting and Docker/Sail local development.
+This standalone repository delivers a mobile-first Android application while retaining the production-ready Laravel monolith and Blade UI as its API/business-logic backend and fallback interface. Earlier Hostinger/MariaDB notes describe the inherited baseline, not this repository's final database target.
 
 - Backend: Laravel 12
 - Runtime: PHP 8.2 or higher
-- Views: Laravel Blade server-rendered templates
-- Frontend styling: Tailwind CSS v4 through Vite
-- Database: MariaDB/MySQL
+- Views: Laravel Blade server-rendered fallback plus a bundled Vue 3/TypeScript mobile client
+- Frontend styling: Tailwind CSS v4 through Vite in both web and mobile builds
+- Mobile runtime: Capacitor 8 Android application, bundled locally with no remote `server.url`
+- Database: the existing Casa Paraiso Supabase PostgreSQL 17 project in Sydney, private `casa` schema
 - Database workflow: Laravel migrations and seeders
 - Package management: Composer for PHP dependencies, npm for frontend build dependencies
 - Authentication: Laravel Breeze email/password authentication with email verification, plus Laravel Socialite Google OAuth
 - Primary local development: Docker Desktop with Laravel Sail services managed through `scripts/casa-docker.ps1`
 - Fallback local development: XAMPP / Apache
-- Production hosting: Hostinger shared/web hosting by default
+- Authentication authority: Laravel Breeze/Socialite and Sanctum; Supabase Auth remains unused
+- Demonstration backend: Docker Desktop Laravel through a rotating Cloudflare Quick Tunnel
+- Inherited fallback: Blade plus MariaDB/MySQL on XAMPP or compatible hosting
 
 ## Frontend Decision
 
@@ -29,13 +32,12 @@ Rationale:
 
 Bootstrap is not selected for the MVP frontend because it prioritizes fastest CRUD scaffolding and built-in components over a more custom product interface.
 
-## Deferred Frontend Options
+## Frontend Boundaries
 
-Do not introduce these unless explicitly approved later:
+Vue 3 is approved only for the bundled `mobile/` Capacitor application. The inherited Blade frontend remains server-rendered. Do not introduce these into the Blade application unless explicitly approved later:
 
 - Inertia
 - React
-- Vue
 - Livewire
 - External UI kits
 - Persistent Node.js runtime in production
@@ -58,19 +60,20 @@ Turbo Drive 8 is approved as the targeted navigation enhancement for the Blade a
 
 - Use Laravel migrations as the source of truth for schema changes.
 - Use Laravel seeders for initial roles, default settings, sample services, and demo data.
-- Keep schema compatible with MariaDB/MySQL for Hostinger.
-- Provide SQL exports when needed for Hostinger/phpMyAdmin handover, but do not use manual phpMyAdmin edits as the primary development workflow.
+- Keep migrations portable enough for the frozen MariaDB rollback source while treating PostgreSQL as authoritative after cutover.
+- Run Supabase migrations/imports as `casa_migrator`; run Laravel requests as DML-only `casa_runtime` through the session pooler with `verify-full` TLS.
+- Keep the Data API disabled and deny Supabase API roles on the private `casa` schema. No database password, privileged key, or direct database access belongs in the APK.
+- Preserve MariaDB as a read-only rollback source until cutover acceptance. Use checksumed exports and Laravel migrations rather than manual phpMyAdmin or dashboard schema edits.
 
 ## Deployment Notes
 
 - Compile production frontend assets with `npm run build`.
 - Deploy compiled assets from Laravel's public build output.
-- Use Docker/Sail for local development only.
-- Do not deploy Sail containers to Hostinger shared/web hosting.
-- Do not require Node.js to run on Hostinger production for the MVP.
+- Use Docker/Sail for local development and the approved demonstration backend; it is not the bundled Android UI.
+- Do not require Node.js at Laravel runtime; Node is used only to compile web/mobile assets.
 - Keep `.env` credentials out of committed source files.
 - Set `APP_ENV=production` and `APP_DEBUG=false` in production.
-- Hostinger must point web requests to Laravel's `public/index.php` entrypoint or an equivalent safe shared-hosting configuration.
+- Any final Laravel host must point web requests to `public/index.php` and keep application source and credentials private.
 - When Hostinger Terminal or SSH is available, run `composer install --no-dev --optimize-autoloader` followed by `php artisan optimize` after the production environment is configured.
 - Do not build or upload Laravel configuration/view caches from Windows; production caches must be generated on the Linux hosting environment.
 - Treat `docs/SECURITY_HARDENING.md` as the production release gate, including HTTPS, trusted-host, session-cookie, least-privilege database, backup, and restore checks.
@@ -81,7 +84,7 @@ For primary Docker/Sail development:
 
 - Confirm Docker Desktop is running with the `desktop-linux` context available.
 - Start services with `.\scripts\casa-docker.ps1 start`.
-- Use the Sail MariaDB service for local database work.
+- Use the Sail MariaDB service only for the frozen migration source/rollback comparison and the local PostgreSQL service for isolated tests and portability checks.
 - Use `.\scripts\casa-docker.ps1 compose exec laravel.test ...` for Composer, npm, Artisan, migrations, and tests.
 - Avoid `.\vendor\bin\sail.bat` on this machine unless Bash/WSL is repaired.
 
@@ -111,7 +114,7 @@ Use these commands once the Laravel project exists:
 .\scripts\casa-docker.ps1 compose restart laravel.test
 .\scripts\casa-docker.ps1 compose exec -T laravel.test npm install
 .\scripts\casa-docker.ps1 compose exec -T laravel.test npm run build
-.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test php artisan migrate
+.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test php artisan migrate --database=migration_target --force
 .\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test php artisan test
 ```
 

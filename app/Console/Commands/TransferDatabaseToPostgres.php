@@ -125,6 +125,7 @@ class TransferDatabaseToPostgres extends Command
 
                     $this->restoreCommissionAdjustments($sourceName, $targetName);
                     $this->resetPostgresSequences($target);
+                    $this->validateTransferSnapshot($sourceName, $targetName, $target);
                 });
             });
         } catch (Throwable $exception) {
@@ -133,17 +134,7 @@ class TransferDatabaseToPostgres extends Command
             return self::FAILURE;
         }
 
-        foreach ($counts as $table => $expected) {
-            $actual = DB::connection($targetName)->table($table)->count();
-
-            if ($actual !== $expected) {
-                $this->error("Post-transfer count mismatch for {$table}: expected {$expected}, found {$actual}.");
-
-                return self::FAILURE;
-            }
-        }
-
-        $this->info('Transfer completed. IDs, password hashes, Google identities, and business records were preserved.');
+        $this->info('Transfer completed. In-transaction validation passed; IDs, password hashes, Google identities, and business records were preserved.');
 
         return self::SUCCESS;
     }
@@ -207,22 +198,27 @@ class TransferDatabaseToPostgres extends Command
         $this->prepareReadOnlySnapshot($source);
         $source->transaction(function () use ($sourceName, $targetName, $target): void {
             $target->transaction(function () use ($sourceName, $targetName, $target): void {
-                foreach (self::TABLES as $table) {
-                    $sourceCount = DB::connection($sourceName)->table($table)->count();
-                    $targetCount = DB::connection($targetName)->table($table)->count();
-
-                    if ($sourceCount !== $targetCount) {
-                        throw new RuntimeException("Count mismatch for {$table}: source {$sourceCount}, target {$targetCount}.");
-                    }
-
-                    if ($this->tableFingerprint($sourceName, $targetName, $table) !== $this->tableFingerprint($targetName, $targetName, $table)) {
-                        throw new RuntimeException("Record mismatch for {$table}.");
-                    }
-                }
-
-                $this->validatePostgresSequences($target);
+                $this->validateTransferSnapshot($sourceName, $targetName, $target);
             });
         });
+    }
+
+    private function validateTransferSnapshot(string $sourceName, string $targetName, Connection $target): void
+    {
+        foreach (self::TABLES as $table) {
+            $sourceCount = DB::connection($sourceName)->table($table)->count();
+            $targetCount = DB::connection($targetName)->table($table)->count();
+
+            if ($sourceCount !== $targetCount) {
+                throw new RuntimeException("Count mismatch for {$table}: source {$sourceCount}, target {$targetCount}.");
+            }
+
+            if ($this->tableFingerprint($sourceName, $targetName, $table) !== $this->tableFingerprint($targetName, $targetName, $table)) {
+                throw new RuntimeException("Record mismatch for {$table}.");
+            }
+        }
+
+        $this->validatePostgresSequences($target);
     }
 
     private function tableFingerprint(string $connectionName, string $targetName, string $table): string

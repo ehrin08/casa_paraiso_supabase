@@ -6,7 +6,7 @@ Deliver the complete Casa Paraiso system as a mobile-first Android application w
 
 The release consists of a signed Capacitor APK with a bundled Vue frontend, a versioned Laravel JSON API, and a dedicated Supabase PostgreSQL database. The existing Blade application remains available as a fallback and regression reference.
 
-## Implemented Foundation (2026-07-16)
+## Implemented Foundation (2026-07-17)
 
 - Docker Desktop's `desktop-linux` engine is now the primary local runtime. The guarded PowerShell workflow fixes the project name to `casa-paraiso-supabase-desktop`, while the former dedicated Ubuntu 24.04 WSL2 engine remains a stopped rollback copy.
 - The isolated MariaDB demo database has an account-preserving, read-only-source clone workflow with source/destination account-count verification.
@@ -17,11 +17,11 @@ The release consists of a signed Capacitor APK with a bundled Vue frontend, a ve
 - The receptionist APK workspace now covers Today, Bookings, Customers, and Payments through persistent bottom navigation. It provides front-desk metrics and schedule context; appointment search, creation, editing, therapist availability, outcome and completion operations; customer contact/history search and editing; and manual transaction search, creation, and editing. The matching `/api/v1/reception` endpoints reuse the Laravel domain rules and enforce receptionist-only access.
 - The therapist APK workspace now covers Today, Schedule, Guests, and Earnings through persistent bottom navigation. It provides personal metrics and agenda context; assigned appointment search/detail with no-show and atomic completion actions; served-customer treatment history; related feedback and payment records; and personal pending/paid commission totals and history. The matching `/api/v1/staff` endpoints enforce assignment ownership and keep customer, feedback, payment, and commission access read-only.
 - The admin and super-administrator APK workspace now covers Today, Ops, Manage, Insights, and Control. It provides operational dashboards; booking, customer, and payment management; therapist, service, schedule, exception, and weekly-roster management; feedback, rewards, commissions, and native-share CSV reports; business settings; and protected super-administrator-only user access. The matching `/api/v1/admin` endpoints enforce admin access, while user provisioning and role/activation changes remain restricted to the configured protected super administrator.
-- Local PostgreSQL 17 runs beside MariaDB on Docker Desktop. The Laravel suite passes on PostgreSQL, MySQL-only expressions are portable, and `casa:transfer-to-postgres` provides dry-run, guarded apply, full-row validation, and sequence verification. A local transfer preserved all 20 accounts and related business records and passed the read-only CRUD integrity audit; the later Docker Desktop move preserved each database independently through verified logical backup and restore.
+- Local PostgreSQL 17 runs beside MariaDB on Docker Desktop for isolated tests and portability rehearsal. The Laravel suite passes on PostgreSQL, MySQL-only expressions are portable, and `casa:transfer-to-postgres` provides dry-run, guarded apply, in-transaction full-row validation, and sequence verification. The 2026-07-17 production cutover copied the current MariaDB source directly to the private `casa` schema in Supabase, preserving all 21 application accounts and related business records.
 - Mobile Google authentication now uses the system browser, server/device-bound state, SHA-256 PKCE, a five-minute single-use exchange code, secure verifier storage, and the `casaparaiso://oauth/callback` deep link. Only the final Laravel Sanctum token enters secure device storage; neither bearer nor Google authorization tokens appear in callback URLs.
 - Release signing is configured for version `1.0.0` (code `1`). A 4096-bit release key is stored outside Git under the Windows user profile, and the repeatable build helper synchronizes Capacitor, assembles the universal APK, verifies Android v2/v3 signatures, writes a checksum, and optionally installs through ADB.
 - `scripts/mobile-demo.ps1` owns tunnel start, rotation, environment hardening/restoration, metadata checks, temporary signed-APK browser delivery, URL-only optional ADB pairing, and shutdown.
-- Pairing does not grant an authenticated application session; it only identifies the backend. The user accepted Android API 34 emulator validation for this delivery; dedicated Supabase provisioning/cutover, live Google-provider acceptance, and secure signing-key backup remain later milestones.
+- Pairing does not grant an authenticated application session; it only identifies the backend. The user accepted Android API 34 emulator validation for this delivery. Supabase provisioning and cutover are complete; live Google-provider acceptance and secure signing-key backup remain later milestones.
 
 ## Architecture
 
@@ -53,17 +53,18 @@ The release consists of a signed Capacitor APK with a bundled Vue frontend, a ve
 
 ## PostgreSQL and Data Migration
 
-- Create a dedicated Supabase project named `Casa Paraiso Mobile` in Singapore after confirming the current provider cost.
-- Disable the Data API and use a restricted Laravel runtime database role plus a separate migration/import account.
-- Connect the Laravel backend through the Supavisor session pooler with verified TLS.
+- Use the existing **Casa Paraiso** Supabase project (`pnichczvgkdxnhcezqyn`) in Sydney (`ap-southeast-2`). This approved existing target replaces the earlier Singapore/project-creation plan; the other Supabase project remains untouched.
+- Keep application objects in the private `casa` schema owned by `casa_migrator`. Laravel runs as `casa_runtime`, which has schema usage, table DML, and sequence usage but no schema DDL, role/database creation, or RLS bypass.
+- Keep `PUBLIC`, `anon`, `authenticated`, and `service_role` denied on `casa`. Supabase Auth remains unused, and the Data API is disabled with zero exposed schemas.
+- Connect both Laravel database roles through the Sydney Supavisor session pooler on port `5432` with `sslmode=verify-full`, Supabase's CA certificate, and project-level SSL enforcement.
 - Add PostgreSQL 17 to local Docker development while retaining the inherited MariaDB service and volume for migration and rollback.
 - Replace the confirmed MySQL-only `MINUTE(...) MOD` and `FIELD(...)` expressions with portable queries.
 - Apply the pending account-preserving roster migration to MariaDB and take a consistent backup before transfer.
-- Add a dry-run-first Artisan transfer command. It must require an empty target, preserve IDs and account credentials, insert in foreign-key order inside a transaction, reset PostgreSQL sequences, and never modify the source database.
+- Add a dry-run-first Artisan transfer command. It must require an empty target, preserve IDs and account credentials, insert in foreign-key order inside a transaction, reset PostgreSQL sequences, complete row/count/identity/sequence validation before commit, and never modify the source database.
 - Transfer business and identity data. Exclude sessions, caches, queues, failed jobs, reset tokens, migration history, and the obsolete `transaction_adjustments` table.
 - Validate table counts, foreign keys, sequences, password and Google identities, scheduling capacity, financial totals, rewards, and representative records before cutover.
 
-Local implementation and verification are complete for the PostgreSQL service, portable queries, transfer command, full-row/source identity comparison, sequence alignment, and integrity audit. A freshly migrated target contains only five deterministic migration-owned RFM presets; the command recognizes that exact baseline as non-business data and replaces it inside the target transaction. The production run still requires a consistent MariaDB backup and an approved empty dedicated Supabase project in Singapore.
+The production cutover completed on 2026-07-17 from the current Docker Desktop MariaDB source, not the stale local PostgreSQL rehearsal copy. A consistent MariaDB dump and SHA-256 checksum were created during maintenance; migrations ran as `casa_migrator`; dry-run, transactional apply, and independent post-commit validation all passed; and a checksumed post-cutover Supabase export was created. The command accepts only the five deterministic migration-owned RFM presets on an otherwise empty target and now rolls back the complete import if any row, count, identity, or sequence validation differs before commit.
 
 ## Delivery and Acceptance
 
@@ -71,7 +72,7 @@ Local implementation and verification are complete for the PostgreSQL service, p
 - Run the Laravel suite against PostgreSQL and web regression coverage against MariaDB.
 - Add API authorization and contract tests for every role, authentication method, conflict path, export, CORS rule, and pairing flow.
 - Add Vue unit/component tests, Playwright role workflows, accessibility checks, Android lint/tests, and a physical-device or explicitly approved emulator smoke test.
-- Current verification covers 253 Laravel tests and 1,835 assertions, local full-row migration validation and CRUD integrity, 19 mobile unit tests, responsive Playwright role workflows at small-phone, Pixel 7, landscape, and tablet viewports with axe accessibility scans across every main tab, modal focus checks and visual snapshots, the mobile production build, Capacitor Android synchronization, Android release unit/lint gates, a universal release APK signed with Android v2/v3 schemes, and phone-sized Quick Tunnel acceptance for customer, receptionist, therapist, admin, and protected super-administrator workspaces. On 2026-07-15, the signed release was installed on an Android API 34 emulator and accepted with URL-only connection, password sign-in, live admin navigation, and persisted pairing/authentication. Dedicated Supabase cutover, live Google-provider acceptance, and signing-key backup are still required.
+- Current verification covers 255 Laravel tests and 1,845 assertions on the isolated local PostgreSQL test database, 19 mobile unit tests, web and mobile production builds, Capacitor Android synchronization, successful Android debug assembly, production full-row transfer validation and CRUD integrity, and live HTTPS smoke tests for administrator, staff, and customer login/logout plus booking, transaction, feedback, promotion, report, and tunnel metadata reads. Responsive Playwright role workflows, axe scans, Android release gates, the signed universal APK, and the 2026-07-15 Android API 34 emulator acceptance remain valid. Live Google-provider acceptance and signing-key backup are still required.
 - Demonstrate customer booking/rewards/feedback; receptionist bookings/payments; therapist schedule/outcomes/commissions; admin operations/reports/export; and super-admin user access entirely through the APK.
 - Build a signed universal APK version `1.0.0` with version code `1`. Keep the keystore outside Git and publish the APK checksum with the installation and demo runbook.
 
@@ -80,4 +81,4 @@ Local implementation and verification are complete for the PostgreSQL service, p
 - Android only; iOS and Play Store/AAB publishing are deferred.
 - Push notifications, biometrics, sensitive offline caching, and queued offline writes are deferred.
 - The mobile app is online-only with clear connection, failure, and retry states.
-- The inherited MariaDB database remains available for rollback until the Supabase migration is accepted.
+- The frozen MariaDB database remains a read-only rollback source until the Supabase cutover is accepted. Before any new Supabase business write, rollback is an environment switch; afterward it requires a reviewed reverse-data migration.
