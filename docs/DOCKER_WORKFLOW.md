@@ -184,6 +184,25 @@ Always stop after the demonstration. This closes the public tunnel, restores the
 
 A Quick Tunnel has no uptime guarantee. The bundled APK UI remains installed and usable as an app shell, but a rotated or stopped backend requires pasting the new connection link.
 
+## Fast Mobile Development in Chrome
+
+Use Chrome with Vite hot reload as the default rapid-development loop for Vue, TypeScript, Tailwind, and ordinary mobile API workflows. Start the paired demonstration backend from the repository root:
+
+```powershell
+.\scripts\mobile-demo.ps1 -Action Start
+```
+
+In a second PowerShell window, start the mobile Vite development server:
+
+```powershell
+Set-Location mobile
+npm run dev
+```
+
+Open `http://localhost:5173` in Chrome and paste the connection link printed by the demo helper. Vite applies supported source and style changes without rebuilding or reinstalling the APK. The browser authentication token is memory-only, so a full-page reload may require signing in again.
+
+Chrome does not validate Android secure storage, app/deep links, native sharing, haptics, keyboard and status-bar integration, or other Capacitor-native behavior. Before completing a mobile change, run the relevant automated checks and exercise native behavior on the approved Android emulator or a physical phone. This development preview does not change the release architecture: the production UI remains bundled into the APK, and Capacitor `server.url` must not be added.
+
 ## Mobile Build
 
 ```powershell

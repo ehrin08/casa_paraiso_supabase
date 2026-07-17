@@ -97,6 +97,7 @@ Design and develop a centralized Spa Appointment and Management System for Casa 
 - Use `scripts\casa-dedicated-docker.ps1` only for an explicit rollback inspection after stopping the Docker Desktop project; never run both local stacks concurrently.
 - Keep the container's PHP dependencies in the `sail-vendor` Docker volume; after first creation or a Composer lock change, run `.\scripts\casa-docker.ps1 compose exec -T laravel.test composer install` in addition to the host install.
 - Treat Docker Desktop and the Cloudflare quick tunnel as the demonstration backend runtime; the mobile UI itself must be bundled into the APK.
+- Use Chrome with Vite hot reload as the default fast-development loop for the mobile Vue UI: start the paired backend with `.\scripts\mobile-demo.ps1 -Action Start`, then run `Set-Location mobile; npm run dev` and open `http://localhost:5173`. Treat this as a browser preview only; verify Capacitor-native behavior and release acceptance on the approved Android emulator or a physical phone, and never ship a Capacitor `server.url` wrapper.
 - Keep Apache/XAMPP compatibility as a fallback local workflow only.
 - Use Node/npm for frontend asset builds only; do not require a production Node.js runtime for the MVP.
 - Use Turbo Drive only for safe same-origin GET links and filter forms; keep state-changing forms, exports, and panel links on their existing Laravel request paths.
@@ -122,6 +123,7 @@ Current application verification:
 - Production/Supabase schema updates: `.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test php artisan migrate --database=migration_target --force`
 - Seed data only when the seeder is account-preserving: `.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test php artisan db:seed`
 - Tests: `.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test php artisan test`
+- Mobile fast-development preview: run `.\scripts\mobile-demo.ps1 -Action Start`, then from `mobile` run `npm run dev` and open `http://localhost:5173` in Chrome for Vite hot reload.
 - Mobile: from `mobile`, run `npm run build`, `npm test`, `npm run android:sync`, and `android\gradlew.bat -p android assembleDebug` with Android SDK API 36 available.
 - Run Artisan as the container's `sail` user so CLI-created logs and cache files remain writable by the web process. If permissions drift, repair `storage` and `bootstrap/cache` from the root container user before retrying.
 
