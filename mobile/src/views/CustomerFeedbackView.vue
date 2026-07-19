@@ -4,17 +4,20 @@ import { PhArrowClockwise } from '@phosphor-icons/vue'
 import { formatAppointmentDate } from '../lib/appointments'
 import type { EligibleFeedbackAppointment } from '../lib/api'
 import { useCustomerFeedbackStore } from '../stores/customerFeedback'
+import MobileSkeleton from '../components/MobileSkeleton.vue'
+import { useInitialLoad } from '../composables/useInitialLoad'
 
 const props = defineProps<{ appointmentId?: number | null }>()
 const store = useCustomerFeedbackStore()
 const selected = ref<EligibleFeedbackAppointment | null>(null)
 const rating = ref(5)
 const comment = ref('')
+const { initialLoading, loadInitial } = useInitialLoad()
 
-onMounted(async () => {
+onMounted(() => void loadInitial(async () => {
   await store.load()
   if (props.appointmentId) open(store.eligibleAppointments.find(item => item.id === props.appointmentId) ?? null)
-})
+}))
 
 function open(appointment: EligibleFeedbackAppointment | null): void {
   if (!appointment) return
@@ -44,7 +47,7 @@ async function submit(): Promise<void> {
 
     <p v-if="store.error" class="alert" role="alert">{{ store.error }}</p>
     <p v-if="store.notice" class="notice" role="status">{{ store.notice }}</p>
-    <div v-if="store.loading" class="loading" role="status">Loading your feedback…</div>
+    <MobileSkeleton v-if="initialLoading" variant="list" label="Loading your feedback" />
 
     <template v-else>
       <section v-if="store.eligibleAppointments.length" class="section-block" aria-labelledby="awaiting-title">

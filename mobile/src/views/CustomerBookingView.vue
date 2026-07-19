@@ -3,6 +3,8 @@ import { computed, nextTick, onMounted, ref } from 'vue'
 import { formatPeso } from '../lib/appointments'
 import { useCustomerBookingStore } from '../stores/customerBooking'
 import MobileModalSheet from '../components/MobileModalSheet.vue'
+import MobileSkeleton from '../components/MobileSkeleton.vue'
+import { useInitialLoad } from '../composables/useInitialLoad'
 
 const emit = defineEmits<{ close: []; booked: [message: string] }>()
 const props = defineProps<{ serviceId?: number | null }>()
@@ -10,8 +12,9 @@ const booking = useCustomerBookingStore()
 const step = ref(1)
 const stepLabels = ['Treatment', 'Preferences', 'Time', 'Review']
 const canContinue = computed(() => step.value === 1 ? !!booking.serviceId : step.value === 3 ? !!booking.selectedSlot : true)
+const { initialLoading, loadInitial } = useInitialLoad()
 
-onMounted(() => booking.loadOptions(props.serviceId))
+onMounted(() => void loadInitial(() => booking.loadOptions(props.serviceId)))
 
 async function submit(): Promise<void> {
   const result = await booking.book()
@@ -34,7 +37,7 @@ function back(): void { if (step.value > 1) step.value -= 1 }
 <template>
   <MobileModalSheet :open="true" title="Book an appointment" eyebrow="Reserve your spot" labelled-by="booking-title" @close="emit('close')">
 
-    <div v-if="booking.loading" class="booking-loading" role="status">Preparing services and rewards…</div>
+    <MobileSkeleton v-if="initialLoading" variant="form" label="Preparing services and rewards" />
     <form v-else-if="booking.options" class="booking-form" @submit.prevent="submit">
       <p v-if="booking.error" class="alert" role="alert">{{ booking.error }}</p>
       <ol class="booking-progress" aria-label="Booking progress"><li v-for="(label, index) in stepLabels" :key="label" :class="{ active: step === index + 1, complete: step > index + 1 }"><span>{{ index + 1 }}</span>{{ label }}</li></ol>

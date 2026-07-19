@@ -144,6 +144,16 @@ textarea { min-height: 6rem; resize: vertical; }
 .mobile-workspace :where(.table-shell, .date-strip, .week, [role="tablist"]) { overscroll-behavior-inline: contain; scrollbar-width: thin; }
 .mobile-workspace :where(.table-shell, .date-strip, .week)[tabindex] { outline-offset: 3px; }
 
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.mobile-skeleton { margin: var(--space-5) 0; }
+.mobile-skeleton__content { display: grid; gap: var(--space-3); }
+.mobile-skeleton__content i, .mobile-skeleton__content b { display: block; border-radius: var(--radius-control); background: linear-gradient(100deg, var(--casa-sand) 25%, #fffaf1 45%, var(--casa-sand) 65%); background-size: 220% 100%; }
+.mobile-skeleton__line { height: .9rem; width: 58%; }.mobile-skeleton__line--heading { width: 38%; height: 1.45rem; }
+.mobile-skeleton__card { min-height: 5.25rem; border: 1px solid var(--casa-border); border-radius: var(--radius-operation) !important; }
+.mobile-skeleton__metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }.mobile-skeleton__metric { min-height: 6rem; }
+.mobile-skeleton__calendar { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .35rem; padding: var(--space-3); border: 1px solid var(--casa-border); border-radius: var(--radius-operation); background: var(--casa-paper); }.mobile-skeleton__calendar i { aspect-ratio: 1; min-height: 2rem; border-radius: .4rem; }
+.mobile-skeleton--form label { display: grid; gap: .45rem; }.mobile-skeleton--form label i { width: 30%; height: .75rem; }.mobile-skeleton--form label b { height: 3rem; }
+
 @media (min-width: 640px) {
   .screen, .mobile-page { padding-inline: 1.5rem; }
   .mobile-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -167,7 +177,10 @@ textarea { min-height: 6rem; resize: vertical; }
 
 @media (prefers-reduced-motion: no-preference) {
   :where(button, a, .mobile-surface) { transition: color var(--motion-fast) ease, background-color var(--motion-fast) ease, border-color var(--motion-fast) ease, box-shadow var(--motion-standard) ease, opacity var(--motion-fast) ease; }
+  .mobile-skeleton__content i, .mobile-skeleton__content b { animation: mobile-skeleton-shimmer 1.35s ease-in-out infinite; }
 }
+
+@keyframes mobile-skeleton-shimmer { to { background-position: -120% 0; } }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }

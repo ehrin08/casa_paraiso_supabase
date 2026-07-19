@@ -5,6 +5,8 @@ import MobileConfirmDialog from '../components/MobileConfirmDialog.vue'
 import MobileSuccessSheet from '../components/MobileSuccessSheet.vue'
 import MobilePagination from '../components/MobilePagination.vue'
 import MobileStatStrip from '../components/MobileStatStrip.vue'
+import MobileSkeleton from '../components/MobileSkeleton.vue'
+import { useInitialLoad } from '../composables/useInitialLoad'
 import { appointmentStatusLabel, formatAppointmentDate, formatPeso } from '../lib/appointments'
 import type { MobileAppointment } from '../lib/api'
 import { useCustomerAppointmentsStore } from '../stores/customerAppointments'
@@ -17,8 +19,9 @@ const openId = ref<number | null>(null)
 const bookingOpen = ref(false)
 const cancelTarget = ref<MobileAppointment | null>(null)
 const successMessage = ref('')
+const { initialLoading, loadInitial } = useInitialLoad()
 
-onMounted(() => store.load())
+onMounted(() => void loadInitial(() => store.load()))
 watch(() => props.serviceId, serviceId => { if (serviceId) bookingOpen.value = true }, { immediate: true })
 
 function confirmCancel(appointment: MobileAppointment): void {
@@ -67,7 +70,7 @@ async function booked(message: string): Promise<void> {
 
     <p v-if="store.error" class="alert" role="alert">{{ store.error }}</p>
     <p v-if="store.notice" class="notice" role="status">{{ store.notice }}</p>
-    <div v-if="store.loading" class="loading" role="status">Loading your appointments…</div>
+    <MobileSkeleton v-if="initialLoading" variant="list" label="Loading your appointments" />
 
     <div v-else-if="store.appointments.length" class="appointment-list">
       <article v-for="appointment in store.appointments" :key="appointment.id" class="appointment-card">

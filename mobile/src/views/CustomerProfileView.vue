@@ -3,18 +3,21 @@ import { onMounted, reactive, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useCustomerProfileStore } from '../stores/customerProfile'
+import MobileSkeleton from '../components/MobileSkeleton.vue'
+import { useInitialLoad } from '../composables/useInitialLoad'
 
 const profileStore = useCustomerProfileStore()
 const auth = useAuthStore()
 const router = useRouter()
 const form = reactive({ name: '', phone: '', address: '', contact_preference: '' })
 const password = reactive({ current: '', next: '', confirmation: '' })
+const { initialLoading, loadInitial } = useInitialLoad()
 
 watch(() => profileStore.profile, (value) => {
   if (!value) return
   form.name = value.name; form.phone = value.phone ?? ''; form.address = value.address ?? ''; form.contact_preference = value.contact_preference ?? ''
 }, { immediate: true })
-onMounted(() => profileStore.load())
+onMounted(() => void loadInitial(() => profileStore.load()))
 
 async function save(): Promise<void> {
   if (await profileStore.save(form) && profileStore.profile) auth.applyProfile(profileStore.profile.name, profileStore.profile.phone)
@@ -33,7 +36,7 @@ async function leave(): Promise<void> { if (await auth.signOut()) await router.r
     <header><p class="eyebrow">Your account</p><h1 id="profile-title">Profile</h1><p>Keep your contact details current for smooth appointment coordination.</p></header>
     <p v-if="profileStore.error" class="alert" role="alert">{{ Object.values(profileStore.fields).flat()[0] ?? profileStore.error }}</p>
     <p v-if="profileStore.notice" class="notice" role="status">{{ profileStore.notice }}</p>
-    <div v-if="profileStore.loading" class="loading" role="status">Loading your profile…</div>
+    <MobileSkeleton v-if="initialLoading" variant="form" label="Loading your profile" />
 
     <template v-else-if="profileStore.profile">
       <form class="profile-card" @submit.prevent="save">

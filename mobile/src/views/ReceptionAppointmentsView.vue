@@ -6,13 +6,16 @@ import type { OperationalAppointment } from '../lib/api'
 import { useReceptionStore } from '../stores/reception'
 import MobileConfirmDialog from '../components/MobileConfirmDialog.vue'
 import MobileFilterDisclosure from '../components/MobileFilterDisclosure.vue'
+import MobileSkeleton from '../components/MobileSkeleton.vue'
+import { useInitialLoad } from '../composables/useInitialLoad'
 
 const store = useReceptionStore()
 const formOpen = ref(false); const editingId = ref<number | undefined>(); const finishTarget = ref<OperationalAppointment | null>(null)
 const outcomeTarget = ref<{ item: OperationalAppointment; status: 'cancelled' | 'no_show' } | null>(null)
 const form = reactive({ customerId: 0, serviceId: 0, therapistId: 0, startsAt: '', addonCodes: [] as string[], customerNotes: '', internalNotes: '' })
 const payment = reactive({ amount: '', status: 'paid', method: '', paidAt: '', notes: '' })
-onMounted(async () => { await Promise.all([store.loadAppointments(), store.loadAppointmentOptions()]) })
+const { initialLoading, loadInitial } = useInitialLoad()
+onMounted(() => void loadInitial(async () => { await Promise.all([store.loadAppointments(), store.loadAppointmentOptions()]) }))
 
 function openNew(): void { const options=store.appointmentOptions; if(!options)return; editingId.value=undefined; form.customerId=options.customers[0]?.id??0; form.serviceId=options.services[0]?.id??0; form.therapistId=0; form.startsAt=manilaDateTimeInput(options.initial_start_at); form.addonCodes=[]; form.customerNotes=''; form.internalNotes=''; store.availableTherapists=[]; formOpen.value=true }
 function openEdit(item:OperationalAppointment):void { editingId.value=item.id; form.customerId=item.customer?.id??0; form.serviceId=item.service?.id??0; form.therapistId=item.therapist?.id??0; form.startsAt=manilaDateTimeInput(item.starts_at); form.addonCodes=item.addons.map(a=>a.code); form.customerNotes=item.customer_notes??''; form.internalNotes=item.internal_notes??''; store.availableTherapists=item.therapist?[item.therapist]:[]; formOpen.value=true }
@@ -29,7 +32,7 @@ async function finish():Promise<void>{ if(!finishTarget.value)return; const rece
   <section class="ops-page" aria-labelledby="bookings-title"><header class="heading"><div><p class="eyebrow">Front desk schedule</p><h1 id="bookings-title">Bookings</h1></div><button class="primary" @click="openNew">New booking</button></header>
     <div class="summary"><span><b>{{store.appointmentSummary.confirmed}}</b> Confirmed</span><span><b>{{store.appointmentSummary.completed}}</b> Completed</span><span><b>{{store.appointmentSummary.cancelled}}</b> Cancelled</span></div>
     <MobileFilterDisclosure :active-count="Number(!!store.appointmentSearch)+Number(!!store.appointmentDate)+Number(!!store.appointmentStatus)" @clear="clearFilters"><form class="filters" @submit.prevent="store.loadAppointments(1)"><label>Search<input v-model="store.appointmentSearch" placeholder="Booking or customer"></label><label>Date<input v-model="store.appointmentDate" type="date"></label><label>Status<select v-model="store.appointmentStatus"><option value="">All statuses</option><option value="confirmed">Confirmed</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option><option value="no_show">No-show</option></select></label><button>Apply filters</button></form></MobileFilterDisclosure>
-    <p v-if="store.error" class="alert" role="alert">{{Object.values(store.fields).flat()[0]??store.error}}</p><p v-if="store.notice" class="notice" role="status">{{store.notice}}</p><div v-if="store.loading" class="loading">Loading bookings…</div>
+    <p v-if="store.error" class="alert" role="alert">{{Object.values(store.fields).flat()[0]??store.error}}</p><p v-if="store.notice" class="notice" role="status">{{store.notice}}</p><MobileSkeleton v-if="initialLoading" variant="list" label="Loading bookings" />
     <div v-else class="ops-list"><article v-for="item in store.appointments" :key="item.id" class="ops-card"><div class="card-top"><small :data-status="item.status">{{appointmentStatusLabel(item.status)}}</small><b>{{formatAppointmentDate(item.starts_at)}}</b></div><h2>{{item.customer?.name}}</h2><p>{{item.service?.name}} · {{item.therapist?.name??'Unassigned'}}</p><p>{{item.appointment_number}} · {{formatPeso(item.expected_amount)}}</p><div class="actions"><button v-if="item.actions.can_edit" @click="openEdit(item)">Edit</button><button v-if="item.actions.can_finish" class="success" @click="openFinish(item)">Finish & pay</button><button v-if="item.actions.can_mark_no_show" @click="outcome(item,'no_show')">No-show</button><button v-if="item.actions.can_cancel" class="danger" @click="outcome(item,'cancelled')">Cancel</button></div></article></div>
     <nav v-if="store.appointmentMeta.last_page>1" class="pager"><button :disabled="store.appointmentMeta.current_page<=1" @click="store.loadAppointments(store.appointmentMeta.current_page-1)">Previous</button><span>Page {{store.appointmentMeta.current_page}} of {{store.appointmentMeta.last_page}}</span><button :disabled="store.appointmentMeta.current_page>=store.appointmentMeta.last_page" @click="store.loadAppointments(store.appointmentMeta.current_page+1)">Next</button></nav>
 
