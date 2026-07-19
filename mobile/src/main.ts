@@ -1,4 +1,6 @@
 import { App as CapacitorApp } from '@capacitor/app'
+import { Capacitor } from '@capacitor/core'
+import { StatusBar } from '@capacitor/status-bar'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
@@ -22,6 +24,19 @@ app.use(router)
 app.directive('mobile-modal', mobileModalDirective)
 app.mount('#app')
 installLegacyModalObserver()
+
+async function applyNativeSafeArea(): Promise<void> {
+  if (!Capacitor.isNativePlatform()) return
+
+  try {
+    const { height } = await StatusBar.getInfo()
+    document.documentElement.style.setProperty('--safe-top', `${height}px`)
+  } catch {
+    // Keep the CSS environment-variable fallback when the native plugin is unavailable.
+  }
+}
+
+void applyNativeSafeArea()
 
 const pairing = usePairingStore(pinia)
 const auth = useAuthStore(pinia)

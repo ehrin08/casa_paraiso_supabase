@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import type { Component } from 'vue'
+import { onBeforeUnmount, onMounted, type Component } from 'vue'
+import { App as CapacitorApp } from '@capacitor/app'
+import type { PluginListenerHandle } from '@capacitor/core'
 import { PhSignOut } from '@phosphor-icons/vue'
 
 export interface MobileNavigationItem {
@@ -8,16 +10,50 @@ export interface MobileNavigationItem {
   icon: Component
 }
 
-defineProps<{
+const props = defineProps<{
   accountLabel: string
   navigationLabel: string
   activeId: string
   items: MobileNavigationItem[]
+  homeId?: string
   working?: boolean
   error?: string | null
 }>()
 
-defineEmits<{ select: [id: string]; signOut: [] }>()
+const emit = defineEmits<{ select: [id: string]; signOut: [] }>()
+
+let backHandle: PluginListenerHandle | null = null
+
+function dismissTransientState(): boolean {
+  if (document.querySelector('[role="dialog"][aria-modal="true"]')) return true
+
+  const openFilter = document.querySelector<HTMLButtonElement>('.mobile-filter__toggle[aria-expanded="true"]')
+  if (openFilter) {
+    openFilter.click()
+    return true
+  }
+
+  const active = document.activeElement
+  if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement || active instanceof HTMLSelectElement) {
+    active.blur()
+    return true
+  }
+
+  return false
+}
+
+onMounted(() => {
+  void CapacitorApp.addListener('backButton', () => {
+    if (dismissTransientState()) return
+    if (props.homeId && props.activeId !== props.homeId) {
+      emit('select', props.homeId)
+      return
+    }
+    void CapacitorApp.exitApp()
+  }).then(handle => { backHandle = handle })
+})
+
+onBeforeUnmount(() => { void backHandle?.remove(); backHandle = null })
 </script>
 
 <template>

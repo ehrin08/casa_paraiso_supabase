@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page, type Route } from '@playwright/test'
 
-const server = 'https://quiet-lotus-123.trycloudflare.com'
+const server = 'https://casa-paraiso-supabase-api-poc.onrender.com'
 const instanceId = 'bda2fdb4-c8a4-4e0d-bc75-43ccd6b23811'
 const meta = { current_page: 1, last_page: 1, per_page: 15, total: 0, from: null, to: null }
 
@@ -34,11 +34,19 @@ function emptyApi(path: string): unknown {
   return { data: [] }
 }
 
-async function mockBackend(page: Page): Promise<void> {
+interface MockBackend {
+  releaseMeta(): void
+}
+
+async function mockBackend(page: Page, holdMeta = false): Promise<MockBackend> {
+  let releaseMeta = (): void => undefined
+  const metaReady = holdMeta ? new Promise<void>(resolve => { releaseMeta = resolve }) : Promise.resolve()
+
   await page.route(`${server}/**`, async (route: Route) => {
     const request = route.request()
     const url = new URL(request.url())
     if (url.pathname === '/api/v1/meta') {
+      await metaReady
       await route.fulfill({ json: { data: { service: 'casa-paraiso-mobile-api', api_version: 'v1', instance_id: instanceId, timezone: 'Asia/Manila', server_time: new Date().toISOString(), supported_auth: ['password', 'google'], pairing: { protocol: 2, enabled: true } } } })
       return
     }
@@ -54,14 +62,13 @@ async function mockBackend(page: Page): Promise<void> {
     }
     await route.fulfill({ json: emptyApi(url.pathname) })
   })
+
+  return { releaseMeta }
 }
 
 async function pairAndSignIn(page: Page, email: string): Promise<void> {
   await mockBackend(page)
-  await page.goto('/')
-  await page.getByRole('button', { name: 'Request an appointment' }).click()
-  await page.getByLabel('Casa Paraiso link').fill(server)
-  await page.getByRole('button', { name: 'Connect' }).click()
+  await page.goto('/sign-in')
   await page.getByLabel('Email').fill(email)
   await page.getByLabel('Password').fill('password')
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
@@ -105,14 +112,14 @@ for (const account of accounts) {
 
 test('landing, connection, and sign-in screens remain phone-first', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'android-pixel-7', 'Visual onboarding coverage uses the reference Android viewport.')
-  await mockBackend(page)
+  const backend = await mockBackend(page, true)
   await page.goto('/')
   await expect(page.getByRole('heading', { name: /Let the day soften here/i })).toBeVisible()
   await expect(page).toHaveScreenshot('landing-phone.png')
-  await page.getByRole('button', { name: 'Request an appointment' }).click()
-  await expect(page).toHaveScreenshot('connect-phone.png')
-  await page.getByLabel('Casa Paraiso link').fill(server)
-  await page.getByRole('button', { name: 'Connect' }).click()
+  await page.getByRole('button', { name: 'Book an appointment' }).click()
+  await expect(page.getByRole('heading', { name: 'Starting Casa Paraiso' })).toBeVisible()
+  backend.releaseMeta()
+  await expect(page.getByRole('heading', { name: 'Welcome to Casa Paraiso' })).toBeVisible()
   await expect(page).toHaveScreenshot('sign-in-phone.png')
 })
 

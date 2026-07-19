@@ -42,6 +42,7 @@ function selectCustomerTab(id: string): void {
     navigation-label="Customer navigation"
     :active-id="customerTab"
     :items="customerItems"
+    home-id="appointments"
     :working="auth.working"
     :error="auth.error"
     @select="selectCustomerTab"

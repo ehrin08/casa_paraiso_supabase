@@ -17,4 +17,4 @@ const items: MobileNavigationItem[] = [
 ]
 async function leave(): Promise<void> { if (await auth.signOut()) await router.replace('/sign-in') }
 </script>
-<template><MobileWorkspaceShell :account-label="auth.user?.name ?? 'Therapist'" navigation-label="Therapist navigation" :active-id="tab" :items="items" :working="auth.working" :error="auth.error" @select="tab=$event as typeof tab" @sign-out="leave"><StaffDashboardView v-if="tab==='dashboard'" @navigate="tab=$event"/><StaffAppointmentsView v-else-if="tab==='schedule'"/><StaffGuestsView v-else-if="tab==='guests'"/><StaffEarningsView v-else/></MobileWorkspaceShell></template>
+<template><MobileWorkspaceShell :account-label="auth.user?.name ?? 'Therapist'" navigation-label="Therapist navigation" :active-id="tab" :items="items" home-id="dashboard" :working="auth.working" :error="auth.error" @select="tab=$event as typeof tab" @sign-out="leave"><StaffDashboardView v-if="tab==='dashboard'" @navigate="tab=$event"/><StaffAppointmentsView v-else-if="tab==='schedule'"/><StaffGuestsView v-else-if="tab==='guests'"/><StaffEarningsView v-else/></MobileWorkspaceShell></template>
