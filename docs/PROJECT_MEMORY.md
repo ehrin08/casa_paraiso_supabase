@@ -199,7 +199,7 @@ Key identity entry points are `routes/auth.php`, the shared profile routes in `r
 - Editable settings are business name, contact email, phone, address, and the default payment method used to prefill new Admin and Receptionist forms. The default never settles a transaction by itself.
 - `AddSecurityHeaders` supplies the browser header baseline. `AppServiceProvider` registers named guest/user sensitive rate limiters and can force HTTPS in production.
 - `casa.security` reads `FORCE_HTTPS`, `HSTS_ENABLED`, and `TRUSTED_HOSTS`. Production release checks live in `SECURITY_HARDENING.md`; HSTS must wait until HTTPS is verified.
-- Mobile startup requires the HTTPS Render origin and configured UUID. All builds receive `VITE_BACKEND_URL`, replace stale Quick Tunnel state at startup, and expose no manual pairing UI or deep links. Metadata responses are non-cacheable and rate-limited; exact Capacitor/Vite CORS origins apply. The metadata identity grants no session; password authentication is the current hosted-pilot flow.
+- Mobile startup requires the HTTPS Render origin and configured UUID. All builds receive `VITE_BACKEND_URL`, replace stale Quick Tunnel state at startup, and expose no manual pairing UI or deep links. Metadata responses are non-cacheable and rate-limited; exact Capacitor/Vite CORS origins apply, including `X-Request-ID` for timed authenticated API requests. The metadata identity grants no session; password authentication is the current hosted-pilot flow.
 
 ### Feedback and Sentiment
 
