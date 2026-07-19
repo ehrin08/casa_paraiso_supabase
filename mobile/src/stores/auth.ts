@@ -27,11 +27,12 @@ export const useAuthStore = defineStore('auth', () => {
   async function hydrate(): Promise<void> {
     booting.value = true
     const pairing = usePairingStore()
-    await pairing.hydrate()
-    if (pairing.status !== 'paired') { booting.value = false; return }
-    configureApi(pairing.url)
     const saved = await readSession()
-    if (!saved || saved.instanceId !== pairing.instanceId || Date.parse(saved.expiresAt) <= Date.now()) { await clear(); booting.value = false; return }
+    const pairingReady = pairing.hydrate()
+    if (!saved || Date.parse(saved.expiresAt) <= Date.now()) { await clear(); void pairingReady; booting.value = false; return }
+    if (!await pairingReady || pairing.status !== 'paired') { booting.value = false; return }
+    configureApi(pairing.url)
+    if (saved.instanceId !== pairing.instanceId) { await clear(); booting.value = false; return }
     setToken(saved.token)
     try { user.value = await me() } catch (reason) {
       const failure = apiError(reason)
@@ -42,7 +43,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function signIn(email: string, password: string): Promise<boolean> {
     const pairing = usePairingStore()
-    if (pairing.status !== 'paired') { error.value = 'Pair this phone before signing in.'; return false }
+    if (pairing.status !== 'paired' && !await pairing.ensurePaired()) { error.value = 'Casa Paraiso is still unavailable. Try again when the connection is restored.'; return false }
     working.value = true; error.value = ''
     try {
       configureApi(pairing.url)
@@ -55,7 +56,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function startGoogleSignIn(): Promise<void> {
     const pairing = usePairingStore()
-    if (pairing.status !== 'paired') { error.value = 'Pair this phone before signing in.'; return }
+    if (pairing.status !== 'paired' && !await pairing.ensurePaired()) { error.value = 'Casa Paraiso is still unavailable. Try again when the connection is restored.'; return }
     if (!pairing.supportedAuth.includes('google')) { error.value = 'Google sign-in is not configured on this server.'; return }
     working.value = true; error.value = ''
     try {

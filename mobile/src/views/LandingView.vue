@@ -28,7 +28,7 @@ async function bookAppointment(serviceId?: number): Promise<void> {
     await router.push(auth.user.workspace === 'customer' ? { path: '/workspace/customer/appointments', query: serviceId ? { service: String(serviceId) } : {} } : `/workspace/${auth.user.workspace}`)
     return
   }
-  await router.push(pairing.status === 'paired' ? { path: '/sign-in', query: serviceId ? { service: String(serviceId) } : {} } : '/starting')
+  if (await pairing.ensurePaired()) await router.push({ path: '/sign-in', query: serviceId ? { service: String(serviceId) } : {} })
 }
 </script>
 

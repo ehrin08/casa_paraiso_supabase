@@ -4,7 +4,6 @@ import { StatusBar } from '@capacitor/status-bar'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
-import { usePairingStore } from './stores/pairing'
 import { useAuthStore } from './stores/auth'
 import { router } from './router'
 import { mobileModalDirective } from './components/mobileModalDirective'
@@ -38,7 +37,6 @@ async function applyNativeSafeArea(): Promise<void> {
 
 void applyNativeSafeArea()
 
-const pairing = usePairingStore(pinia)
 const auth = useAuthStore(pinia)
 
 async function handleAppUrl(url: string): Promise<void> {
@@ -52,14 +50,12 @@ const ready = auth.hydrate().then(async () => {
   const launch = await CapacitorApp.getLaunchUrl()
   if (launch?.url) await handleAppUrl(launch.url)
   if (auth.user) await router.replace(`/workspace/${auth.user.workspace}`)
-  else if (pairing.status === 'paired') await router.replace('/sign-in')
-  else await router.replace('/starting')
+  else await router.replace('/')
 })
 
 void CapacitorApp.addListener('appUrlOpen', async ({ url }) => {
   await ready
   await handleAppUrl(url)
   if (auth.user) await router.replace(`/workspace/${auth.user.workspace}`)
-  else if (pairing.status === 'paired') await router.replace('/sign-in')
-  else await router.replace('/starting')
+  else await router.replace('/')
 })

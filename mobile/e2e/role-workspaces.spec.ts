@@ -124,15 +124,17 @@ for (const account of accounts) {
   })
 }
 
-test('landing, connection, and sign-in screens remain phone-first', async ({ page }, testInfo) => {
+test('landing remains explorable while pairing and opens sign-in after booking is requested', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'android-pixel-7', 'Visual onboarding coverage uses the reference Android viewport.')
   const backend = await mockBackend(page, true)
   await page.goto('/')
   await expect(page.getByRole('heading', { name: /Let the day soften here/i })).toBeVisible()
   await expect(page).toHaveScreenshot('landing-phone.png')
-  await page.getByRole('button', { name: 'Book an appointment' }).click()
-  await expect(page.getByRole('heading', { name: 'Starting Casa Paraiso' })).toBeVisible()
+  const booking = page.getByRole('button', { name: 'Book an appointment' }).click()
+  await expect(page.getByRole('status')).toContainText('Connecting to Casa Paraiso')
+  await expect(page.getByRole('heading', { name: /Let the day soften here/i })).toBeVisible()
   backend.releaseMeta()
+  await booking
   await expect(page.getByRole('heading', { name: 'Welcome to Casa Paraiso' })).toBeVisible()
   await expect(page).toHaveScreenshot('sign-in-phone.png')
 })
