@@ -1,0 +1,14 @@
+.git
+.env
+.env.*
+!.env.example
+node_modules
+vendor
+mobile/node_modules
+mobile/android/.gradle
+mobile/android/app/build
+mobile/dist
+public/build
+storage/backups
+storage/testing
+storage/logs

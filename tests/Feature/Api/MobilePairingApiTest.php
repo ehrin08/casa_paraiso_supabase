@@ -8,7 +8,7 @@ class MobilePairingApiTest extends TestCase
 {
     private const INSTANCE_ID = 'bda2fdb4-c8a4-4e0d-bc75-43ccd6b23811';
 
-    private const HOST = 'quiet-lotus-1234.trycloudflare.com';
+    private const HOST = 'casa-paraiso-supabase-api-poc.onrender.com';
 
     protected function setUp(): void
     {
@@ -17,7 +17,7 @@ class MobilePairingApiTest extends TestCase
         config([
             'app.key' => 'base64:pairing-test-application-key',
             'app.url' => 'https://'.self::HOST,
-            'casa.mobile.demo_enabled' => true,
+            'casa.mobile.pairing_enabled' => true,
             'casa.mobile.instance_id' => self::INSTANCE_ID,
         ]);
     }
@@ -68,6 +68,15 @@ class MobilePairingApiTest extends TestCase
         $this->getJson('/api/v1/meta')
             ->assertStatus(503)
             ->assertJsonPath('error.code', 'PAIRING_NOT_CONFIGURED');
+    }
+
+    public function test_meta_requires_an_enabled_https_pairing_endpoint(): void
+    {
+        config(['app.url' => 'http://'.self::HOST]);
+
+        $this->getJson('/api/v1/meta')
+            ->assertOk()
+            ->assertJsonPath('data.pairing.enabled', false);
     }
 
     public function test_pin_verification_endpoint_is_removed(): void

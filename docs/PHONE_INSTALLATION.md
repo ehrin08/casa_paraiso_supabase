@@ -2,10 +2,10 @@
 
 ## Build the signed APK
 
-The one-time command below creates the 4096-bit release key under `%USERPROFILE%\.casa-paraiso`, restricts that directory to the current Windows account, synchronizes Capacitor, builds version `1.0.0` (code `1`), and verifies the APK signature:
+The one-time command below creates the 4096-bit release key under `%USERPROFILE%\.casa-paraiso`, restricts that directory to the current Windows account, synchronizes Capacitor, builds version `1.0.1` (code `2`), and verifies the APK signature. Supply the live HTTPS Render origin; it is compiled into the release APK so users never have to pair to a laptop tunnel:
 
 ```powershell
-.\scripts\build-mobile-release.ps1 -InitializeSigning
+.\scripts\build-mobile-release.ps1 -InitializeSigning -BackendUrl https://casa-paraiso-supabase-api-poc.onrender.com
 ```
 
 Back up `%USERPROFILE%\.casa-paraiso` securely. Losing this directory prevents future APK updates from being installed over the existing app. Never commit or share its keystore or property file.
@@ -13,7 +13,7 @@ Back up `%USERPROFILE%\.casa-paraiso` securely. Losing this directory prevents f
 Subsequent builds reuse the same key:
 
 ```powershell
-.\scripts\build-mobile-release.ps1
+.\scripts\build-mobile-release.ps1 -BackendUrl https://casa-paraiso-supabase-api-poc.onrender.com
 ```
 
 The universal APK and checksum are written to:
@@ -30,7 +30,7 @@ mobile\android\app\build\outputs\apk\release\app-release.apk.sha256
 3. Build and install with exactly one authorized phone connected:
 
 ```powershell
-.\scripts\build-mobile-release.ps1 -Install
+.\scripts\build-mobile-release.ps1 -Install -BackendUrl https://casa-paraiso-supabase-api-poc.onrender.com
 ```
 
 Alternatively, copy `app-release.apk` to the phone, open it, and allow installation from the selected file manager when Android asks. Check the published SHA-256 value before installing a copied APK.
@@ -43,9 +43,9 @@ From the repository root:
 .\scripts\mobile-demo.ps1 -Action Start
 ```
 
-The helper prints a temporary `APK download` URL and its SHA-256 checksum. Open the URL in the Android phone browser to install the signed app without USB; Android may ask you to allow installs from that browser. The download exists only while the demo is active and the signed release artifact is present.
+The helper is for development/demo builds only. Build a debug APK first with `mobile\android\gradlew.bat -p mobile\android assembleDebug`; the helper then prints a temporary APK download URL and its SHA-256 checksum. The hosted release APK does not accept a Quick Tunnel connection link.
 
-If one authorized phone is connected, the helper opens and validates the connection link automatically. Otherwise open the app and paste either the displayed `Connection link` or the same APK download URL; no PIN is required. Google Cloud must authorize the exact displayed mobile callback ending in `/auth/google/mobile/callback`; the callback changes whenever the Quick Tunnel rotates.
+If one authorized phone is connected, the helper opens and validates the connection link automatically. Otherwise open the demo app and paste either the displayed `Connection link` or the same APK download URL; no PIN is required. Google Cloud must authorize the exact displayed mobile callback ending in `/auth/google/mobile/callback`; the callback changes whenever the Quick Tunnel rotates.
 
 Sign in, exercise the appropriate role workspace, and stop the public tunnel afterward:
 

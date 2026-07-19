@@ -1,5 +1,14 @@
 <?php
 
+$trustedHosts = array_values(array_filter(array_map(
+    'trim',
+    explode(',', (string) env('TRUSTED_HOSTS', '')),
+)));
+
+if ($trustedHosts === [] && filled($renderHostname = env('RENDER_EXTERNAL_HOSTNAME'))) {
+    $trustedHosts = ['^'.preg_quote((string) $renderHostname, '/').'$'];
+}
+
 return [
     'business_name' => 'Casa Paraiso Body and Wellness Spa',
     'marketing_line' => 'Reserve your spot. You deserve this.',
@@ -12,17 +21,15 @@ return [
     'security' => [
         'force_https' => (bool) env('FORCE_HTTPS', false),
         'hsts' => (bool) env('HSTS_ENABLED', false),
-        'trusted_hosts' => array_values(array_filter(array_map(
-            'trim',
-            explode(',', (string) env('TRUSTED_HOSTS', '')),
-        ))),
+        'trusted_hosts' => $trustedHosts,
     ],
     'mobile' => [
         'service' => 'casa-paraiso-mobile-api',
         'api_version' => 'v1',
         'pairing_protocol' => 2,
-        'instance_id' => env('MOBILE_DEMO_INSTANCE_ID'),
-        'demo_enabled' => (bool) env('MOBILE_DEMO_PAIRING_ENABLED', false),
+        'instance_id' => env('MOBILE_INSTANCE_ID'),
+        'pairing_enabled' => (bool) env('MOBILE_PAIRING_ENABLED', false),
+        'demo_apk_enabled' => (bool) env('MOBILE_DEMO_APK_ENABLED', false),
         'apk_path' => env('MOBILE_DEMO_APK_PATH', base_path('mobile/android/app/build/outputs/apk/release/app-release.apk')),
         'google_cache_store' => env('MOBILE_GOOGLE_CACHE_STORE', 'file'),
         'google_ttl_seconds' => 300,

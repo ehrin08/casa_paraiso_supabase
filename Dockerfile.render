@@ -1,0 +1,51 @@
+FROM node:24-bookworm-slim AS assets
+
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY resources resources
+COPY public public
+COPY vite.config.js ./
+RUN npm run build
+
+FROM composer:2 AS vendor
+
+WORKDIR /app
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts
+COPY app app
+COPY bootstrap bootstrap
+COPY config config
+COPY database database
+COPY public public
+COPY resources resources
+COPY routes routes
+COPY artisan ./
+RUN composer dump-autoload --no-dev --optimize && php artisan package:discover --ansi
+
+FROM php:8.2-apache-bookworm
+
+WORKDIR /var/www/html
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libicu-dev libpq-dev libzip-dev unzip \
+    && docker-php-ext-install bcmath intl pdo_mysql pdo_pgsql zip \
+    && a2enmod rewrite headers \
+    && echo 'ServerName localhost' > /etc/apache2/conf-available/render-servername.conf \
+    && a2enconf render-servername \
+    && groupadd --gid 1000 render-secrets || true \
+    && usermod -a -G 1000 www-data \
+    && sed -ri -e 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/*.conf \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=vendor /app /var/www/html
+COPY --from=assets /app/public/build /var/www/html/public/build
+COPY deploy/render/start.sh /usr/local/bin/render-start
+
+RUN chmod +x /usr/local/bin/render-start \
+    && mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache
+
+EXPOSE 10000
+
+CMD ["/usr/local/bin/render-start"]

@@ -12,11 +12,11 @@ class MobileDemoApkController extends Controller
     {
         $path = (string) config('casa.mobile.apk_path');
 
-        abort_unless(config('casa.mobile.demo_enabled') && is_file($path), 404);
+        abort_unless(config('casa.mobile.demo_apk_enabled') && is_file($path), 404);
 
         return response()->download(
             $path,
-            'Casa-Paraiso-Mobile-v1.0.0.apk',
+            'Casa-Paraiso-Mobile-v1.0.1.apk',
             [
                 'Cache-Control' => 'private, no-store',
                 'Content-Type' => 'application/vnd.android.package-archive',

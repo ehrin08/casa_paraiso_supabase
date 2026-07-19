@@ -44,7 +44,7 @@ When sources disagree, identify whether the question concerns intended or curren
 - The inherited Laravel/Blade/MariaDB implementation remains the functional baseline; its isolated MariaDB copy is now frozen as the read-only rollback source for the completed Supabase cutover.
 - The approved target is a bundled Capacitor Android application using Vue 3 and TypeScript, with Laravel retained as the authenticated API and business-logic backend and Supabase PostgreSQL as the authoritative database after cutover.
 - All five roles remain in scope: customer, receptionist, therapist, admin, and super administrator.
-- The demonstration backend runs in the Docker Desktop Compose project `casa-paraiso-supabase-desktop` with a profile-gated Cloudflare Quick Tunnel. The bundled APK pairs by pasting the verified tunnel or APK download link; no separate PIN is required.
+- The development/demo backend runs in the Docker Desktop Compose project `casa-paraiso-supabase-desktop` with a profile-gated Cloudflare Quick Tunnel. The hosted proof of concept is one free Singapore Render Docker web service defined by `render.yaml`; it uses Supabase Sydney only, sleeps after 15 idle minutes, and is intentionally password-login pilot capacity rather than always-on production.
 - The implementation and migration sequence is authoritative in [`MOBILE_SUPABASE_PLAN.md`](MOBILE_SUPABASE_PLAN.md). Inherited Hostinger/MariaDB documents describe the baseline unless and until they are reconciled as implementation work lands.
 
 ## Current Project State
@@ -82,7 +82,7 @@ When sources disagree, identify whether the question concerns intended or curren
 | Primary local runtime | Docker Desktop `desktop-linux` through `scripts/casa-docker.ps1`, using Compose project `casa-paraiso-supabase-desktop`; bare Compose is intentionally avoided |
 | Local runtime rollback | Preserved `CasaParaisoDocker` WSL2 engine through `scripts/casa-dedicated-docker.ps1`; never run concurrently with Docker Desktop |
 | Local fallback | XAMPP/Apache with compatible PHP and MariaDB/MySQL |
-| Delivery target | Signed Android APK; local Laravel demo backend through a Cloudflare quick tunnel |
+| Delivery target | Signed Android APK; stable Render HTTPS endpoint for the hosted pilot, with Cloudflare Quick Tunnel retained for local demo builds |
 | Timezone | `Asia/Manila` |
 | Business window | Every day, 1:00 PM through 12:00 midnight, with 30-minute starts |
 
@@ -126,7 +126,7 @@ Key identity entry points are `routes/auth.php`, the shared profile routes in `r
 - `app/Http/Requests` contains workflow validation; business invariants that require transactions, locks, or cross-record checks live in services.
 - `app/Models` contains state vocabulary, casts, and relationships.
 - `app/Services` contains reusable scheduling, completion, sentiment, RFM, numbering, identity-confirmation, session, and conflict logic.
-- `app/Services/MobilePairing.php` owns Quick Tunnel configuration and instance-identity validation for URL-only pairing.
+- `app/Services/MobilePairing.php` owns HTTPS endpoint configuration and instance-identity validation for URL-only pairing; runtime flags separate hosted pairing from local demo APK delivery.
 
 ### Core Records and Relationships
 
@@ -198,7 +198,7 @@ Key identity entry points are `routes/auth.php`, the shared profile routes in `r
 - Editable settings are business name, contact email, phone, address, and the default payment method used to prefill new Admin and Receptionist forms. The default never settles a transaction by itself.
 - `AddSecurityHeaders` supplies the browser header baseline. `AppServiceProvider` registers named guest/user sensitive rate limiters and can force HTTPS in production.
 - `casa.security` reads `FORCE_HTTPS`, `HSTS_ENABLED`, and `TRUSTED_HOSTS`. Production release checks live in `SECURITY_HARDENING.md`; HSTS must wait until HTTPS is verified.
-- Mobile pairing is enabled only for an exact HTTPS `*.trycloudflare.com` `APP_URL` with a configured UUID. Metadata responses are non-cacheable and rate-limited; exact Capacitor/Vite CORS origins apply. Pairing itself grants no session and therefore needs no PIN; normal password or Google authentication remains mandatory.
+- Mobile pairing requires an enabled HTTPS `APP_URL` and configured UUID. Hosted APK builds receive `VITE_PRODUCTION_BACKEND_URL`, replace stale Quick Tunnel state at startup, and hide manual pairing; development/demo builds retain exact `*.trycloudflare.com` URL pairing. Metadata responses are non-cacheable and rate-limited; exact Capacitor/Vite CORS origins apply. Pairing itself grants no session and therefore needs no PIN; password authentication is the current hosted-pilot flow.
 
 ### Feedback and Sentiment
 
@@ -292,9 +292,9 @@ Database migrations, seeders, imports, and targeted data repairs are permitted i
 
 - Pairing, password and Google device-token authentication, secure token/PKCE storage, complete five-role workspaces, and repeatable release signing are implemented. Google Cloud credentials and live provider acceptance remain pending.
 - Supabase provisioning and the account-preserving Sydney cutover are complete, including restricted roles, private schema, verified TLS, disabled Data API, full-row/sequence validation, checksumed exports, live role smoke tests, and clean security/unindexed-foreign-key advisor results. Keep MariaDB read-only until acceptance; ongoing export retention and a restore rehearsal remain pending.
-- The Quick Tunnel pairing flow is implemented and live-verified. While demo pairing is active, the same temporary tunnel exposes the existing signed APK for browser installation; the route returns 404 when the demo flag is off or the artifact is missing. Mobile Google OAuth callback/exchange behavior is covered by backend and client tests, but the local environment has no Google client credentials, so live provider acceptance remains pending.
+- The Quick Tunnel pairing flow is implemented and live-verified for development/demo builds. While the separate demo APK flag is active, the temporary tunnel exposes that artifact for browser installation; the route returns 404 when the flag is off or the artifact is missing. Render builds use a compiled stable endpoint instead, with Google credentials intentionally absent and password-only metadata for the hosted pilot.
 - The automated five-workspace smoke suite passes. Pairing, password sign-in, customer booking options, live availability, slot selection, feedback history, profile display/update, navigation, and sign-out were verified through a phone-sized in-app browser against a Cloudflare Quick Tunnel on 2026-07-15. Receptionist dashboard, booking creation/options and lists, customer search/detail/edit fields, payment lists, and payment-entry options were likewise live-verified without mutating records. Therapist dashboard, assigned schedule and detail actions, served-customer history, related-review empty state, commission totals/history, and related payments were also live-verified without mutating records.
-- Admin Today, Ops, Manage, Insights, Control, native report sharing entry points, and the protected super-administrator User Access boundary were live-verified through the phone-sized bundled client and Quick Tunnel on 2026-07-15. The universal version `1.0.0` release APK builds with API 36, verifies with Android v2/v3 signatures, and was installed on an Android API 34 emulator. URL-only connection, password sign-in, workspace navigation, and persisted pairing/authentication were accepted there; signing-key backup remains outstanding.
+- Admin Today, Ops, Manage, Insights, Control, native report sharing entry points, and the protected super-administrator User Access boundary were live-verified through the phone-sized bundled client and Quick Tunnel on 2026-07-15. The universal version `1.0.0` release APK builds with API 36, verifies with Android v2/v3 signatures, and was installed on an Android API 34 emulator. The pending `1.0.1`/code `2` Render release requires the actual service URL at build time plus hosted HTTPS/wake-up acceptance before it supersedes that artifact; signing-key backup remains outstanding.
 - Supabase database and live tunnel security checks are complete for the current configuration. Final live Google-provider acceptance and signing-key backup remain pending.
 - Record-level CRUD repair status belongs only in its dedicated repair documents and must be rechecked read-only before any separately approved action.
 

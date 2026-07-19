@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeBackendUrl, parsePairingDeepLink, validateMeta } from './pairing'
+import { normalizeBackendUrl, normalizeConfiguredProductionBackendUrl, parsePairingDeepLink, validateMeta } from './pairing'
 
 describe('mobile pairing validation', () => {
   it('accepts a Cloudflare Quick Tunnel or APK download link', () => {
@@ -15,6 +15,13 @@ describe('mobile pairing validation', () => {
       url: 'https://quiet-lotus-123.trycloudflare.com',
     })
     expect(parsePairingDeepLink('casaparaiso://pair?url=https%3A%2F%2Fevil.example')).toBeNull()
+  })
+
+  it('validates a fixed production backend origin', () => {
+    expect(normalizeConfiguredProductionBackendUrl('https://casa-paraiso-api-poc.onrender.com')).toBe('https://casa-paraiso-api-poc.onrender.com')
+    expect(normalizeConfiguredProductionBackendUrl('')).toBe('')
+    expect(() => normalizeConfiguredProductionBackendUrl('http://casa-paraiso-api-poc.onrender.com')).toThrow()
+    expect(() => normalizeConfiguredProductionBackendUrl('https://casa-paraiso-api-poc.onrender.com/api')).toThrow()
   })
 
   it('rejects a metadata identity mismatch', () => {

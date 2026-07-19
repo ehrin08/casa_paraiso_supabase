@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [ValidateSet('Start', 'Rotate', 'Status', 'Stop')]
-    [string] $Action = 'Status'
+    [string] $Action = 'Status',
+    [string] $ApkPath
 )
 
 Set-StrictMode -Version Latest
@@ -11,8 +12,8 @@ Import-Module (Join-Path $PSScriptRoot 'CasaDocker.psm1') -Force
 $projectRoot = Get-CasaProjectPath
 $envPath = Join-Path $projectRoot '.env'
 $statePath = Join-Path $projectRoot 'storage\app\private\mobile-demo-state.json'
-$apkPath = Join-Path $projectRoot 'mobile\android\app\build\outputs\apk\release\app-release.apk'
-$managedKeys = @('APP_URL', 'APP_DEBUG', 'SESSION_SECURE_COOKIE', 'TRUSTED_HOSTS', 'MOBILE_DEMO_PAIRING_ENABLED')
+$apkPath = if ($ApkPath) { $ApkPath } else { Join-Path $projectRoot 'mobile\android\app\build\outputs\apk\debug\app-debug.apk' }
+$managedKeys = @('APP_URL', 'APP_DEBUG', 'SESSION_SECURE_COOKIE', 'TRUSTED_HOSTS', 'MOBILE_PAIRING_ENABLED', 'MOBILE_INSTANCE_ID', 'MOBILE_DEMO_APK_ENABLED')
 
 function Get-DotEnvState {
     param([string] $Key)
@@ -70,9 +71,9 @@ function Restore-EnvironmentState {
 }
 
 function Ensure-InstanceId {
-    $current = Get-DotEnvState 'MOBILE_DEMO_INSTANCE_ID'
+    $current = Get-DotEnvState 'MOBILE_INSTANCE_ID'
     if (-not $current.exists -or [string]::IsNullOrWhiteSpace($current.value)) {
-        Set-DotEnvValue -Key 'MOBILE_DEMO_INSTANCE_ID' -Value ([guid]::NewGuid().ToString())
+        Set-DotEnvValue -Key 'MOBILE_INSTANCE_ID' -Value ([guid]::NewGuid().ToString())
     }
 }
 
@@ -133,7 +134,8 @@ function Configure-TunnelEnvironment {
     Set-DotEnvValue -Key 'APP_DEBUG' -Value 'false'
     Set-DotEnvValue -Key 'SESSION_SECURE_COOKIE' -Value 'true'
     Set-DotEnvValue -Key 'TRUSTED_HOSTS' -Value "^localhost$,^127\.0\.0\.1$,^laravel\.test$,^$escapedHost$"
-    Set-DotEnvValue -Key 'MOBILE_DEMO_PAIRING_ENABLED' -Value 'true'
+    Set-DotEnvValue -Key 'MOBILE_PAIRING_ENABLED' -Value 'true'
+    Set-DotEnvValue -Key 'MOBILE_DEMO_APK_ENABLED' -Value 'true'
     Invoke-Laravel @('php', 'artisan', 'config:clear') | Out-Null
 }
 
@@ -166,7 +168,7 @@ if (-not (Test-Path $envPath)) {
 switch ($Action) {
     'Start' {
         if (-not (Test-Path $apkPath)) {
-            throw 'The signed APK is missing. Run .\scripts\build-mobile-release.ps1 before starting the phone demo.'
+            throw 'The demo APK is missing. Run mobile\android\gradlew.bat -p mobile\android assembleDebug, or pass -ApkPath for a development/demo build.'
         }
         Save-EnvironmentState
         Ensure-InstanceId

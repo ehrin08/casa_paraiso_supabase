@@ -28,10 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
             subdomains: false,
         );
 
-        $middleware->trustProxies(at: [
-            '127.0.0.1',
-            '172.16.0.0/12',
-        ]);
+        $middleware->trustProxies(at: env('TRUSTED_PROXIES', '127.0.0.1,172.16.0.0/12'));
 
         $middleware->alias([
             'active' => EnsureUserIsActive::class,

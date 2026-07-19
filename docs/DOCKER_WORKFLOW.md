@@ -165,9 +165,9 @@ Start a demo session:
 .\scripts\mobile-demo.ps1 -Action Start
 ```
 
-The helper requires an existing signed release APK, starts the Docker Desktop stack and profile-gated `cloudflared` container, temporarily hardens the ignored `.env`, validates `/api/v1/meta`, prints a temporary APK download URL plus the connection link and Google callback, and sends a URL-only `casaparaiso://pair` deep link when exactly one ADB device is available. The APK download route is disabled whenever the demo pairing flag is off.
+The helper requires an existing debug or explicitly supplied demo APK, starts the Docker Desktop stack and profile-gated `cloudflared` container, temporarily hardens the ignored `.env`, validates `/api/v1/meta`, prints a temporary APK download URL plus the connection link and Google callback, and sends a URL-only `casaparaiso://pair` deep link when exactly one ADB device is available. The APK download route is disabled whenever the demo flag is off. Render release APKs must not be used with this helper.
 
-The app accepts the bare connection URL or the APK download URL, reduces it to an exact HTTPS `*.trycloudflare.com` origin, validates the Casa Paraiso service identity and instance UUID through the rate-limited metadata endpoint, and persists only the verified URL, instance UUID, and pairing timestamp in Capacitor Preferences. Pairing grants no authenticated session; password or Google sign-in remains required.
+Development/demo builds accept the bare connection URL or APK download URL, reduce it to an exact HTTPS `*.trycloudflare.com` origin, validate the Casa Paraiso service identity and instance UUID through the rate-limited metadata endpoint, and persist the verified endpoint in Capacitor Preferences. A Render release instead bootstraps its compiled HTTPS endpoint, replacing stale tunnel state. Pairing grants no authenticated session; password sign-in remains required for the proof of concept.
 
 Rotate or inspect the demo:
 
@@ -216,10 +216,10 @@ $env:ANDROID_HOME = Join-Path $env:LOCALAPPDATA 'Android\Sdk'
 
 Capacitor 8 compiles and targets API 36 with minimum API 24. Install `platforms;android-36` and the matching build tools through Android's `sdkmanager` if the local SDK is missing them. The debug APK is generated under `mobile/android/app/build/outputs/apk/debug/` and is ignored by Git.
 
-For the signed version `1.0.0` release APK, follow [`PHONE_INSTALLATION.md`](PHONE_INSTALLATION.md). The one-time initializer creates a 4096-bit key under `%USERPROFILE%\.casa-paraiso`; subsequent builds reuse it and verify the APK before reporting its SHA-256 checksum:
+For the signed version `1.0.1` release APK, follow [`PHONE_INSTALLATION.md`](PHONE_INSTALLATION.md). The one-time initializer creates a 4096-bit key under `%USERPROFILE%\.casa-paraiso`; subsequent builds reuse it and verify the APK before reporting its SHA-256 checksum. Every release build must receive the live Render URL:
 
 ```powershell
-.\scripts\build-mobile-release.ps1 -InitializeSigning
+.\scripts\build-mobile-release.ps1 -InitializeSigning -BackendUrl https://casa-paraiso-supabase-api-poc.onrender.com
 .\scripts\build-mobile-release.ps1
 .\scripts\build-mobile-release.ps1 -Install
 ```
@@ -264,6 +264,6 @@ These are clean-checkout local defaults, not the current production database con
 
 ## Deployment Boundary
 
-Docker and the Quick Tunnel are the approved demonstration backend, not the final hosted production backend. The Android UI is bundled into the APK and must never use Capacitor `server.url` to wrap a remote web page. Supabase provisioning, restricted-role setup, verified-TLS cutover, and data acceptance are complete; production backend hosting, live Google-provider acceptance, signing-key backup, and physical-device acceptance remain delivery milestones.
+Docker and the Quick Tunnel are development/demo backends, not the hosted proof-of-concept backend. `render.yaml` defines one free Singapore Render Docker web service with no Render database, disk, worker, cron, or Redis; Supabase Sydney remains the only durable datastore. The free service sleeps after 15 minutes idle and can take about a minute to wake, so it is a password-login proof of concept rather than an always-on production service. The Android UI is bundled into the APK and must never use Capacitor `server.url` to wrap a remote web page. The Render dashboard must receive the Supabase TLS CA as secret file `/etc/secrets/supabase-prod-ca-2021.crt`, all application/database secrets, and `HSTS_ENABLED=false` until live HTTPS verification passes.
 
 XAMPP remains a fallback for inherited browser comparison only. It must not share or replace the Docker Desktop project database. The preserved dedicated WSL2 engine is a rollback copy, not a concurrently active development environment.

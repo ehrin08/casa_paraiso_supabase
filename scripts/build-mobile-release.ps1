@@ -1,11 +1,22 @@
 [CmdletBinding()]
 param(
     [switch] $InitializeSigning,
-    [switch] $Install
+    [switch] $Install,
+    [Parameter(Mandatory)]
+    [string] $BackendUrl
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+try {
+    $backend = [uri]$BackendUrl
+} catch {
+    throw 'BackendUrl must be an HTTPS origin such as https://your-service.onrender.com.'
+}
+if ($backend.Scheme -ne 'https' -or $backend.UserInfo -or $backend.Port -ne 443 -or $backend.Query -or $backend.Fragment -or ($backend.AbsolutePath -ne '/' -and $backend.AbsolutePath -ne '')) {
+    throw 'BackendUrl must be an HTTPS origin without a path, credentials, query, or fragment.'
+}
 
 $projectRoot = Split-Path $PSScriptRoot -Parent
 $mobileRoot = Join-Path $projectRoot 'mobile'
@@ -89,6 +100,7 @@ $env:CASA_RELEASE_STORE_PASSWORD = $signing.storePassword
 $env:CASA_RELEASE_KEY_ALIAS = $signing.keyAlias
 $env:CASA_RELEASE_KEY_PASSWORD = $signing.keyPassword
 $env:ANDROID_HOME = Join-Path $env:LOCALAPPDATA 'Android\Sdk'
+$env:VITE_PRODUCTION_BACKEND_URL = $backend.GetLeftPart([System.UriPartial]::Authority)
 
 Push-Location $mobileRoot
 try {
@@ -99,6 +111,7 @@ try {
 } finally {
     Pop-Location
     Remove-Item Env:CASA_RELEASE_STORE_FILE, Env:CASA_RELEASE_STORE_PASSWORD, Env:CASA_RELEASE_KEY_ALIAS, Env:CASA_RELEASE_KEY_PASSWORD -ErrorAction SilentlyContinue
+    Remove-Item Env:VITE_PRODUCTION_BACKEND_URL -ErrorAction SilentlyContinue
 }
 
 $apkPath = Join-Path $mobileRoot 'android\app\build\outputs\apk\release\app-release.apk'

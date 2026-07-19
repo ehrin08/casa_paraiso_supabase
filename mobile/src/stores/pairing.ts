@@ -2,11 +2,11 @@ import { Preferences } from '@capacitor/preferences'
 import { Network } from '@capacitor/network'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { fetchMeta, normalizeBackendUrl, parsePairingDeepLink, validateMeta } from '../lib/pairing'
+import { fetchMeta, isProductionBuild, normalizeBackendUrl, parsePairingDeepLink, PRODUCTION_BACKEND_URL, validateMeta } from '../lib/pairing'
 
 const STORAGE_KEY = 'casa.mobile.pairing'
 
-interface SavedPairing { url: string; instanceId: string; pairedAt: string }
+interface SavedPairing { url: string; instanceId: string; pairedAt: string; deployment?: 'production' | 'demo' }
 
 export const usePairingStore = defineStore('pairing', () => {
   const url = ref('')
@@ -20,6 +20,11 @@ export const usePairingStore = defineStore('pairing', () => {
   async function hydrate(): Promise<void> {
     online.value = (await Network.getStatus()).connected
     void Network.addListener('networkStatusChange', ({ connected }) => { online.value = connected })
+    if (isProductionBuild()) {
+      url.value = PRODUCTION_BACKEND_URL
+      await pair()
+      return
+    }
     const stored = await Preferences.get({ key: STORAGE_KEY })
     if (!stored.value) return
 
@@ -60,8 +65,13 @@ export const usePairingStore = defineStore('pairing', () => {
       const normalized = normalizeBackendUrl(url.value)
       const meta = await fetchMeta(normalized)
       supportedAuth.value = meta.data.supported_auth
-      if (!meta.data.pairing.enabled) throw new Error('Pairing is not enabled on this tunnel. Start the demo helper again.')
-      const saved: SavedPairing = { url: normalized, instanceId: meta.data.instance_id, pairedAt: meta.data.server_time }
+      if (!meta.data.pairing.enabled) throw new Error('Pairing is not enabled on this server.')
+      const saved: SavedPairing = {
+        url: normalized,
+        instanceId: meta.data.instance_id,
+        pairedAt: meta.data.server_time,
+        deployment: isProductionBuild() ? 'production' : 'demo',
+      }
       await Preferences.set({ key: STORAGE_KEY, value: JSON.stringify(saved) })
       url.value = saved.url
       instanceId.value = saved.instanceId

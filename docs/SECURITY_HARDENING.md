@@ -35,7 +35,7 @@ APP_ENV=production
 APP_DEBUG=false
 APP_URL=https://your-approved-domain.example
 FORCE_HTTPS=true
-HSTS_ENABLED=true
+HSTS_ENABLED=false
 TRUSTED_HOSTS=your-approved-domain.example,www.your-approved-domain.example
 
 SESSION_SECURE_COOKIE=true
@@ -57,8 +57,8 @@ DB_SSLROOTCERT=/var/www/html/storage/app/private/supabase/prod-ca-2021.crt
 
 - [ ] Generate a unique production `APP_KEY`; never reuse a published or sample key.
 - [x] Use the least-privilege `casa_runtime` account scoped to the private `casa` schema.
-- [ ] Configure production mail, Google OAuth, database, and protected Super Administrator credentials only in the hosting environment.
-- [ ] Verify HTTPS and certificate renewal before enabling HSTS. Keep HSTS disabled until every approved host works over HTTPS.
+- [ ] Configure the Render proof-of-concept secrets only in the hosting environment: `APP_KEY`, protected Super Administrator email, Supavisor runtime credentials, a stable `MOBILE_INSTANCE_ID`, and the Supabase CA secret file at `/etc/secrets/supabase-prod-ca-2021.crt`. Keep Google credentials unset and `MAIL_MAILER=array` for the password-login pilot.
+- [ ] Verify Render HTTPS, `/up`, `/api/v1/meta`, password login, role reads, and logout before enabling HSTS. Keep HSTS disabled until every approved host works over HTTPS.
 - [ ] Point the web document root to Laravel's `public` directory; application source, `.env`, storage data, and vendor internals must not be web-accessible.
 - [ ] Confirm storage and bootstrap cache directories are writable without broad world-writable permissions.
 - [ ] Run `composer install --no-dev --optimize-autoloader` and `php artisan optimize` on the Linux production environment after configuration is complete.
