@@ -23,12 +23,12 @@ function scrollToSection(id: string): void {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
-async function bookAppointment(): Promise<void> {
+async function bookAppointment(serviceId?: number): Promise<void> {
   if (auth.user) {
-    await router.push(`/workspace/${auth.user.workspace}`)
+    await router.push(auth.user.workspace === 'customer' ? { path: '/workspace/customer/appointments', query: serviceId ? { service: String(serviceId) } : {} } : `/workspace/${auth.user.workspace}`)
     return
   }
-  await router.push(pairing.status === 'paired' ? '/sign-in' : '/starting')
+  await router.push(pairing.status === 'paired' ? { path: '/sign-in', query: serviceId ? { service: String(serviceId) } : {} } : '/starting')
 }
 </script>
 
@@ -43,7 +43,7 @@ async function bookAppointment(): Promise<void> {
         <button type="button" @click="scrollToSection('how-it-works')">How it works</button>
         <button type="button" @click="scrollToSection('visit')">Visit hours</button>
       </nav>
-      <button class="landing__reserve" type="button" @click="bookAppointment">Book</button>
+      <button class="landing__reserve" type="button" @click="bookAppointment()">Book</button>
     </header>
 
     <section class="landing__hero" aria-labelledby="landing-title">
@@ -52,7 +52,7 @@ async function bookAppointment(): Promise<void> {
         <h1 id="landing-title">Let the day<br><em>soften here.</em></h1>
         <p class="landing__intro">Thoughtful full-body massage rituals, prepared around your pace and confirmed as soon as your booking succeeds.</p>
         <div class="landing__actions">
-          <button class="landing__primary-action" type="button" @click="bookAppointment">Book an appointment <PhArrowRight :size="20" weight="bold" aria-hidden="true" /></button>
+          <button class="landing__primary-action" type="button" @click="bookAppointment()">Book an appointment <PhArrowRight :size="20" weight="bold" aria-hidden="true" /></button>
           <button class="landing__secondary-action" type="button" @click="scrollToSection('treatments')">Explore treatments</button>
         </div>
         <p class="landing__quote">“Reserve your spot. You deserve this.”</p>
@@ -77,10 +77,10 @@ async function bookAppointment(): Promise<void> {
     <section class="landing__section landing__section--sand" id="treatments" aria-labelledby="treatments-title">
       <div class="landing__section-heading"><div><p class="landing__eyebrow">Signature treatments</p><h2 id="treatments-title">Four ways to return to yourself.</h2></div><p>Each ritual keeps its time, inclusions, and price clear before you book an appointment. Add-ons can be coordinated with our team before your visit.</p></div>
       <div class="landing__treatments">
-        <article v-for="treatment in treatments" :key="treatment.name" class="landing__treatment-card">
+        <article v-for="(treatment, index) in treatments" :key="treatment.name" class="landing__treatment-card landing__treatment-card--interactive" tabindex="0" role="button" @click="bookAppointment(index + 1)" @keydown.enter.prevent="bookAppointment(index + 1)" @keydown.space.prevent="bookAppointment(index + 1)">
           <div class="landing__treatment-top"><span>{{ treatment.number }}</span><small>{{ treatment.duration }}</small></div>
           <h3>{{ treatment.name }}</h3><strong>PHP {{ treatment.price }}</strong><p>{{ treatment.description }}</p>
-          <ul><li v-for="include in treatment.includes" :key="include">{{ include }}</li></ul>
+          <ul><li v-for="include in treatment.includes" :key="include">{{ include }}</li></ul><span class="landing__treatment-action">Select this treatment <PhArrowRight :size="17" weight="bold" aria-hidden="true"/></span>
         </article>
       </div>
     </section>
@@ -94,7 +94,7 @@ async function bookAppointment(): Promise<void> {
 
     <section class="landing__section landing__section--dark" id="visit" aria-labelledby="visit-title">
       <div><p class="landing__eyebrow">Optional additions</p><h2>Make the ritual your own.</h2><div class="landing__addons"><div v-for="addon in addons" :key="addon[0]"><strong>{{ addon[0] }}</strong><span>{{ addon[1] }}</span></div></div></div>
-      <aside class="landing__hours"><p class="landing__eyebrow">Plan your visit</p><h2 id="visit-title">Open every day</h2><strong>1:00 PM to 12:00 MN</strong><hr><p>Reserve your spot. You deserve this.</p><button type="button" @click="bookAppointment">Book your visit <PhCaretRight :size="18" weight="bold" aria-hidden="true" /></button></aside>
+      <aside class="landing__hours"><p class="landing__eyebrow">Plan your visit</p><h2 id="visit-title">Open every day</h2><strong>1:00 PM to 12:00 MN</strong><hr><p>Reserve your spot. You deserve this.</p><button type="button" @click="bookAppointment()">Book your visit <PhCaretRight :size="18" weight="bold" aria-hidden="true" /></button></aside>
     </section>
 
     <section class="landing__reassurance" aria-label="Casa Paraiso care promises"><article><PhCalendarBlank :size="28" weight="duotone" aria-hidden="true" /><h2>Clear appointment status</h2><p>Confirmed visits and completed care remain easy to follow.</p></article><article><PhUsersThree :size="28" weight="duotone" aria-hidden="true" /><h2>Therapist-aware scheduling</h2><p>Available therapist schedules are checked as your booking is confirmed.</p></article><article><PhSparkle :size="28" weight="duotone" aria-hidden="true" /><h2>Care that keeps listening</h2><p>Completed visits can be reviewed through thoughtful service feedback.</p></article></section>

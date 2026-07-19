@@ -9,8 +9,8 @@ const accounts = [
   { email: 'customer@example.test', role: 'customer', workspace: 'customer', navigation: 'Customer navigation', tabs: ['Appointments', 'Feedback', 'Profile'] },
   { email: 'reception@example.test', role: 'receptionist', workspace: 'reception', navigation: 'Receptionist navigation', tabs: ['Today', 'Bookings', 'Customers', 'Payments'] },
   { email: 'staff@example.test', role: 'staff', workspace: 'staff', navigation: 'Therapist navigation', tabs: ['Today', 'Schedule', 'Guests', 'Earnings'] },
-  { email: 'admin@example.test', role: 'admin', workspace: 'admin', navigation: 'Administrator navigation', tabs: ['Today', 'Ops', 'Manage', 'Insights', 'Control'] },
-  { email: 'super@example.test', role: 'super_admin', workspace: 'admin', navigation: 'Administrator navigation', tabs: ['Today', 'Ops', 'Manage', 'Insights', 'Control'] },
+  { email: 'admin@example.test', role: 'admin', workspace: 'admin', navigation: 'Administrator navigation', tabs: ['Today', 'Ops', 'Manage', 'Insights'] },
+  { email: 'super@example.test', role: 'super_admin', workspace: 'admin', navigation: 'Administrator navigation', tabs: ['Today', 'Ops', 'Manage', 'Insights'] },
 ] as const
 
 function emptyApi(path: string): unknown {
@@ -109,6 +109,12 @@ for (const account of accounts) {
       }
     }
 
+    if (account.workspace === 'admin') {
+      await page.getByRole('button', { name: 'More administrator options' }).click()
+      await page.getByRole('button', { name: 'Control centre' }).click()
+      await expect(page.getByText('Control')).toBeVisible()
+    }
+
     if (account.role === 'super_admin') {
       await expect(page.getByRole('button', { name: 'User access' })).toBeVisible()
     } else if (account.role === 'admin') {
@@ -140,6 +146,8 @@ test('full-screen booking sheet calendar manages focus, selection, and dismissal
   await expect(dialog).toBeVisible()
   await expect(page.getByRole('button', { name: 'Close' })).toBeFocused()
   await expect.poll(() => page.evaluate(() => document.body.style.overflow)).toBe('hidden')
+  await page.getByRole('button', { name: 'Continue' }).click()
+  await page.getByRole('button', { name: 'Continue' }).click()
   const calendar = page.getByRole('grid', { name: 'Available appointment dates' })
   await expect(calendar).toBeVisible()
   const julyFifteenth = calendar.getByRole('gridcell', { name: '2026-07-15, available' })

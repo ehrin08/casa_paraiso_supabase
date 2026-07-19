@@ -43,7 +43,7 @@ export const useCustomerBookingStore = defineStore('customerBooking', () => {
   const calendarMonthLabel = computed(() => monthLabel(month.value))
   let availabilityRequest = 0
 
-  async function loadOptions(): Promise<void> {
+  async function loadOptions(preselectedServiceId?: number | null): Promise<void> {
     loading.value = true
     clearError()
     availability.value = null
@@ -56,7 +56,9 @@ export const useCustomerBookingStore = defineStore('customerBooking', () => {
     try {
       options.value = await customerBookingOptions()
       month.value = options.value.booking_window.initial_month
-      serviceId.value = options.value.services[0]?.id ?? null
+      serviceId.value = options.value.services.some(service => service.id === preselectedServiceId)
+        ? preselectedServiceId ?? null
+        : options.value.services[0]?.id ?? null
       if (serviceId.value) await findAvailability()
     } catch (reason) {
       capture(reason)

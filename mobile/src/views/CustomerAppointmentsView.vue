@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { PhArrowClockwise } from '@phosphor-icons/vue'
 import MobileConfirmDialog from '../components/MobileConfirmDialog.vue'
+import MobileSuccessSheet from '../components/MobileSuccessSheet.vue'
 import MobilePagination from '../components/MobilePagination.vue'
 import MobileStatStrip from '../components/MobileStatStrip.vue'
 import { appointmentStatusLabel, formatAppointmentDate, formatPeso } from '../lib/appointments'
@@ -10,12 +11,15 @@ import { useCustomerAppointmentsStore } from '../stores/customerAppointments'
 import CustomerBookingView from './CustomerBookingView.vue'
 
 const store = useCustomerAppointmentsStore()
+const props = defineProps<{ serviceId?: number | null }>()
 const emit = defineEmits<{ feedback: [appointmentId: number] }>()
 const openId = ref<number | null>(null)
 const bookingOpen = ref(false)
 const cancelTarget = ref<MobileAppointment | null>(null)
+const successMessage = ref('')
 
 onMounted(() => store.load())
+watch(() => props.serviceId, serviceId => { if (serviceId) bookingOpen.value = true }, { immediate: true })
 
 function confirmCancel(appointment: MobileAppointment): void {
   cancelTarget.value = appointment
@@ -30,7 +34,7 @@ async function cancelAppointment(): Promise<void> {
 
 async function booked(message: string): Promise<void> {
   bookingOpen.value = false
-  store.notice = message
+  successMessage.value = message
   await store.load(1)
 }
 </script>
@@ -102,7 +106,8 @@ async function booked(message: string): Promise<void> {
     </div>
 
     <MobilePagination :current="store.meta.current_page" :last="store.meta.last_page" :loading="store.loading" @page="store.load" />
-    <CustomerBookingView v-if="bookingOpen" @close="bookingOpen = false" @booked="booked" />
+    <CustomerBookingView v-if="bookingOpen" :service-id="props.serviceId" @close="bookingOpen = false" @booked="booked" />
+    <MobileSuccessSheet :open="!!successMessage" title="Appointment confirmed" :message="successMessage" action-label="View my appointments" @close="successMessage=''" @action="successMessage=''" />
     <MobileConfirmDialog :open="!!cancelTarget" title="Cancel appointment?" :message="cancelTarget ? `Cancel ${cancelTarget.appointment_number}? This will release the reserved time.` : ''" confirm-label="Cancel appointment" destructive @cancel="cancelTarget=null" @confirm="cancelAppointment" />
   </section>
 </template>

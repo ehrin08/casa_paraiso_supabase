@@ -10,6 +10,6 @@ export const router = createRouter({
     { path: '/', component: LandingView },
     { path: '/starting', component: StartupView },
     { path: '/sign-in', component: SignInView },
-    { path: '/workspace/:workspace', component: WorkspaceView },
+    { path: '/workspace/:workspace/:section?', component: WorkspaceView },
   ],
 })

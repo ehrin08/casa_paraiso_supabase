@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+.landing__treatment-card--interactive { cursor: pointer; }
+.landing__treatment-card--interactive:focus-visible, .landing__treatment-card--interactive:hover { border-color: var(--casa-palm); box-shadow: var(--shadow-card); transform: translateY(-2px); }
+.landing__treatment-action { display:flex; align-items:center; gap:.3rem; margin-top:1rem; color:var(--casa-palm); font-size:.82rem; font-weight:800; }
+
 @theme {
   --color-casa-cacao: #7a3e14;
   --color-casa-palm: #4f6a4e;
