@@ -59,6 +59,7 @@ async function mockBackend(page: Page): Promise<void> {
 async function pairAndSignIn(page: Page, email: string): Promise<void> {
   await mockBackend(page)
   await page.goto('/')
+  await page.getByRole('button', { name: 'Request an appointment' }).click()
   await page.getByLabel('Casa Paraiso link').fill(server)
   await page.getByRole('button', { name: 'Connect' }).click()
   await page.getByLabel('Email').fill(email)
@@ -102,10 +103,13 @@ for (const account of accounts) {
   })
 }
 
-test('connection and sign-in screens remain phone-first', async ({ page }, testInfo) => {
+test('landing, connection, and sign-in screens remain phone-first', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'android-pixel-7', 'Visual onboarding coverage uses the reference Android viewport.')
   await mockBackend(page)
   await page.goto('/')
+  await expect(page.getByRole('heading', { name: /Let the day soften here/i })).toBeVisible()
+  await expect(page).toHaveScreenshot('landing-phone.png')
+  await page.getByRole('button', { name: 'Request an appointment' }).click()
   await expect(page).toHaveScreenshot('connect-phone.png')
   await page.getByLabel('Casa Paraiso link').fill(server)
   await page.getByRole('button', { name: 'Connect' }).click()
