@@ -15,6 +15,14 @@ const accounts = [
 
 function emptyApi(path: string): unknown {
   if (path === '/api/v1/customer/booking-options') return { data: { services: [{ id: 1, name: 'Signature Massage', description: 'A restorative full-body treatment.', duration_minutes: 60, price: '1200.00', therapists: [{ id: 1, name: 'Therapist' }] }], addons: [{ code: 'foot_spa', name: 'Foot Spa', price: '350.00', duration_minutes: 0 }], vouchers: [], booking_window: { timezone: 'Asia/Manila', opens_at: '13:00', closes_at: '00:00', slot_interval_minutes: 30, lead_time_minutes: 30, initial_month: '2026-07' } } }
+  if (path === '/api/v1/customer/availability') return { data: { dates: {
+    '2026-07-15': [
+      { time: '13:00', starts_at: '2026-07-15T13:00:00+08:00', ends_at: '2026-07-15T14:00:00+08:00', label: '1:00 PM', staff_count: 1 },
+      { time: '13:30', starts_at: '2026-07-15T13:30:00+08:00', ends_at: '2026-07-15T14:30:00+08:00', label: '1:30 PM', staff_count: 1 },
+      { time: '14:00', starts_at: '2026-07-15T14:00:00+08:00', ends_at: '2026-07-15T15:00:00+08:00', label: '2:00 PM', staff_count: 1 },
+    ],
+    '2026-07-16': [{ time: '13:00', starts_at: '2026-07-16T13:00:00+08:00', ends_at: '2026-07-16T14:00:00+08:00', label: '1:00 PM', staff_count: 1 }],
+  } } }
   if (path === '/api/v1/reception/dashboard') return { data: { summary: { today: 0, upcoming: 0, customers: 0, payments_today: '0.00' }, today_appointments: [] } }
   if (path === '/api/v1/staff/dashboard') return { data: { profile: { id: 1, name: 'Therapist', specialization: 'Massage' }, summary: { assigned_today: 0, upcoming: 0, completed_today: 0, feedback: 0 }, commissions: { pending: '0.00', paid: '0.00', net: '0.00' }, today_appointments: [] } }
   if (path === '/api/v1/admin/dashboard') return { data: { summary: { today: 0, upcoming: 0, payments_today: '0.00', today_appointments: 0, upcoming_appointments: 0, today_revenue: '0.00', new_feedback: 0, available_rewards: 0, customers: 0, active_services: 0, bookable_therapists: 0 }, today_appointments: [], upcoming_appointments: [], is_super_admin: true } }
@@ -123,7 +131,7 @@ test('landing, connection, and sign-in screens remain phone-first', async ({ pag
   await expect(page).toHaveScreenshot('sign-in-phone.png')
 })
 
-test('full-screen booking sheet manages focus and dismissal', async ({ page }, testInfo) => {
+test('full-screen booking sheet calendar manages focus, selection, and dismissal', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'android-pixel-7', 'Modal interaction coverage uses the reference Android viewport.')
   await pairAndSignIn(page, 'customer@example.test')
   const trigger = page.getByRole('button', { name: 'Book an appointment' })
@@ -132,6 +140,15 @@ test('full-screen booking sheet manages focus and dismissal', async ({ page }, t
   await expect(dialog).toBeVisible()
   await expect(page.getByRole('button', { name: 'Close' })).toBeFocused()
   await expect.poll(() => page.evaluate(() => document.body.style.overflow)).toBe('hidden')
+  const calendar = page.getByRole('grid', { name: 'Available appointment dates' })
+  await expect(calendar).toBeVisible()
+  const julyFifteenth = calendar.getByRole('gridcell', { name: '2026-07-15, available' })
+  await expect(julyFifteenth).toContainText('1:00 PM')
+  await expect(julyFifteenth).toContainText('+1 more')
+  await julyFifteenth.click()
+  await expect(page.getByText('Available times for 2026-07-15')).toBeVisible()
+  await julyFifteenth.press('ArrowRight')
+  await expect(calendar.getByRole('gridcell', { name: '2026-07-16, available' })).toBeFocused()
   await expect(page).toHaveScreenshot('customer-booking-form.png')
   await page.keyboard.press('Escape')
   await expect(dialog).toHaveCount(0)

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
-import { formatBookingDay, formatPeso } from '../lib/appointments'
+import { nextTick, onMounted } from 'vue'
+import { formatPeso } from '../lib/appointments'
 import { useCustomerBookingStore } from '../stores/customerBooking'
 import MobileModalSheet from '../components/MobileModalSheet.vue'
 
@@ -12,6 +12,16 @@ onMounted(() => booking.loadOptions())
 async function submit(): Promise<void> {
   const result = await booking.book()
   if (result) emit('booked', result.message)
+}
+
+async function moveAvailableDate(date: string | null, amount: number): Promise<void> {
+  if (!date) return
+  const currentIndex = booking.calendarDays.findIndex(day => day.date === date)
+  const target = booking.calendarDays[currentIndex + amount]
+  if (!target?.available || !target.date) return
+  booking.selectDate(target.date)
+  await nextTick()
+  document.querySelector<HTMLButtonElement>(`[data-booking-calendar-day="${target.date}"]`)?.focus()
 }
 </script>
 
@@ -56,28 +66,32 @@ async function submit(): Promise<void> {
         </label>
       </fieldset>
 
-      <fieldset>
-        <legend>{{ booking.options.vouchers.length ? '5' : '4' }}. Find a time</legend>
-        <label>Month<input v-model="booking.month" class="field" type="month" :min="booking.options.booking_window.initial_month" @change="booking.selectionChanged"></label>
-        <button type="button" class="secondary-button" :disabled="booking.finding || !booking.serviceId" @click="booking.findAvailability">
-          {{ booking.finding ? 'Checking schedules…' : 'Find available times' }}
-        </button>
-        <p v-if="booking.availability && !booking.availableDates.length" class="empty-inline">No times are available for these choices. Try another therapist, add-on, or month.</p>
-      </fieldset>
-
-      <template v-if="booking.availableDates.length">
-        <div class="date-strip" role="tablist" aria-label="Available appointment dates" tabindex="0">
-          <button v-for="date in booking.availableDates" :key="date" type="button" role="tab" :aria-selected="booking.selectedDate === date" :class="{ active: booking.selectedDate === date }" @click="booking.selectDate(date)">{{ formatBookingDay(date) }}</button>
+      <fieldset class="calendar-fieldset" :aria-busy="booking.finding">
+        <legend>{{ booking.options.vouchers.length ? '5' : '4' }}. Choose your time</legend>
+        <p class="calendar-intro">Highlighted dates have at least one open 30-minute start time within 1:00 PM to 12:00 midnight.</p>
+        <div class="calendar-controls">
+          <button type="button" class="calendar-nav" aria-label="Previous month" :disabled="booking.finding" @click="booking.previousMonth">‹</button>
+          <h3>{{ booking.calendarMonthLabel }}</h3>
+          <button type="button" class="calendar-nav" aria-label="Next month" :disabled="booking.finding" @click="booking.nextMonth">›</button>
         </div>
-        <fieldset>
-          <legend>Available times</legend>
+        <div class="booking-calendar" role="grid" aria-label="Available appointment dates">
+          <span v-for="weekday in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']" :key="weekday" class="calendar-weekday">{{ weekday }}</span>
+          <button v-for="day in booking.calendarDays" :key="day.key" type="button" class="calendar-day" :class="{ available: day.available, selected: day.date === booking.selectedDate, blank: !day.date }" :disabled="!day.available" :tabindex="!day.available ? -1 : (day.date === booking.selectedDate ? 0 : -1)" :data-booking-calendar-day="day.date ?? ''" :aria-label="day.date ? `${day.date}${day.available ? ', available' : ', unavailable'}` : 'Blank calendar day'" role="gridcell" @click="booking.selectDate(day.date!)" @keydown.right.prevent="moveAvailableDate(day.date, 1)" @keydown.left.prevent="moveAvailableDate(day.date, -1)" @keydown.down.prevent="moveAvailableDate(day.date, 7)" @keydown.up.prevent="moveAvailableDate(day.date, -7)">
+            <span>{{ day.label }}</span>
+            <span v-if="day.available" class="calendar-previews"><small v-for="slot in day.previewSlots" :key="slot.starts_at">{{ slot.label }}</small><small v-if="day.moreSlots">+{{ day.moreSlots }} more</small></span>
+          </button>
+        </div>
+        <p v-if="booking.finding" class="calendar-status" role="status">Checking schedules…</p>
+        <p v-else-if="booking.availability && !booking.availableDates.length" class="empty-inline">No times are available for these choices. Try another therapist, add-on, or month.</p>
+        <div v-else-if="booking.selectedDate" class="selected-times">
+          <p>Available times for {{ booking.selectedDate }}</p>
           <div class="slot-grid">
             <button v-for="slot in booking.slots" :key="slot.starts_at" type="button" :class="{ selected: booking.selectedSlot?.starts_at === slot.starts_at }" @click="booking.selectSlot(slot)">
               <strong>{{ slot.label }}</strong><small>{{ slot.staff_count }} therapist{{ slot.staff_count === 1 ? '' : 's' }}</small>
             </button>
           </div>
-        </fieldset>
-      </template>
+        </div>
+      </fieldset>
 
       <label>Your note (optional)<textarea v-model="booking.notes" class="field notes" maxlength="5000" placeholder="Share comfort preferences or areas to focus on."></textarea></label>
 
@@ -99,8 +113,7 @@ async function submit(): Promise<void> {
 .booking-header { position: sticky; z-index: 2; top: calc(-1 * max(1rem, env(safe-area-inset-top))); display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: calc(-1 * max(1rem, env(safe-area-inset-top))) -1rem 1rem; padding: max(1rem, env(safe-area-inset-top)) 1rem 1rem; border-bottom: 1px solid #dcd2c2; background: rgb(255 252 247 / 96%); backdrop-filter: blur(12px); }.booking-header h2 { margin: .2rem 0 0; font-family: Georgia, serif; color: #334736; }.booking-header .eyebrow { margin: 0; }.close-button { width: 48px; height: 48px; border: 1px solid #dcd2c2; border-radius: 999px; background: #fff; color: #334736; font-size: 1.6rem; }
 .booking-loading { padding: 3rem 1rem; text-align: center; }.booking-form { width: min(100%, 40rem); margin: 0 auto; display: grid; gap: 1rem; }.booking-form fieldset { display: grid; gap: .65rem; margin: 0; padding: 1rem; border: 1px solid #dcd2c2; border-radius: 1rem; background: #fffcf7; }.booking-form legend { padding: 0 .35rem; color: #334736; font-size: 1rem; font-weight: 800; }
 .choice-card,.check-card { min-height: 56px; display: grid; grid-template-columns: 24px 1fr; align-items: center; gap: .7rem; padding: .7rem; border: 1px solid #dcd2c2; border-radius: .8rem; background: #fff; }.choice-card.selected { border-color: #4f6a4e; background: #eef4ed; }.choice-card input,.check-card input { width: 20px; height: 20px; accent-color: #4f6a4e; }.choice-card span,.check-card span { display: grid; gap: .15rem; }.choice-card small,.check-card small,fieldset > small { color: #67675f; line-height: 1.35; }
-.secondary-button { min-height: 48px; border: 1px solid #4f6a4e; border-radius: .75rem; background: #fff; color: #334736; font: inherit; font-weight: 800; }.secondary-button:disabled { opacity: .55; }.empty-inline { margin: 0; padding: .75rem; border-radius: .75rem; background: #f3ebdd; }
-.date-strip { display: flex; gap: .5rem; overflow-x: auto; padding: .15rem .1rem .5rem; }.date-strip button { min-width: 104px; min-height: 48px; border: 1px solid #dcd2c2; border-radius: 999px; background: #fff; color: #334736; font: inherit; font-weight: 700; }.date-strip button.active { border-color: #4f6a4e; background: #4f6a4e; color: #fff; }
+.calendar-fieldset { gap: .8rem !important; }.calendar-intro,.calendar-status { margin: 0; color: #67675f; font-size: .875rem; line-height: 1.4; }.calendar-controls { display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; gap: .5rem; }.calendar-controls h3 { margin: 0; color: #334736; font-family: Georgia, serif; font-size: 1.2rem; text-align: center; }.calendar-nav { min-height: 48px; border: 1px solid #dcd2c2; border-radius: 999px; background: #fff; color: #334736; font-size: 1.75rem; line-height: 1; }.calendar-nav:disabled { opacity: .55; }.booking-calendar { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .28rem; }.calendar-weekday { overflow: hidden; color: #67675f; font-size: .66rem; font-weight: 800; text-align: center; text-transform: uppercase; }.calendar-day { min-height: 64px; display: grid; align-content: start; gap: .18rem; border: 1px solid #e2dbd0; border-radius: .65rem; padding: .35rem .18rem; background: #f7f3ec; color: #9c978d; font: inherit; font-size: .76rem; font-weight: 800; text-align: center; }.calendar-day.available { border-color: #b6c9b5; background: #eef4ed; color: #334736; }.calendar-day.selected { border-color: #4f6a4e; background: #4f6a4e; color: #fff; box-shadow: 0 0 0 2px rgb(79 106 78 / 18%); }.calendar-day.blank { visibility: hidden; }.calendar-previews { display: grid; gap: .12rem; }.calendar-previews small { overflow: hidden; border-radius: .25rem; padding: .08rem; background: rgb(79 106 78 / 12%); color: #334736; font-size: .57rem; line-height: 1.15; text-overflow: ellipsis; white-space: nowrap; }.calendar-day.selected .calendar-previews small { background: rgb(255 255 255 / 16%); color: #fff; }.empty-inline { margin: 0; padding: .75rem; border-radius: .75rem; background: #f3ebdd; }.selected-times { display: grid; gap: .55rem; }.selected-times p { margin: 0; color: #334736; font-size: .88rem; font-weight: 800; }
 .slot-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: .55rem; }.slot-grid button { min-height: 58px; display: grid; place-items: center; gap: .1rem; border: 1px solid #dcd2c2; border-radius: .75rem; background: #fff; color: #334736; }.slot-grid button.selected { border-color: #4f6a4e; outline: 3px solid rgb(79 106 78 / 18%); background: #eef4ed; }.slot-grid small { color: #67675f; }
 .notes { min-height: 96px; resize: vertical; }.booking-total { display: grid; grid-template-columns: 1fr auto; gap: .2rem .75rem; padding: 1rem; border-radius: 1rem; background: #334736; color: #fff; }.booking-total strong { font-size: 1.15rem; }.booking-total small { grid-column: 1 / -1; color: #dce8dc; }.confirm-button { position: sticky; bottom: max(.5rem, env(safe-area-inset-bottom)); box-shadow: 0 8px 24px rgb(35 38 32 / 18%); }
 @media (min-width: 640px) { .booking-sheet { padding-inline: 1.5rem; }.slot-grid { grid-template-columns: repeat(3, 1fr); } }

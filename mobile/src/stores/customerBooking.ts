@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { bookingExpectedAmount } from '../lib/appointments'
+import { buildBookingCalendar, monthLabel, shiftMonth } from '../lib/bookingCalendar'
 import {
   apiError,
   createCustomerAppointment,
@@ -38,6 +39,9 @@ export const useCustomerBookingStore = defineStore('customerBooking', () => {
   ))
   const availableDates = computed(() => Object.keys(availability.value?.dates ?? {}))
   const slots = computed(() => availability.value?.dates[selectedDate.value] ?? [])
+  const calendarDays = computed(() => buildBookingCalendar(month.value, availability.value))
+  const calendarMonthLabel = computed(() => monthLabel(month.value))
+  let availabilityRequest = 0
 
   async function loadOptions(): Promise<void> {
     loading.value = true
@@ -53,6 +57,7 @@ export const useCustomerBookingStore = defineStore('customerBooking', () => {
       options.value = await customerBookingOptions()
       month.value = options.value.booking_window.initial_month
       serviceId.value = options.value.services[0]?.id ?? null
+      if (serviceId.value) await findAvailability()
     } catch (reason) {
       capture(reason)
     } finally {
@@ -65,6 +70,7 @@ export const useCustomerBookingStore = defineStore('customerBooking', () => {
     selectedDate.value = ''
     selectedSlot.value = null
     clearError()
+    if (options.value && serviceId.value) void findAvailability()
   }
 
   function serviceChanged(): void {
@@ -81,23 +87,28 @@ export const useCustomerBookingStore = defineStore('customerBooking', () => {
 
   async function findAvailability(): Promise<void> {
     if (!serviceId.value) { error.value = 'Choose a service first.'; return }
+    const request = ++availabilityRequest
     finding.value = true
     clearError()
     try {
-      availability.value = await customerAvailability({
+      const result = await customerAvailability({
         service_id: serviceId.value,
         preferred_staff_profile_id: therapistId.value ?? undefined,
         promotion_suggestion_id: voucherId.value ?? undefined,
         addon_codes: addonCodes.value,
         month: month.value,
       })
+      if (request !== availabilityRequest) return
+      availability.value = result
       const dates = Object.keys(availability.value.dates)
-      selectedDate.value = dates[0] ?? ''
-      selectedSlot.value = null
+      if (selectedDate.value && !availability.value.dates[selectedDate.value]) selectedDate.value = ''
+      if (!selectedDate.value) selectedDate.value = dates[0] ?? ''
+      if (!slots.value.some(slot => slot.starts_at === selectedSlot.value?.starts_at)) selectedSlot.value = null
     } catch (reason) {
+      if (request !== availabilityRequest) return
       capture(reason)
     } finally {
-      finding.value = false
+      if (request === availabilityRequest) finding.value = false
     }
   }
 
@@ -130,6 +141,8 @@ export const useCustomerBookingStore = defineStore('customerBooking', () => {
   }
 
   function selectSlot(slot: AvailabilitySlot): void { selectedSlot.value = slot }
+  function previousMonth(): void { month.value = shiftMonth(month.value, -1); selectionChanged() }
+  function nextMonth(): void { month.value = shiftMonth(month.value, 1); selectionChanged() }
   function clearError(): void { error.value = ''; fields.value = {} }
   function capture(reason: unknown): void {
     const failure: ApiError = apiError(reason)
@@ -139,7 +152,8 @@ export const useCustomerBookingStore = defineStore('customerBooking', () => {
 
   return {
     options, availability, serviceId, therapistId, addonCodes, voucherId, month, selectedDate, selectedSlot, notes,
-    loading, finding, submitting, error, fields, selectedService, selectedAddons, expectedAmount, availableDates, slots,
+    loading, finding, submitting, error, fields, selectedService, selectedAddons, expectedAmount, availableDates, slots, calendarDays, calendarMonthLabel,
     loadOptions, selectionChanged, serviceChanged, toggleAddon, findAvailability, book, selectDate, selectSlot,
+    previousMonth, nextMonth,
   }
 })
