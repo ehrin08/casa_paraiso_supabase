@@ -1,22 +1,24 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { PhCheckCircle, PhCircleNotch, PhWarningCircle } from '@phosphor-icons/vue'
-import { useAuthStore } from '../stores/auth'
 import { usePairingStore } from '../stores/pairing'
 
 const pairing = usePairingStore()
-const auth = useAuthStore()
 const dismissed = ref(false)
 let timer: ReturnType<typeof setTimeout> | null = null
-const visible = computed(() => !auth.user && !dismissed.value && ['validating', 'paired', 'unreachable'].includes(pairing.status))
-const message = computed(() => pairing.status === 'validating' ? 'Connecting to Casa Paraiso…' : pairing.status === 'paired' ? 'Ready to book' : pairing.error || 'Casa Paraiso is temporarily unavailable.')
-const retryLabel = computed(() => pairing.status === 'unreachable' ? 'Retry' : '')
+const visible = computed(() => !dismissed.value && ['validating', 'paired', 'unreachable'].includes(pairing.status))
+const message = computed(() => pairing.status === 'validating'
+  ? 'Checking the secure Casa Paraiso connection…'
+  : pairing.status === 'paired'
+    ? 'Connection verified — ready to book.'
+    : pairing.error || 'Casa Paraiso could not verify a server connection.')
+const retryLabel = computed(() => pairing.status === 'unreachable' ? 'Check connection' : '')
 function retry(): void { dismissed.value = false; void pairing.bootstrap() }
 function close(): void { dismissed.value = true }
 watch(() => pairing.status, status => {
   if (timer) clearTimeout(timer)
   dismissed.value = false
-  if (status === 'paired') timer = setTimeout(close, 2400)
+  if (status === 'paired') timer = setTimeout(close, 3200)
 })
 onBeforeUnmount(() => { if (timer) clearTimeout(timer) })
 </script>

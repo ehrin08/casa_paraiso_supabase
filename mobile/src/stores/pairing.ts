@@ -20,6 +20,23 @@ export const usePairingStore = defineStore('pairing', () => {
   let hydrationTask: Promise<boolean> | null = null
   let bootstrapTask: Promise<boolean> | null = null
 
+  function connectionLost(): void {
+    if (status.value === 'validating') return
+    status.value = 'unreachable'
+    error.value = 'The app could not verify a connection to Casa Paraiso. Check your internet, then choose Check connection.'
+  }
+
+  function connectionConfirmed(): void {
+    if (status.value !== 'unreachable') return
+    status.value = 'paired'
+    error.value = ''
+  }
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('casa:connection-lost', connectionLost)
+    window.addEventListener('casa:connection-confirmed', connectionConfirmed)
+  }
+
   function hydrate(): Promise<boolean> {
     if (hydrationTask) return hydrationTask
     hydrationTask = (async () => {
@@ -47,6 +64,8 @@ export const usePairingStore = defineStore('pairing', () => {
       error.value = ''
       attempts.value++
       try {
+        online.value = (await Network.getStatus()).connected
+        if (!online.value) throw new Error('No internet connection is available.')
         const meta = await fetchMeta(url.value)
         validateMeta(meta)
         supportedAuth.value = meta.data.supported_auth
@@ -57,9 +76,9 @@ export const usePairingStore = defineStore('pairing', () => {
         status.value = 'paired'
         return true
       } catch (reason) {
-        const message = reason instanceof Error ? reason.message : 'The saved server cannot be reached.'
+        const message = reason instanceof Error ? reason.message : 'The server connection could not be verified.'
         status.value = 'unreachable'
-        error.value = `${message} Render may still be waking after being idle.`
+        error.value = `${message} The Render server may still be waking after being idle; check again in a moment.`
         return false
       } finally { bootstrapTask = null }
     })()

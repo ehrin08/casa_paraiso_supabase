@@ -170,6 +170,11 @@ export interface AdminRoster { schedule_week_id: number; week_start: string; wee
 let client: AxiosInstance | null = null
 let token = ''
 
+function reportConnection(status: 'confirmed' | 'lost'): void {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new CustomEvent(`casa:connection-${status}`))
+}
+
 type TimedRequest = { startedAt: number; requestId: string }
 
 function timingFor(config: object): TimedRequest | undefined {
@@ -193,14 +198,26 @@ export function configureApi(baseUrl: string): void {
     return config
   })
   client.interceptors.response.use(
-    response => { recordTiming(response.config); return response },
-    error => { recordTiming(error.config); return Promise.reject(error) },
+    response => { recordTiming(response.config); reportConnection('confirmed'); return response },
+    error => {
+      recordTiming(error.config)
+      if (axios.isAxiosError(error) && !error.response) reportConnection('lost')
+      return Promise.reject(error)
+    },
   )
 }
 
 export function setToken(value: string): void { token = value }
 export function apiError(reason: unknown): ApiError {
-  if (axios.isAxiosError(reason)) return reason.response?.data?.error ?? { code: 'NETWORK_ERROR', message: 'The Casa Paraiso server could not be reached.' }
+  if (axios.isAxiosError(reason)) {
+    if (!reason.response) return {
+      code: 'NETWORK_ERROR',
+      message: reason.code === 'ECONNABORTED'
+        ? 'Casa Paraiso did not respond in time. Check your connection, then verify the server connection and try again.'
+        : 'Casa Paraiso could not verify a server connection. Check your internet, then verify the connection and try again.',
+    }
+    return reason.response.data?.error ?? { code: 'REQUEST_ERROR', message: 'Casa Paraiso could not complete that request. Please try again.' }
+  }
   return { code: 'UNKNOWN_ERROR', message: 'Something went wrong. Please try again.' }
 }
 function getClient(): AxiosInstance { if (!client) throw new Error('Pair this phone before signing in.'); return client }
