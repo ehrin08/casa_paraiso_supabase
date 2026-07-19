@@ -46,19 +46,20 @@ class MobilePairingApiTest extends TestCase
         }
     }
 
-    public function test_capacitor_can_preflight_authenticated_appointment_mutations(): void
+    public function test_android_webview_can_preflight_authenticated_api_requests_with_request_timing(): void
     {
-        $origin = 'capacitor://localhost';
+        $origin = 'https://localhost';
 
         $this->call('OPTIONS', '/api/v1/customer/appointments/1/cancel', server: [
             'HTTP_ORIGIN' => $origin,
             'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'PATCH',
-            'HTTP_ACCESS_CONTROL_REQUEST_HEADERS' => 'authorization,content-type',
+            'HTTP_ACCESS_CONTROL_REQUEST_HEADERS' => 'authorization,content-type,x-request-id',
         ])
             ->assertNoContent()
             ->assertHeader('Access-Control-Allow-Origin', $origin)
             ->assertHeaderContains('Access-Control-Allow-Methods', 'PATCH')
-            ->assertHeaderContains('Access-Control-Allow-Headers', 'authorization');
+            ->assertHeaderContains('Access-Control-Allow-Headers', 'authorization')
+            ->assertHeaderContains('Access-Control-Allow-Headers', 'x-request-id');
     }
 
     public function test_meta_requires_a_configured_instance_identity(): void

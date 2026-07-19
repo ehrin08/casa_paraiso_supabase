@@ -8,7 +8,7 @@ return [
         explode(',', (string) env('MOBILE_CORS_ALLOWED_ORIGINS', 'https://localhost,capacitor://localhost,http://localhost:5173,http://127.0.0.1:5173')),
     ))),
     'allowed_origins_patterns' => [],
-    'allowed_headers' => ['Accept', 'Authorization', 'Content-Type'],
+    'allowed_headers' => ['Accept', 'Authorization', 'Content-Type', 'X-Request-ID'],
     'exposed_headers' => [],
     'max_age' => 0,
     'supports_credentials' => false,
