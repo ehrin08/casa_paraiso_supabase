@@ -47,9 +47,10 @@ class AppointmentAvailability
             ->where('scheduled_end_at', '>', $monthStart)
             ->get()
             ->groupBy('staff_profile_id');
+        $bookingCutoff = $this->customerBookingCutoff();
 
         for ($day = $monthStart->copy(); $day->lte($monthEnd); $day->addDay()) {
-            $daySlots = $this->slotsForDate($service, $staffProfiles, $confirmedByStaff, $day, $addonCodes);
+            $daySlots = $this->slotsForDate($service, $staffProfiles, $confirmedByStaff, $day, $addonCodes, $bookingCutoff);
 
             if ($daySlots !== []) {
                 $dates[$day->toDateString()] = $daySlots;
@@ -94,10 +95,26 @@ class AppointmentAvailability
      * @param  Collection<int, Collection<int, Appointment>>  $confirmedByStaff
      * @return array<int, array{starts_at: string, ends_at: string, time: string, label: string, staff_count: int}>
      */
-    private function slotsForDate(Service $service, Collection $staffProfiles, Collection $confirmedByStaff, Carbon $day, array $addonCodes): array
-    {
+    private function slotsForDate(
+        Service $service,
+        Collection $staffProfiles,
+        Collection $confirmedByStaff,
+        Carbon $day,
+        array $addonCodes,
+        Carbon $bookingCutoff,
+    ): array {
         $slots = [];
         $business = $this->scheduleWindows->businessWindow($day);
+
+        if ($business['end']->lte($bookingCutoff)) {
+            return $slots;
+        }
+
+        // Resolve each therapist's windows once per date. Previously this happened
+        // for every 30-minute slot, repeatedly querying dated roster coverage.
+        $windowsByStaff = $staffProfiles->mapWithKeys(fn (StaffProfile $staffProfile) => [
+            $staffProfile->id => $this->scheduleWindows->effectiveWindows($staffProfile, $day),
+        ]);
         $slot = $business['start']->copy();
         $interval = (int) config('casa.business_hours.slot_interval_minutes', 30);
 
@@ -108,10 +125,11 @@ class AppointmentAvailability
                 break;
             }
 
-            if ($slot->gte($this->customerBookingCutoff())) {
+            if ($slot->gte($bookingCutoff)) {
                 $availableStaffCount = $staffProfiles
-                    ->filter(function (StaffProfile $staffProfile) use ($slot, $slotEnd, $confirmedByStaff): bool {
-                        if (! $this->scheduleWindows->covers($staffProfile, $slot, $slotEnd)) {
+                    ->filter(function (StaffProfile $staffProfile) use ($slot, $slotEnd, $confirmedByStaff, $windowsByStaff): bool {
+                        if (! $windowsByStaff->get($staffProfile->id, collect())
+                            ->contains(fn (array $window) => $window['start']->lte($slot) && $window['end']->gte($slotEnd))) {
                             return false;
                         }
 

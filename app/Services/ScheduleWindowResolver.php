@@ -12,6 +12,12 @@ use Illuminate\Support\Collection;
 
 class ScheduleWindowResolver
 {
+    /** @var array<string, StaffScheduleWeek|null> */
+    private array $publishedWeeks = [];
+
+    /** @var array<int, Collection<string, Collection<int, StaffScheduleShift>>> */
+    private array $publishedRosterShifts = [];
+
     /**
      * @return array{start: Carbon, end: Carbon}
      */
@@ -219,11 +225,16 @@ class ScheduleWindowResolver
     private function rosterShiftsForDate(StaffProfile $staffProfile, Carbon $date): ?Collection
     {
         $weekStart = $date->copy()->startOfWeek(Carbon::SUNDAY)->toDateString();
-        $week = StaffScheduleWeek::query()
-            ->whereNotNull('published_at')
-            ->whereDate('week_start_date', '<=', $weekStart)
-            ->orderByDesc('week_start_date')
-            ->first();
+
+        if (! array_key_exists($weekStart, $this->publishedWeeks)) {
+            $this->publishedWeeks[$weekStart] = StaffScheduleWeek::query()
+                ->whereNotNull('published_at')
+                ->whereDate('week_start_date', '<=', $weekStart)
+                ->orderByDesc('week_start_date')
+                ->first();
+        }
+
+        $week = $this->publishedWeeks[$weekStart];
 
         if (! $week) {
             return null;
@@ -231,12 +242,16 @@ class ScheduleWindowResolver
 
         $sourceDate = Carbon::parse($week->week_start_date)->addDays($date->dayOfWeek)->toDateString();
 
-        return StaffScheduleShift::query()
-            ->where('staff_schedule_week_id', $week->id)
-            ->where('staff_profile_id', $staffProfile->id)
-            ->where('version', StaffScheduleShift::VERSION_PUBLISHED)
-            ->whereDate('schedule_date', $sourceDate)
-            ->orderBy('start_time')
-            ->get();
+        if (! array_key_exists($week->id, $this->publishedRosterShifts)) {
+            $this->publishedRosterShifts[$week->id] = StaffScheduleShift::query()
+                ->where('staff_schedule_week_id', $week->id)
+                ->where('version', StaffScheduleShift::VERSION_PUBLISHED)
+                ->orderBy('start_time')
+                ->get()
+                ->groupBy(fn (StaffScheduleShift $shift) => $shift->staff_profile_id.':'.$shift->schedule_date?->toDateString());
+        }
+
+        return $this->publishedRosterShifts[$week->id]
+            ->get($staffProfile->id.':'.$sourceDate, collect());
     }
 }

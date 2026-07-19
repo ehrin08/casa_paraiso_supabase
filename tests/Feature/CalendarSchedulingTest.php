@@ -9,8 +9,10 @@ use App\Models\StaffProfile;
 use App\Models\StaffScheduleException;
 use App\Models\StaffWeeklySchedule;
 use App\Models\User;
+use App\Services\AppointmentAvailability;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class CalendarSchedulingTest extends TestCase
@@ -89,6 +91,36 @@ class CalendarSchedulingTest extends TestCase
 
         $this->assertNotNull($slot);
         $this->assertSame($start->copy()->addHour()->toDateTimeString(), $slot['ends_at']);
+    }
+
+    public function test_month_availability_resolves_therapist_schedules_with_bounded_queries(): void
+    {
+        $service = Service::factory()->create(['duration_minutes' => 60, 'is_active' => true]);
+        $month = now('Asia/Manila')->addMonthNoOverflow()->format('Y-m');
+
+        foreach (StaffProfile::factory()->count(3)->create() as $staff) {
+            $staff->services()->attach($service);
+
+            foreach (range(0, 6) as $dayOfWeek) {
+                StaffWeeklySchedule::factory()->for($staff)->create([
+                    'day_of_week' => $dayOfWeek,
+                    'start_time' => '13:00:00',
+                    'end_time' => '00:00:00',
+                    'ends_next_day' => true,
+                ]);
+            }
+        }
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $availability = app(AppointmentAvailability::class)->month($service, $month);
+        $queryCount = count(DB::getQueryLog());
+
+        DB::disableQueryLog();
+
+        $this->assertNotEmpty($availability['dates']);
+        $this->assertLessThan(20, $queryCount, 'Monthly availability must resolve each therapist schedule once per date, not once per slot.');
     }
 
     public function test_customer_availability_and_submission_require_thirty_minutes_of_lead_time(): void
