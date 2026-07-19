@@ -17,23 +17,29 @@ class MobileAdminDashboardController
 {
     public function __invoke(Request $request): JsonResponse
     {
-        $today = today();
+        $today = now()->startOfDay();
+        $tomorrow = $today->copy()->addDay();
         $upcoming = Appointment::query()
-            ->with(['customerProfile.user', 'service', 'staffProfile.user', 'preferredStaffProfile.user', 'addons', 'transactions'])
+            ->with(['customerProfile.user', 'service', 'staffProfile.user', 'preferredStaffProfile.user', 'addons', 'latestTransaction'])
             ->where('status', Appointment::STATUS_CONFIRMED)
             ->where('scheduled_start_at', '>=', now())
             ->orderBy('scheduled_start_at')
             ->limit(8)
             ->get();
         $todayAppointments = Appointment::query()
-            ->with(['customerProfile.user', 'service', 'staffProfile.user', 'preferredStaffProfile.user', 'addons', 'transactions'])
-            ->whereDate('scheduled_start_at', $today)
+            ->with(['customerProfile.user', 'service', 'staffProfile.user', 'preferredStaffProfile.user', 'addons', 'latestTransaction'])
+            ->where('scheduled_start_at', '>=', $today)
+            ->where('scheduled_start_at', '<', $tomorrow)
             ->orderBy('scheduled_start_at')
             ->limit(12)
             ->get();
-        $todayCount = Appointment::query()->whereDate('scheduled_start_at', $today)->count();
-        $upcomingCount = Appointment::query()->where('status', Appointment::STATUS_CONFIRMED)->where('scheduled_start_at', '>=', now())->count();
-        $todayRevenue = $this->money(Transaction::query()->where('payment_status', Transaction::PAYMENT_PAID)->whereDate('paid_at', $today)->sum('amount'));
+        $appointmentSummary = Appointment::query()->selectRaw(
+            'COUNT(CASE WHEN scheduled_start_at >= ? AND scheduled_start_at < ? THEN 1 END) AS today_count, COUNT(CASE WHEN status = ? AND scheduled_start_at >= ? THEN 1 END) AS upcoming_count',
+            [$today, $tomorrow, Appointment::STATUS_CONFIRMED, now()],
+        )->first();
+        $todayCount = (int) ($appointmentSummary->today_count ?? 0);
+        $upcomingCount = (int) ($appointmentSummary->upcoming_count ?? 0);
+        $todayRevenue = $this->money(Transaction::query()->where('payment_status', Transaction::PAYMENT_PAID)->where('paid_at', '>=', $today)->where('paid_at', '<', $tomorrow)->sum('amount'));
         $customerCount = CustomerProfile::query()->count();
 
         return response()->json(['data' => [
@@ -44,7 +50,7 @@ class MobileAdminDashboardController
                 'today_appointments' => $todayCount,
                 'upcoming_appointments' => $upcomingCount,
                 'today_revenue' => $todayRevenue,
-                'new_feedback' => Feedback::query()->whereDate('submitted_at', $today)->count(),
+                'new_feedback' => Feedback::query()->where('submitted_at', '>=', $today)->where('submitted_at', '<', $tomorrow)->count(),
                 'available_rewards' => PromotionSuggestion::query()->where('status', PromotionSuggestion::STATUS_SUGGESTED)->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))->count(),
                 'customers' => $customerCount,
                 'active_services' => Service::query()->where('is_active', true)->count(),

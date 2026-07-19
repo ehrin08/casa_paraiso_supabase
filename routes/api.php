@@ -29,9 +29,12 @@ use App\Http\Controllers\Api\V1\MobileStaffCustomerController;
 use App\Http\Controllers\Api\V1\MobileStaffDashboardController;
 use App\Http\Controllers\Api\V1\MobileStaffFeedbackController;
 use App\Http\Controllers\Api\V1\MobileStaffTransactionController;
+use App\Http\Middleware\CacheMobileReadResponse;
+use App\Http\Middleware\InvalidateMobileReadCache;
+use App\Http\Middleware\MeasureApiRequest;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('v1')->group(function (): void {
+Route::prefix('v1')->middleware(MeasureApiRequest::class)->group(function (): void {
     Route::get('/demo/Casa-Paraiso-Mobile.apk', MobileDemoApkController::class)
         ->middleware('throttle:6,1')
         ->name('api.v1.demo.apk');
@@ -52,7 +55,7 @@ Route::prefix('v1')->group(function (): void {
         ->middleware('throttle:mobile-google')
         ->name('api.v1.auth.google.exchange');
 
-    Route::middleware(['auth:sanctum', 'active_mobile'])->group(function (): void {
+    Route::middleware(['auth:sanctum', 'active_mobile', InvalidateMobileReadCache::class, CacheMobileReadResponse::class])->group(function (): void {
         Route::get('/auth/me', [MobileAuthController::class, 'me'])->name('api.v1.auth.me');
         Route::post('/auth/logout', [MobileAuthController::class, 'logout'])->name('api.v1.auth.logout');
         Route::patch('/auth/password', [MobileAuthController::class, 'password'])->name('api.v1.auth.password');

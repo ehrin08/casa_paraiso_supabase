@@ -91,7 +91,7 @@ class MobileStaffAppointmentController
 
     private function relations(): array
     {
-        return ['customerProfile.user', 'service', 'staffProfile.user', 'preferredStaffProfile.user', 'addons', 'transactions'];
+        return ['customerProfile.user', 'service', 'staffProfile.user', 'preferredStaffProfile.user', 'addons', 'latestTransaction'];
     }
 
     private function pagination($paginator): array

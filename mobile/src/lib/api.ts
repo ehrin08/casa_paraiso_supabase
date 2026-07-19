@@ -170,12 +170,32 @@ export interface AdminRoster { schedule_week_id: number; week_start: string; wee
 let client: AxiosInstance | null = null
 let token = ''
 
+type TimedRequest = { startedAt: number; requestId: string }
+
+function timingFor(config: object): TimedRequest | undefined {
+  return (config as { casaTiming?: TimedRequest }).casaTiming
+}
+
+function recordTiming(config: object | undefined): void {
+  if (!config || typeof performance === 'undefined') return
+  const timing = timingFor(config)
+  if (!timing) return
+  performance.measure(`casa-api:${timing.requestId}`, { start: timing.startedAt, end: performance.now() })
+}
+
 export function configureApi(baseUrl: string): void {
   client = axios.create({ baseURL: `${baseUrl}/api/v1`, headers: { Accept: 'application/json' }, timeout: baseUrl === BACKEND_URL ? 75_000 : 10_000, withCredentials: false })
   client.interceptors.request.use((config) => {
+    const requestId = crypto.randomUUID()
+    ;(config as typeof config & { casaTiming: TimedRequest }).casaTiming = { startedAt: performance.now(), requestId }
+    config.headers['X-Request-ID'] = requestId
     if (token) config.headers.Authorization = `Bearer ${token}`
     return config
   })
+  client.interceptors.response.use(
+    response => { recordTiming(response.config); return response },
+    error => { recordTiming(error.config); return Promise.reject(error) },
+  )
 }
 
 export function setToken(value: string): void { token = value }

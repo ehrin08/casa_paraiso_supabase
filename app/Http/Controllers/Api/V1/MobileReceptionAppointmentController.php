@@ -175,7 +175,7 @@ class MobileReceptionAppointmentController
     /** @return array<int, string> */
     private function relations(): array
     {
-        return ['customerProfile.user', 'service', 'staffProfile.user', 'preferredStaffProfile.user', 'addons', 'transactions'];
+        return ['customerProfile.user', 'service', 'staffProfile.user', 'preferredStaffProfile.user', 'addons', 'latestTransaction'];
     }
 
     /** @return array<string, int|null> */

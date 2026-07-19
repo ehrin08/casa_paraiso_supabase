@@ -21,6 +21,8 @@ class MobileAdminOperationsApiTest extends TestCase
 
         $this->withToken($token)->getJson('/api/v1/admin/dashboard')->assertOk()
             ->assertHeaderContains('Cache-Control', 'no-store')
+            ->assertHeader('X-Request-ID')
+            ->assertHeaderContains('Server-Timing', 'app;dur=')
             ->assertJsonPath('data.summary.customers', 1);
         $this->withToken($token)->getJson('/api/v1/admin/appointments')->assertOk();
         $this->withToken($token)->getJson('/api/v1/admin/customers')->assertOk();
@@ -53,6 +55,31 @@ class MobileAdminOperationsApiTest extends TestCase
         ])->assertOk()->assertJsonPath('data.phone', '09171234567');
 
         $this->assertDatabaseHas('customer_profiles', ['id' => $customer->id, 'address' => 'San Pablo City']);
+    }
+
+    public function test_dashboard_cache_is_private_and_is_invalidated_after_a_mobile_mutation(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $token = $this->token($admin);
+        $customer = CustomerProfile::factory()->create();
+
+        $this->withToken($token)->getJson('/api/v1/admin/dashboard')
+            ->assertOk()->assertJsonPath('data.summary.customers', 1);
+
+        CustomerProfile::factory()->create();
+
+        $this->withToken($token)->getJson('/api/v1/admin/dashboard')
+            ->assertOk()->assertJsonPath('data.summary.customers', 1);
+
+        $this->withToken($token)->patchJson("/api/v1/admin/customers/{$customer->id}", [
+            'phone' => '09170000000',
+            'address' => 'San Pablo City',
+            'contact_preference' => 'sms',
+            'notes' => 'Cache invalidation check.',
+        ])->assertOk();
+
+        $this->withToken($token)->getJson('/api/v1/admin/dashboard')
+            ->assertOk()->assertJsonPath('data.summary.customers', 2);
     }
 
     public function test_admin_can_manage_service_catalog_with_fixed_pagination(): void

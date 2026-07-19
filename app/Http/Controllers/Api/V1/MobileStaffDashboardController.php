@@ -17,15 +17,21 @@ class MobileStaffDashboardController
         abort_unless($staff, 403);
         $appointments = Appointment::query()->where('staff_profile_id', $staff->id);
         $commissions = TherapistCommission::query()->where('staff_profile_id', $staff->id);
-        $today = (clone $appointments)->with($this->relations())->whereDate('scheduled_start_at', today())
+        $startOfToday = now()->startOfDay();
+        $startOfTomorrow = $startOfToday->copy()->addDay();
+        $today = (clone $appointments)->with($this->relations())->where('scheduled_start_at', '>=', $startOfToday)->where('scheduled_start_at', '<', $startOfTomorrow)
             ->orderBy('scheduled_start_at')->limit(12)->get();
+        $appointmentSummary = (clone $appointments)->selectRaw(
+            'COUNT(CASE WHEN status = ? AND scheduled_start_at >= ? AND scheduled_start_at < ? THEN 1 END) AS assigned_today, COUNT(CASE WHEN status = ? AND scheduled_start_at > ? THEN 1 END) AS upcoming_count, COUNT(CASE WHEN status = ? AND completed_at >= ? AND completed_at < ? THEN 1 END) AS completed_today',
+            [Appointment::STATUS_CONFIRMED, $startOfToday, $startOfTomorrow, Appointment::STATUS_CONFIRMED, now(), Appointment::STATUS_COMPLETED, $startOfToday, $startOfTomorrow],
+        )->first();
 
         return response()->json(['data' => [
             'profile' => ['id' => $staff->id, 'name' => $request->user()->name, 'specialization' => $staff->specialization],
             'summary' => [
-                'assigned_today' => (clone $appointments)->where('status', Appointment::STATUS_CONFIRMED)->whereDate('scheduled_start_at', today())->count(),
-                'upcoming' => (clone $appointments)->where('status', Appointment::STATUS_CONFIRMED)->where('scheduled_start_at', '>', now())->count(),
-                'completed_today' => (clone $appointments)->where('status', Appointment::STATUS_COMPLETED)->whereDate('completed_at', today())->count(),
+                'assigned_today' => (int) ($appointmentSummary->assigned_today ?? 0),
+                'upcoming' => (int) ($appointmentSummary->upcoming_count ?? 0),
+                'completed_today' => (int) ($appointmentSummary->completed_today ?? 0),
                 'feedback' => Feedback::query()->whereHas('appointment', fn ($query) => $query->where('staff_profile_id', $staff->id))->count(),
             ],
             'commissions' => [
@@ -39,7 +45,7 @@ class MobileStaffDashboardController
 
     private function relations(): array
     {
-        return ['customerProfile.user', 'service', 'staffProfile.user', 'preferredStaffProfile.user', 'addons', 'transactions'];
+        return ['customerProfile.user', 'service', 'staffProfile.user', 'preferredStaffProfile.user', 'addons', 'latestTransaction'];
     }
 
     private function money(mixed $value): string

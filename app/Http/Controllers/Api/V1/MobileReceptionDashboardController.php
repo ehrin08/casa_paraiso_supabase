@@ -13,19 +13,26 @@ class MobileReceptionDashboardController
 {
     public function __invoke(Request $request): JsonResponse
     {
+        $startOfToday = now()->startOfDay();
+        $startOfTomorrow = $startOfToday->copy()->addDay();
         $today = Appointment::query()
             ->with($this->appointmentRelations())
-            ->whereDate('scheduled_start_at', today())
+            ->where('scheduled_start_at', '>=', $startOfToday)
+            ->where('scheduled_start_at', '<', $startOfTomorrow)
             ->orderBy('scheduled_start_at')
             ->limit(12)
             ->get();
+        $appointmentSummary = Appointment::query()->selectRaw(
+            'COUNT(CASE WHEN scheduled_start_at >= ? AND scheduled_start_at < ? THEN 1 END) AS today_count, COUNT(CASE WHEN status = ? AND scheduled_start_at >= ? THEN 1 END) AS upcoming_count',
+            [$startOfToday, $startOfTomorrow, Appointment::STATUS_CONFIRMED, now()],
+        )->first();
 
         return response()->json(['data' => [
             'summary' => [
-                'today' => Appointment::query()->whereDate('scheduled_start_at', today())->count(),
-                'upcoming' => Appointment::query()->where('status', Appointment::STATUS_CONFIRMED)->where('scheduled_start_at', '>=', now())->count(),
+                'today' => (int) ($appointmentSummary->today_count ?? 0),
+                'upcoming' => (int) ($appointmentSummary->upcoming_count ?? 0),
                 'customers' => CustomerProfile::query()->count(),
-                'payments_today' => number_format((float) Transaction::query()->whereDate('paid_at', today())->sum('amount'), 2, '.', ''),
+                'payments_today' => number_format((float) Transaction::query()->where('paid_at', '>=', $startOfToday)->where('paid_at', '<', $startOfTomorrow)->sum('amount'), 2, '.', ''),
             ],
             'today_appointments' => MobileOperationalAppointmentResource::collection($today)->resolve($request),
         ]])->header('Cache-Control', 'no-store');
@@ -34,6 +41,6 @@ class MobileReceptionDashboardController
     /** @return array<int, string> */
     private function appointmentRelations(): array
     {
-        return ['customerProfile.user', 'service', 'staffProfile.user', 'preferredStaffProfile.user', 'addons', 'transactions'];
+        return ['customerProfile.user', 'service', 'staffProfile.user', 'preferredStaffProfile.user', 'addons', 'latestTransaction'];
     }
 }

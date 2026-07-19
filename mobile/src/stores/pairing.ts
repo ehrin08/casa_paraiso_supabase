@@ -14,6 +14,7 @@ export const usePairingStore = defineStore('pairing', () => {
   const pairedAt = ref('')
   const status = ref<'unpaired' | 'validating' | 'paired' | 'unreachable' | 'mismatch'>('unpaired')
   const error = ref('')
+  const attempts = ref(0)
   const online = ref(true)
   const supportedAuth = ref<string[]>([])
 
@@ -36,6 +37,7 @@ export const usePairingStore = defineStore('pairing', () => {
   async function bootstrap(): Promise<boolean> {
     status.value = 'validating'
     error.value = ''
+    attempts.value++
     try {
       const meta = await fetchMeta(url.value)
       validateMeta(meta)
@@ -49,10 +51,10 @@ export const usePairingStore = defineStore('pairing', () => {
     } catch (reason) {
       const message = reason instanceof Error ? reason.message : 'The saved server cannot be reached.'
       status.value = 'unreachable'
-      error.value = message
+      error.value = `${message} Render may still be waking after being idle.`
       return false
     }
   }
 
-  return { url, instanceId, pairedAt, status, error, online, supportedAuth, hydrate, bootstrap }
+  return { url, instanceId, pairedAt, status, error, attempts, online, supportedAuth, hydrate, bootstrap }
 })

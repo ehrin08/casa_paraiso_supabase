@@ -11,7 +11,9 @@ class MobileOperationalAppointmentResource extends JsonResource
     /** @return array<string, mixed> */
     public function toArray(Request $request): array
     {
-        $transaction = $this->transactions->sortByDesc('id')->first();
+        $transaction = $this->relationLoaded('latestTransaction')
+            ? $this->latestTransaction
+            : $this->transactions->sortByDesc('id')->first();
         $start = $this->scheduled_start_at ?? $this->requested_start_at;
         $isTherapist = $request->user()?->role === 'staff';
 

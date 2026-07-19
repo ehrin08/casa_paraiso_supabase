@@ -142,6 +142,11 @@ class Appointment extends Model
         return $this->hasMany(Transaction::class);
     }
 
+    public function latestTransaction()
+    {
+        return $this->hasOne(Transaction::class)->latestOfMany();
+    }
+
     public function feedback()
     {
         return $this->hasOne(Feedback::class);
