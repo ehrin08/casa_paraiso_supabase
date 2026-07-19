@@ -3,17 +3,18 @@ import axios from 'axios'
 export const PAIRING_PROTOCOL = 2
 export const SERVICE_IDENTITY = 'casa-paraiso-mobile-api'
 
-export function normalizeConfiguredProductionBackendUrl(value: string): string {
-  if (!value.trim()) return ''
+export const DEFAULT_BACKEND_URL = 'https://casa-paraiso-supabase-api-poc.onrender.com'
+
+export function normalizeConfiguredBackendUrl(value: string): string {
+  if (!value.trim()) throw new Error('The Casa Paraiso backend URL is not configured.')
   const url = new URL(value.trim())
   if (url.protocol !== 'https:' || url.username || url.password || url.port || url.search || url.hash || (url.pathname !== '/' && url.pathname !== '')) {
-    throw new Error('The production backend URL must be an HTTPS origin.')
+    throw new Error('The Casa Paraiso backend URL must be an HTTPS origin.')
   }
   return url.origin
 }
 
-export const PRODUCTION_BACKEND_URL = normalizeConfiguredProductionBackendUrl(import.meta.env.VITE_PRODUCTION_BACKEND_URL ?? '')
-export const isProductionBuild = (): boolean => PRODUCTION_BACKEND_URL !== ''
+export const BACKEND_URL = normalizeConfiguredBackendUrl(import.meta.env.VITE_BACKEND_URL ?? DEFAULT_BACKEND_URL)
 
 export interface MetaResponse {
   data: {
@@ -29,24 +30,7 @@ export interface MetaResponse {
 
 export function normalizeBackendUrl(value: string): string {
   const url = new URL(value.trim())
-  if (url.username || url.password || url.port || url.search || url.hash) {
-    throw new Error('Paste the Casa Paraiso HTTPS link without extra text.')
-  }
-
-  if (PRODUCTION_BACKEND_URL) {
-    if (url.protocol !== 'https:' || url.origin !== PRODUCTION_BACKEND_URL || (url.pathname !== '/' && url.pathname !== '')) {
-      throw new Error('This release is configured for a different Casa Paraiso server.')
-    }
-    return url.origin
-  }
-
-  if (url.protocol !== 'https:' || !/^[a-z0-9-]+\.trycloudflare\.com$/.test(url.hostname)) {
-    throw new Error('Use the HTTPS Quick Tunnel address shown by the demo helper.')
-  }
-  if (url.pathname !== '/' && url.pathname !== '/api/v1/demo/Casa-Paraiso-Mobile.apk') {
-    throw new Error('Use the Casa Paraiso connection or APK download link.')
-  }
-  return url.origin
+  return normalizeConfiguredBackendUrl(url.origin)
 }
 
 export function validateMeta(meta: MetaResponse, expectedInstanceId?: string): void {
@@ -65,22 +49,10 @@ export function validateMeta(meta: MetaResponse, expectedInstanceId?: string): v
   }
 }
 
-export function parsePairingDeepLink(value: string): { url: string } | null {
-  if (isProductionBuild()) return null
-  try {
-    const link = new URL(value)
-    if (link.protocol !== 'casaparaiso:' || link.hostname !== 'pair') return null
-    const url = normalizeBackendUrl(link.searchParams.get('url') ?? '')
-    return { url }
-  } catch {
-    return null
-  }
-}
-
 export async function fetchMeta(baseUrl: string): Promise<MetaResponse> {
   const response = await axios.get<MetaResponse>(`${baseUrl}/api/v1/meta`, {
     headers: { Accept: 'application/json' },
-    timeout: isProductionBuild() ? 90_000 : 10_000,
+    timeout: 90_000,
     withCredentials: false,
     maxRedirects: 0,
   })

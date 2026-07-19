@@ -30,9 +30,7 @@ async function handleAppUrl(url: string): Promise<void> {
   if (await auth.completeGoogleSignIn(url)) {
     if (auth.user) await router.replace(`/workspace/${auth.user.workspace}`)
     else await router.replace('/sign-in')
-    return
   }
-  await pairing.acceptDeepLink(url)
 }
 
 const ready = auth.hydrate().then(async () => {
@@ -40,6 +38,7 @@ const ready = auth.hydrate().then(async () => {
   if (launch?.url) await handleAppUrl(launch.url)
   if (auth.user) await router.replace(`/workspace/${auth.user.workspace}`)
   else if (pairing.status === 'paired') await router.replace('/sign-in')
+  else await router.replace('/starting')
 })
 
 void CapacitorApp.addListener('appUrlOpen', async ({ url }) => {
@@ -47,7 +46,5 @@ void CapacitorApp.addListener('appUrlOpen', async ({ url }) => {
   await handleAppUrl(url)
   if (auth.user) await router.replace(`/workspace/${auth.user.workspace}`)
   else if (pairing.status === 'paired') await router.replace('/sign-in')
-  else {
-    await router.replace('/connect')
-  }
+  else await router.replace('/starting')
 })

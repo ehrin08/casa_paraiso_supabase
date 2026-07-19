@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance } from 'axios'
-import { isProductionBuild } from './pairing'
+import { BACKEND_URL } from './pairing'
 
 export interface MobileUser { id: number; name: string; email: string; phone: string | null; role: string; workspace: 'admin' | 'reception' | 'staff' | 'customer'; email_verified: boolean }
 export interface ApiError { code: string; message: string; fields?: Record<string, string[]> }
@@ -171,7 +171,7 @@ let client: AxiosInstance | null = null
 let token = ''
 
 export function configureApi(baseUrl: string): void {
-  client = axios.create({ baseURL: `${baseUrl}/api/v1`, headers: { Accept: 'application/json' }, timeout: isProductionBuild() ? 75_000 : 10_000, withCredentials: false })
+  client = axios.create({ baseURL: `${baseUrl}/api/v1`, headers: { Accept: 'application/json' }, timeout: baseUrl === BACKEND_URL ? 75_000 : 10_000, withCredentials: false })
   client.interceptors.request.use((config) => {
     if (token) config.headers.Authorization = `Bearer ${token}`
     return config

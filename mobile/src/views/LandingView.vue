@@ -28,7 +28,7 @@ async function requestAppointment(): Promise<void> {
     await router.push(`/workspace/${auth.user.workspace}`)
     return
   }
-  await router.push(pairing.status === 'paired' ? '/sign-in' : '/connect')
+  await router.push(pairing.status === 'paired' ? '/sign-in' : '/starting')
 }
 </script>
 

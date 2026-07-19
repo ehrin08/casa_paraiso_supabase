@@ -100,7 +100,7 @@ $env:CASA_RELEASE_STORE_PASSWORD = $signing.storePassword
 $env:CASA_RELEASE_KEY_ALIAS = $signing.keyAlias
 $env:CASA_RELEASE_KEY_PASSWORD = $signing.keyPassword
 $env:ANDROID_HOME = Join-Path $env:LOCALAPPDATA 'Android\Sdk'
-$env:VITE_PRODUCTION_BACKEND_URL = $backend.GetLeftPart([System.UriPartial]::Authority)
+$env:VITE_BACKEND_URL = $backend.GetLeftPart([System.UriPartial]::Authority)
 
 Push-Location $mobileRoot
 try {
@@ -111,7 +111,7 @@ try {
 } finally {
     Pop-Location
     Remove-Item Env:CASA_RELEASE_STORE_FILE, Env:CASA_RELEASE_STORE_PASSWORD, Env:CASA_RELEASE_KEY_ALIAS, Env:CASA_RELEASE_KEY_PASSWORD -ErrorAction SilentlyContinue
-    Remove-Item Env:VITE_PRODUCTION_BACKEND_URL -ErrorAction SilentlyContinue
+    Remove-Item Env:VITE_BACKEND_URL -ErrorAction SilentlyContinue
 }
 
 $apkPath = Join-Path $mobileRoot 'android\app\build\outputs\apk\release\app-release.apk'

@@ -1,8 +1,7 @@
 [CmdletBinding()]
 param(
     [ValidateSet('Start', 'Rotate', 'Status', 'Stop')]
-    [string] $Action = 'Status',
-    [string] $ApkPath
+    [string] $Action = 'Status'
 )
 
 Set-StrictMode -Version Latest
@@ -12,7 +11,6 @@ Import-Module (Join-Path $PSScriptRoot 'CasaDocker.psm1') -Force
 $projectRoot = Get-CasaProjectPath
 $envPath = Join-Path $projectRoot '.env'
 $statePath = Join-Path $projectRoot 'storage\app\private\mobile-demo-state.json'
-$apkPath = if ($ApkPath) { $ApkPath } else { Join-Path $projectRoot 'mobile\android\app\build\outputs\apk\debug\app-debug.apk' }
 $managedKeys = @('APP_URL', 'APP_DEBUG', 'SESSION_SECURE_COOKIE', 'TRUSTED_HOSTS', 'MOBILE_PAIRING_ENABLED', 'MOBILE_INSTANCE_ID', 'MOBILE_DEMO_APK_ENABLED')
 
 function Get-DotEnvState {
@@ -135,30 +133,8 @@ function Configure-TunnelEnvironment {
     Set-DotEnvValue -Key 'SESSION_SECURE_COOKIE' -Value 'true'
     Set-DotEnvValue -Key 'TRUSTED_HOSTS' -Value "^localhost$,^127\.0\.0\.1$,^laravel\.test$,^$escapedHost$"
     Set-DotEnvValue -Key 'MOBILE_PAIRING_ENABLED' -Value 'true'
-    Set-DotEnvValue -Key 'MOBILE_DEMO_APK_ENABLED' -Value 'true'
+    Set-DotEnvValue -Key 'MOBILE_DEMO_APK_ENABLED' -Value 'false'
     Invoke-Laravel @('php', 'artisan', 'config:clear') | Out-Null
-}
-
-function Get-AdbPath {
-    $fromPath = Get-Command adb.exe -ErrorAction SilentlyContinue
-    if ($fromPath) { return $fromPath.Source }
-
-    $sdkPath = Join-Path $env:LOCALAPPDATA 'Android\Sdk\platform-tools\adb.exe'
-    if (Test-Path $sdkPath) { return $sdkPath }
-    return $null
-}
-
-function Send-PairingDeepLink {
-    param([string] $Url)
-
-    $adb = Get-AdbPath
-    if (-not $adb) { return $false }
-    $devices = & $adb devices | Select-Object -Skip 1 | Where-Object { $_ -match "`tdevice$" }
-    if (($devices | Measure-Object).Count -ne 1) { return $false }
-
-    $deepLink = "casaparaiso://pair?url=$([uri]::EscapeDataString($Url))"
-    & $adb shell am start -W -a android.intent.action.VIEW -d "'$deepLink'" 'com.casaparaiso.mobile' | Out-Null
-    return ($LASTEXITCODE -eq 0)
 }
 
 if (-not (Test-Path $envPath)) {
@@ -167,9 +143,6 @@ if (-not (Test-Path $envPath)) {
 
 switch ($Action) {
     'Start' {
-        if (-not (Test-Path $apkPath)) {
-            throw 'The demo APK is missing. Run mobile\android\gradlew.bat -p mobile\android assembleDebug, or pass -ApkPath for a development/demo build.'
-        }
         Save-EnvironmentState
         Ensure-InstanceId
         try {
@@ -178,18 +151,10 @@ switch ($Action) {
             Configure-TunnelEnvironment $url
             $meta = Wait-MobileMeta -Url $url
             if ($meta.data.service -ne 'casa-paraiso-mobile-api' -or -not $meta.data.pairing.enabled) { throw 'The tunnel did not return a pairing-enabled mobile API.' }
-            $sent = Send-PairingDeepLink -Url $url
             Write-Output "Tunnel URL: $url"
-            Write-Output "APK download: $url/api/v1/demo/Casa-Paraiso-Mobile.apk"
-            Write-Output "APK SHA-256: $((Get-FileHash -LiteralPath $apkPath -Algorithm SHA256).Hash)"
-            Write-Output "Connection link: $url"
+            Write-Output 'Browser/API development tunnel is active; Android builds use the Render endpoint.'
             Write-Output "Google web callback: $url/auth/google/callback"
             Write-Output "Google mobile callback: $url/auth/google/mobile/callback"
-            if ($sent) {
-                Write-Output 'Connection link sent through ADB.'
-            } else {
-                Write-Output 'Paste the Connection link into the Android app.'
-            }
         } catch {
             try { Invoke-CasaCompose -Arguments @('--profile', 'tunnel', 'stop', 'cloudflared') | Out-Null } catch { }
             Restore-EnvironmentState

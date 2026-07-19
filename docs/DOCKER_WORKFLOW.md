@@ -165,9 +165,9 @@ Start a demo session:
 .\scripts\mobile-demo.ps1 -Action Start
 ```
 
-The helper requires an existing debug or explicitly supplied demo APK, starts the Docker Desktop stack and profile-gated `cloudflared` container, temporarily hardens the ignored `.env`, validates `/api/v1/meta`, prints a temporary APK download URL plus the connection link and Google callback, and sends a URL-only `casaparaiso://pair` deep link when exactly one ADB device is available. The APK download route is disabled whenever the demo flag is off. Render release APKs must not be used with this helper.
+The helper starts the Docker Desktop stack and profile-gated `cloudflared` container, temporarily hardens the ignored `.env`, validates `/api/v1/meta`, and prints the temporary tunnel and Google callback URLs for browser/API development. It no longer builds, downloads, or pairs an APK, and Render remains the only Android endpoint.
 
-Development/demo builds accept the bare connection URL or APK download URL, reduce it to an exact HTTPS `*.trycloudflare.com` origin, validate the Casa Paraiso service identity and instance UUID through the rate-limited metadata endpoint, and persist the verified endpoint in Capacitor Preferences. A Render release instead bootstraps its compiled HTTPS endpoint, replacing stale tunnel state. Pairing grants no authenticated session; password sign-in remains required for the proof of concept.
+Every Android build bootstraps its compiled HTTPS Render endpoint, replacing stale tunnel state in Preferences, and validates the Casa Paraiso service identity and instance UUID through `/api/v1/meta`. No manual URL entry or pairing deep link exists. Pairing metadata remains in the API contract for compatibility; password sign-in remains required.
 
 Rotate or inspect the demo:
 
@@ -199,7 +199,7 @@ Set-Location mobile
 npm run dev
 ```
 
-Open `http://localhost:5173` in Chrome and paste the connection link printed by the demo helper. Vite applies supported source and style changes without rebuilding or reinstalling the APK. The browser authentication token is memory-only, so a full-page reload may require signing in again.
+Open `http://localhost:5173` in Chrome. Vite uses the configured Render endpoint for browser development; the temporary tunnel remains available for backend/API inspection. Vite applies supported source and style changes without rebuilding or reinstalling the APK. The browser authentication token is memory-only, so a full-page reload may require signing in again.
 
 Chrome does not validate Android secure storage, app/deep links, native sharing, haptics, keyboard and status-bar integration, or other Capacitor-native behavior. Before completing a mobile change, run the relevant automated checks and exercise native behavior on the approved Android emulator or a physical phone. This development preview does not change the release architecture: the production UI remains bundled into the APK, and Capacitor `server.url` must not be added.
 

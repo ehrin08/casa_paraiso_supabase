@@ -43,9 +43,7 @@ From the repository root:
 .\scripts\mobile-demo.ps1 -Action Start
 ```
 
-The helper is for development/demo builds only. Build a debug APK first with `mobile\android\gradlew.bat -p mobile\android assembleDebug`; the helper then prints a temporary APK download URL and its SHA-256 checksum. The hosted release APK does not accept a Quick Tunnel connection link.
-
-If one authorized phone is connected, the helper opens and validates the connection link automatically. Otherwise open the demo app and paste either the displayed `Connection link` or the same APK download URL; no PIN is required. Google Cloud must authorize the exact displayed mobile callback ending in `/auth/google/mobile/callback`; the callback changes whenever the Quick Tunnel rotates.
+The helper is browser/API-only. It starts a temporary Quick Tunnel, validates the API, and prints the Google callback URLs; Android debug and release builds use the stable Render endpoint and never accept a Quick Tunnel connection link. Google Cloud must authorize the exact displayed mobile callback ending in `/auth/google/mobile/callback`; the callback changes whenever the Quick Tunnel rotates.
 
 Sign in, exercise the appropriate role workspace, and stop the public tunnel afterward:
 
@@ -53,4 +51,4 @@ Sign in, exercise the appropriate role workspace, and stop the public tunnel aft
 .\scripts\mobile-demo.ps1 -Action Stop
 ```
 
-The app is online-only. A stopped or rotated tunnel requires pasting the new connection link.
+The app is online-only. A stopped or rotated Quick Tunnel affects browser/API development only; Android builds continue using Render.
