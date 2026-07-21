@@ -63,14 +63,14 @@
   <text x="1548" y="624" class="ink small">Supabase Auth/Data API unused</text>
 
   <path d="M362 448 C395 448 410 448 450 448" class="line"/>
-  <text x="378" y="426" class="ink tiny">HTTPS browser requests</text>
+  <text x="385" y="426" class="ink tiny">HTTPS</text>
   <path d="M895 448 C925 448 940 448 965 448" class="line"/>
-  <text x="900" y="426" class="ink tiny">same-origin Laravel web flow</text>
+  <text x="900" y="426" class="ink tiny">Laravel web</text>
   <path d="M1445 448 C1470 448 1490 448 1515 448" class="line"/>
-  <text x="1450" y="426" class="ink tiny">private SQL over TLS</text>
+  <text x="1452" y="426" class="ink tiny">SQL / TLS</text>
 
   <rect x="72" y="758" width="1778" height="232" rx="24" class="boundary"/>
-  <text x="106" y="800" class="layer">SUPPORTING CLIENT · IDENTITY · DEPLOYMENT · FALLBACK PATHS</text>
+  <text x="106" y="790" class="layer">SUPPORTING CLIENT · IDENTITY · DEPLOYMENT · FALLBACK PATHS</text>
   <rect x="108" y="838" width="290" height="110" rx="18" class="node external"/>
   <text x="140" y="882" class="ink h2">Google OAuth</text><text x="140" y="916" class="ink small">Browser redirect · PKCE</text>
   <rect x="470" y="838" width="300" height="110" rx="18" class="node web"/>
@@ -83,14 +83,14 @@
   <text x="1598" y="882" class="ink h2">MariaDB</text><text x="1598" y="916" class="ink small">read-only rollback source</text>
 
   <path d="M253 838 C430 748 600 724 600 688" class="goldline"/>
-  <text x="290" y="790" class="ink tiny">OAuth callback to Laravel session</text>
+  <text x="290" y="820" class="ink tiny">OAuth callback</text>
   <path d="M620 838 C620 770 720 735 720 688" class="goldline"/>
-  <text x="535" y="780" class="ink tiny">authenticated API client</text>
+  <text x="535" y="820" class="ink tiny">API client</text>
   <path d="M992 838 C992 770 1080 735 1080 688" class="goldline"/>
-  <text x="920" y="780" class="ink tiny">deployed web/API origin</text>
+  <text x="920" y="820" class="ink tiny">production origin</text>
   <path d="M1354 838 C1354 770 1260 735 1260 688" class="dashline"/>
   <path d="M1683 838 C1683 770 1360 735 1360 688" class="dashline"/>
-  <text x="1440" y="784" class="ink tiny">demo and rollback only</text>
+  <text x="1440" y="820" class="ink tiny">demo / rollback only</text>
 
   <text x="96" y="1038" class="ink small">Security invariant: browsers and the APK talk to Laravel only; Laravel is the sole authority that talks to Supabase.</text>
 </svg>
