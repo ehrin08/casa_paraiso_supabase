@@ -33,6 +33,7 @@ Database work is permitted when it follows the account-preservation rule in `AGE
 | What is the approved build order and remaining delivery work? | [`IMPLEMENTATION_ROADMAP.md`](IMPLEMENTATION_ROADMAP.md) | Phases, dependencies, verification, and completion definition |
 | How should the interface look and behave? | [`BRAND_UI_GUIDE.md`](BRAND_UI_GUIDE.md) | Brand, density, components, responsive behavior, and accessibility |
 | What security checks gate a release? | [`SECURITY_HARDENING.md`](SECURITY_HARDENING.md) | Implemented controls plus production environment, hosting, backup, and recovery checks |
+| What is the implemented web software architecture? | [`SYSTEM_ARCHITECTURE.md`](SYSTEM_ARCHITECTURE.md) | Web system architecture schematic diagram, 3-tier blueprint, and layer details |
 | What does the application currently do? | Current routes, controllers, services, models, migrations, configuration, and tests | Implemented behavior |
 | Where should a new task begin? | This document | Fast navigation only |
 
