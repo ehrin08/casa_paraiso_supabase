@@ -6,9 +6,9 @@
             <p class="mt-2 max-w-2xl text-sm leading-6 text-casa-muted">{{ __('See today’s assigned care, requests waiting for action, and recently completed services.') }}</p>
         </div>
 
-        <div class="flex flex-wrap gap-3">
-            <a href="{{ route('staff.customers.index') }}" class="casa-button-secondary">{{ __('Customer lookup') }}</a>
-            <a href="{{ route('staff.appointments.index') }}" class="casa-button-primary">{{ __('Open schedule') }}</a>
+        <div class="flex w-full flex-nowrap gap-2 sm:w-auto sm:gap-3">
+            <a href="{{ route('staff.customers.index') }}" class="casa-button-secondary min-w-0 flex-1 px-2 sm:flex-none sm:px-[0.9rem]">{{ __('Customer lookup') }}</a>
+            <a href="{{ route('staff.appointments.index') }}" class="casa-button-primary min-w-0 flex-1 px-2 sm:flex-none sm:px-[0.9rem]">{{ __('Open schedule') }}</a>
         </div>
     </x-slot>
 
