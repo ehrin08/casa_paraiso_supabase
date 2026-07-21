@@ -90,6 +90,7 @@ Design and develop a centralized Spa Appointment and Management System for Casa 
 ## Development Guidelines
 
 - Prefer small, focused changes that are easy to inspect.
+- Treat feature and behavior tasks as complete only after applying and verifying the relevant change in both the Capacitor mobile app and the Laravel web app, unless the user explicitly limits the task to one surface.
 - End every completed work session by committing that session's scoped changes and pushing the current branch. Do not include unrelated pre-existing worktree changes; if committing or pushing is blocked, report the blocker before ending the session.
 - Keep project-specific setup notes in this file as the application takes shape.
 - Keep Laravel 12 and the existing Blade application; add Vue 3, TypeScript, Tailwind CSS, Capacitor, Sanctum, and PostgreSQL according to the mobile plan.
