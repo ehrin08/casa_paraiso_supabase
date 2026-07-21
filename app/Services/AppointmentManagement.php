@@ -38,7 +38,7 @@ class AppointmentManagement
         $originalRequestedStart = $appointment->requested_start_at?->copy();
         $originalScheduledStart = $appointment->scheduled_start_at?->copy();
         $addonCodes = $data['addon_codes'] ?? $appointment->addons->pluck('addon_code')->all();
-        $paidAddons = $this->addons->selected($addonCodes);
+        $paidAddons = $this->addons->selected($addonCodes, true);
         $this->addons->assertDoesNotDuplicateVoucher($paidAddons, $appointment->promotionSuggestion);
         $scheduleAddonCodes = [...$addonCodes, ...($appointment->promotionSuggestion?->addon_code ? [$appointment->promotionSuggestion->addon_code] : [])];
         $originalAddonCodes = $appointment->addons->pluck('addon_code')->sort()->values()->all();

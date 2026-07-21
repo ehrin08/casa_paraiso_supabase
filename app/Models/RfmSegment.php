@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Addon;
+
 use Database\Factories\RfmSegmentFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -50,6 +52,6 @@ class RfmSegment extends Model
 
     public function addonName(): ?string
     {
-        return collect(config('casa.addons', []))->firstWhere('code', $this->addon_code)['name'] ?? null;
+        return $this->addon_code ? Addon::query()->where('code', $this->addon_code)->value('name') : null;
     }
 }

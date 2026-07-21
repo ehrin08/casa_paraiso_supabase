@@ -3,16 +3,20 @@
 namespace App\Services;
 
 use App\Models\Appointment;
+use App\Models\Addon;
 use App\Models\PromotionSuggestion;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 class AppointmentAddons
 {
+    private ?Collection $activeCatalog = null;
+
+    private ?Collection $fullCatalog = null;
     /** @return Collection<int, array{code: string, name: string, price: float, duration_minutes: int}> */
-    public function selected(array $codes): Collection
+    public function selected(array $codes, bool $includeInactive = false): Collection
     {
-        $catalog = $this->catalog()->keyBy('code');
+        $catalog = $this->catalog($includeInactive)->keyBy('code');
         $selected = collect($codes)
             ->filter(fn ($code) => is_string($code) && $code !== '')
             ->unique()
@@ -28,16 +32,34 @@ class AppointmentAddons
     }
 
     /** @return Collection<int, array{code: string, name: string, price: float, duration_minutes: int}> */
-    public function catalog(): Collection
+    public function catalog(bool $includeInactive = false): Collection
     {
-        return collect(config('casa.addons', []))
-            ->map(fn (array $addon) => [
-                'code' => (string) $addon['code'],
-                'name' => (string) $addon['name'],
-                'price' => (float) $addon['price'],
-                'duration_minutes' => (int) ($addon['duration_minutes'] ?? 0),
+        $cache = $includeInactive ? $this->fullCatalog : $this->activeCatalog;
+        if ($cache !== null) {
+            return $cache;
+        }
+
+        $catalog = Addon::query()->when(! $includeInactive, fn ($query) => $query->where('is_active', true))->orderBy('id')->get()
+            ->map(fn (Addon $addon) => [
+                'code' => $addon->code,
+                'name' => $addon->name,
+                'price' => (float) $addon->price,
+                'duration_minutes' => (int) $addon->duration_minutes,
             ])
             ->values();
+
+        if ($includeInactive) {
+            $this->fullCatalog = $catalog;
+        } else {
+            $this->activeCatalog = $catalog;
+        }
+
+        return $catalog;
+    }
+
+    public function name(string $code): ?string
+    {
+        return Addon::query()->where('code', $code)->value('name');
     }
 
     /** @param Collection<int, array{code: string, name: string, price: float, duration_minutes: int}> $addons */

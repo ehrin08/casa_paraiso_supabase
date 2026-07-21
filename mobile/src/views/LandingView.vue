@@ -22,10 +22,6 @@ const treatments = [
   { number: '04', name: 'AURORA BREEZE', duration: '2 Hours', price: '849.00', description: 'Extended Full Body Massage package with add-ons and VIP Room access.', includes: ['Full Body Massage', 'Ventosa', 'Hot Compress', 'Hot Stone', 'VIP Room'] },
 ]
 
-const addons = [
-  ['Ventosa', 'PHP 200.00'], ['Hot Compress', 'PHP 200.00'], ['Hot Stone', 'PHP 200.00'], ['30-Minute Back Massage', 'PHP 299.00'], ['VIP Room', 'PHP 200.00'],
-]
-
 function scrollToSection(id: string): void {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
@@ -100,7 +96,7 @@ async function bookAppointment(serviceId?: number): Promise<void> {
     </section>
 
     <section class="landing__section landing__section--dark" id="visit" aria-labelledby="visit-title">
-      <div><p class="landing__eyebrow">Optional additions</p><h2>Make the ritual your own.</h2><div class="landing__addons"><div v-for="addon in addons" :key="addon[0]"><strong>{{ addon[0] }}</strong><span>{{ addon[1] }}</span></div></div></div>
+      <div><p class="landing__eyebrow">Optional additions</p><h2>Make the ritual your own.</h2><div class="landing__addons"><div v-for="addon in businessProfile.addons" :key="addon[0]"><strong>{{ addon[0] }}</strong><span>{{ addon[1] }}</span></div></div></div>
       <aside class="landing__hours"><p class="landing__eyebrow">Plan your visit</p><h2 id="visit-title">Open every day</h2><strong>1:00 PM to 12:00 MN</strong><hr><p class="landing__eyebrow">Find us</p><p class="landing__address">{{ businessProfile.business_address }}</p><p class="landing__landmarks">{{ businessProfile.location_landmarks }}</p><div class="landing__location-actions"><a :href="businessProfile.messenger_url" target="_blank" rel="noopener noreferrer">Message us</a><a :href="businessProfile.facebook_url" target="_blank" rel="noopener noreferrer">Visit Facebook</a><a :href="businessProfile.map_url" target="_blank" rel="noopener noreferrer">Get directions</a></div><button type="button" @click="bookAppointment()">Book your visit <PhCaretRight :size="18" weight="bold" aria-hidden="true" /></button></aside>
     </section>
 

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\CustomerProfile;
+use App\Models\Addon;
 use App\Models\PromotionSuggestion;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
@@ -22,7 +23,7 @@ class RfmAddonVoucher
             ->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))
             ->oldest()
             ->get()
-            ->filter(fn (PromotionSuggestion $voucher) => $voucher->addonName() !== null)
+            ->filter(fn (PromotionSuggestion $voucher) => $voucher->addonName() !== null && Addon::query()->where('code', $voucher->addon_code)->where('is_active', true)->exists())
             ->values();
     }
 
@@ -37,6 +38,7 @@ class RfmAddonVoucher
             && $voucher->status === PromotionSuggestion::STATUS_SUGGESTED
             && $voucher->addon_code
             && $voucher->addonName()
+            && Addon::query()->where('code', $voucher->addon_code)->where('is_active', true)->exists()
             && ! $voucher->isExpired();
 
         if (! $available) {

@@ -36,6 +36,13 @@ class MobilePublicBusinessProfileApiTest extends TestCase
                     'facebook_url' => 'https://www.facebook.com/61579320037378',
                     'messenger_url' => 'https://m.me/61579320037378',
                     'map_url' => 'https://www.google.com/maps/search/?api=1&query=Casa+Paraiso',
+                    'addons' => [
+                        ['30-Minute Back Massage', 'PHP 299.00'],
+                        ['Hot Compress', 'PHP 200.00'],
+                        ['Hot Stone', 'PHP 200.00'],
+                        ['VIP Room', 'PHP 200.00'],
+                        ['Ventosa', 'PHP 200.00'],
+                    ],
                 ],
             ]);
     }

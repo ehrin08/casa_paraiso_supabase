@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AppointmentCalendarController as AdminAppointmentCalendarController;
+use App\Http\Controllers\Admin\AddonController as AdminAddonController;
 use App\Http\Controllers\Admin\AppointmentController as AdminAppointmentController;
 use App\Http\Controllers\Admin\CommissionController as AdminCommissionController;
 use App\Http\Controllers\Admin\CustomerController as AdminCustomerController;
@@ -36,6 +37,7 @@ use App\Http\Controllers\Staff\FeedbackController as StaffFeedbackController;
 use App\Http\Controllers\Staff\TransactionController as StaffTransactionController;
 use App\Http\Controllers\WebAttendanceController;
 use App\Models\ApplicationSetting;
+use App\Models\Addon;
 use App\Models\Service;
 use App\Http\Middleware\MeasureApiRequest;
 use Illuminate\Http\Request;
@@ -48,6 +50,7 @@ Route::get('/', function () {
             ->where('is_active', true)
             ->orderBy('name')
             ->get(),
+        'addons' => Addon::query()->where('is_active', true)->orderBy('name')->get(),
     ]);
 });
 
@@ -104,6 +107,8 @@ Route::middleware(['auth', 'active', 'verified', 'role:super_admin,admin', Measu
         Route::resource('staff', AdminStaffController::class)->except('destroy');
         Route::patch('/services/{service}/toggle', [AdminServiceController::class, 'toggle'])->name('services.toggle');
         Route::resource('services', AdminServiceController::class)->except('destroy');
+        Route::patch('/addons/{addon}/toggle', [AdminAddonController::class, 'toggle'])->name('addons.toggle');
+        Route::resource('addons', AdminAddonController::class)->only(['index', 'create', 'store', 'edit', 'update']);
         Route::resource('transactions', AdminTransactionController::class)->except('destroy');
         Route::get('/commissions', [AdminCommissionController::class, 'index'])->name('commissions.index');
         Route::get('/commissions/{commission}', [AdminCommissionController::class, 'show'])->name('commissions.show');

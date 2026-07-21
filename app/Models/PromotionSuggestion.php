@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\PromotionSuggestionFactory;
+use App\Models\Addon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -91,7 +92,7 @@ class PromotionSuggestion extends Model
 
     public function addonName(): ?string
     {
-        return collect(config('casa.addons', []))->firstWhere('code', $this->addon_code)['name'] ?? null;
+        return $this->addon_code ? Addon::query()->where('code', $this->addon_code)->value('name') : null;
     }
 
     public function hasActiveVoucherReservation(): bool
@@ -117,6 +118,7 @@ class PromotionSuggestion extends Model
         return $this->status === self::STATUS_SUGGESTED
             && $this->addon_code !== null
             && $this->addonName() !== null
+            && Addon::query()->where('code', $this->addon_code)->where('is_active', true)->exists()
             && ! $this->isExpired();
     }
 

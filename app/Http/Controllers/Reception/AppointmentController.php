@@ -8,6 +8,7 @@ use App\Http\Requests\AdminAppointmentOutcomeRequest;
 use App\Http\Requests\AdminAppointmentStoreRequest;
 use App\Http\Requests\AdminAppointmentUpdateRequest;
 use App\Models\ApplicationSetting;
+use App\Models\Addon;
 use App\Models\Appointment;
 use App\Models\CustomerProfile;
 use App\Models\Service;
@@ -148,7 +149,18 @@ class AppointmentController extends Controller
             'customers' => CustomerProfile::query()->with('user')->get()->sortBy('user.name')->values(),
             'services' => $services,
             'staffProfiles' => StaffProfile::query()->with(['user', 'services'])->where('is_bookable', true)->whereHas('user', fn ($query) => $query->where('is_active', true))->get()->sortBy('user.name')->values(),
-            'addons' => collect(config('casa.addons', [])),
+            'addons' => $this->addonSelectors($appointment),
         ];
+    }
+
+    private function addonSelectors(?Appointment $appointment = null)
+    {
+        $addons = Addon::query()->where('is_active', true)->orderBy('name')->get();
+        foreach ($appointment?->addons ?? [] as $snapshot) {
+            if (! $addons->contains('code', $snapshot->addon_code)) {
+                $addons->push(new Addon(['code' => $snapshot->addon_code, 'name' => $snapshot->addon_name, 'price' => $snapshot->price, 'duration_minutes' => $snapshot->duration_minutes, 'is_active' => false]));
+            }
+        }
+        return $addons->sortBy('name')->values();
     }
 }

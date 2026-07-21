@@ -7,6 +7,7 @@ use App\Models\ApplicationSetting;
 use App\Models\Appointment;
 use App\Models\PromotionSuggestion;
 use App\Models\RfmSegment;
+use App\Models\Addon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -36,7 +37,7 @@ class MobileAdminPromotionController
 
                 return [...$preset, 'addon_code' => $segment?->addon_code, 'is_active' => (bool) $segment?->is_active];
             })->values(),
-            'addons' => collect(config('casa.addons', []))->map(fn (array $addon) => ['code' => $addon['code'], 'name' => $addon['name']])->values(),
+            'addons' => Addon::query()->where('is_active', true)->orderBy('name')->get(['code', 'name'])->values(),
             'meta' => $this->pagination($suggestions),
         ])->header('Cache-Control', 'no-store');
     }

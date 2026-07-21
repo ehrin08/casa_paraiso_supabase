@@ -568,6 +568,7 @@ Main data:
 - Active services.
 - Available staff or preferred staff where supported.
 - Paid add-on catalog with individual prices.
+- Admin Add-ons management with create/edit and activate/deactivate controls.
 - Eligible unused RFM add-on vouchers.
 - Preferred date/time.
 - Customer notes.

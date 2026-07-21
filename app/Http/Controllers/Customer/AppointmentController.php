@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Customer;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CustomerAppointmentStoreRequest;
 use App\Models\Appointment;
+use App\Models\Addon;
 use App\Models\Service;
 use App\Models\StaffProfile;
 use App\Services\AppointmentAvailability;
@@ -90,7 +91,7 @@ class AppointmentController extends Controller
                 ->get()
                 ->sortBy('user.name'),
             'vouchers' => $customerProfile ? $addonVouchers->availableFor($customerProfile) : collect(),
-            'addons' => collect(config('casa.addons', [])),
+            'addons' => Addon::query()->where('is_active', true)->orderBy('name')->get(),
             'preselectedServiceId' => isset($data['service_id']) ? (int) $data['service_id'] : null,
             'initialRequestedAt' => filled($data['requested_start_at'] ?? null) ? Carbon::parse($data['requested_start_at'])->format('Y-m-d\TH:i') : null,
         ]);

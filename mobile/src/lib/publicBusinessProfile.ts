@@ -10,6 +10,7 @@ export interface PublicBusinessProfile {
   facebook_url: string
   messenger_url: string
   map_url: string
+  addons: Array<[string, string]>
 }
 
 export const defaultPublicBusinessProfile: PublicBusinessProfile = {
@@ -21,6 +22,7 @@ export const defaultPublicBusinessProfile: PublicBusinessProfile = {
   facebook_url: 'https://www.facebook.com/61579320037378',
   messenger_url: 'https://m.me/61579320037378',
   map_url: 'https://www.google.com/maps/search/?api=1&query=Casa+Paraiso+Body+%26+Wellness+Spa%2C+Cuta+East%2C+Santa+Teresita%2C+Batangas',
+  addons: [],
 }
 
 export async function loadPublicBusinessProfile(): Promise<PublicBusinessProfile> {

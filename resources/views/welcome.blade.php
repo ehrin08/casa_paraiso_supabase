@@ -15,7 +15,6 @@
     <body class="font-sans antialiased">
         @php
             $packageDetailsBySlug = collect(config('casa.service_packages', []))->keyBy('slug');
-            $addons = config('casa.addons', []);
             $businessHours = config('casa.business_hours', []);
             $homeUrl = auth()->check() ? route(auth()->user()->homeRouteName()) : null;
             $startingRate = $services->min('price');

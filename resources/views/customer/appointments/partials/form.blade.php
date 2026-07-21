@@ -22,11 +22,11 @@
         'offer' => $voucher->suggested_offer,
         'expires_at' => $voucher->expires_at?->toIso8601String(),
     ])->values();
-    $bookingAddons = $addons->map(fn (array $addon) => [
-        'code' => $addon['code'],
-        'name' => $addon['name'],
-        'price' => (float) $addon['price'],
-        'duration_minutes' => (int) ($addon['duration_minutes'] ?? 0),
+    $bookingAddons = $addons->map(fn ($addon) => [
+        'code' => is_array($addon) ? $addon['code'] : $addon->code,
+        'name' => is_array($addon) ? $addon['name'] : $addon->name,
+        'price' => (float) (is_array($addon) ? $addon['price'] : $addon->price),
+        'duration_minutes' => (int) (is_array($addon) ? ($addon['duration_minutes'] ?? 0) : $addon->duration_minutes),
     ])->values();
     $bookingContext = $bookingContext ?? null;
 @endphp

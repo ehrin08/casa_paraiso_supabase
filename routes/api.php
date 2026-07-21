@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\MobileAdminPromotionController;
 use App\Http\Controllers\Api\V1\MobileAdminReportController;
 use App\Http\Controllers\Api\V1\MobileAdminScheduleController;
 use App\Http\Controllers\Api\V1\MobileAdminServiceController;
+use App\Http\Controllers\Api\V1\MobileAdminAddonController;
 use App\Http\Controllers\Api\V1\MobileAdminSettingController;
 use App\Http\Controllers\Api\V1\MobileAdminStaffController;
 use App\Http\Controllers\Api\V1\MobileAdminUserController;
@@ -148,6 +149,10 @@ Route::prefix('v1')->middleware(MeasureApiRequest::class)->group(function (): vo
             Route::get('/services/{service}', [MobileAdminServiceController::class, 'show'])->name('api.v1.admin.services.show');
             Route::patch('/services/{service}', [MobileAdminServiceController::class, 'update'])->name('api.v1.admin.services.update');
             Route::patch('/services/{service}/toggle', [MobileAdminServiceController::class, 'toggle'])->name('api.v1.admin.services.toggle');
+            Route::get('/addons', [MobileAdminAddonController::class, 'index'])->name('api.v1.admin.addons.index');
+            Route::post('/addons', [MobileAdminAddonController::class, 'store'])->name('api.v1.admin.addons.store');
+            Route::patch('/addons/{addon}', [MobileAdminAddonController::class, 'update'])->name('api.v1.admin.addons.update');
+            Route::patch('/addons/{addon}/toggle', [MobileAdminAddonController::class, 'toggle'])->name('api.v1.admin.addons.toggle');
 
             Route::get('/staff', [MobileAdminStaffController::class, 'index'])->name('api.v1.admin.staff.index');
             Route::get('/staff/options', [MobileAdminStaffController::class, 'options'])->name('api.v1.admin.staff.options');

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\PromotionSettingsRequest;
 use App\Models\ApplicationSetting;
+use App\Models\Addon;
 use App\Models\Appointment;
 use App\Models\PromotionSuggestion;
 use App\Models\RfmSegment;
@@ -54,6 +55,7 @@ class PromotionController extends Controller
                 'used' => $this->activityQuery('used')->count(),
                 'expired' => $this->activityQuery('expired')->count(),
             ],
+            'addons' => Addon::query()->where('is_active', true)->orderBy('name')->get(),
         ]);
     }
 

@@ -66,8 +66,8 @@
                             <div class="mt-4">
                                 <x-input-label :for="'reward-'.$preset['key']" :value="__('Complimentary add-on')" />
                                 <select id="{{ 'reward-'.$preset['key'] }}" name="groups[{{ $preset['key'] }}][addon_code]" class="casa-input mt-2" required>
-                                    @foreach (config('casa.addons') as $addon)
-                                        <option value="{{ $addon['code'] }}" @selected(old("groups.{$preset['key']}.addon_code", $segment?->addon_code ?: $preset['addon_code']) === $addon['code'])>{{ $addon['name'] }}</option>
+                                    @foreach ($addons as $addon)
+                                        <option value="{{ $addon->code }}" @selected(old("groups.{$preset['key']}.addon_code", $segment?->addon_code ?: $preset['addon_code']) === $addon->code)>{{ $addon->name }}</option>
                                     @endforeach
                                 </select>
                                 <x-input-error class="mt-2" :messages="$errors->get("groups.{$preset['key']}.addon_code")" />

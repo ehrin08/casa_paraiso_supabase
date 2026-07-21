@@ -160,6 +160,7 @@ export interface AdminDashboard {
   is_super_admin: boolean
 }
 export interface AdminService { id: number; name: string; slug: string; description: string | null; duration_minutes: number; price: string; is_active: boolean; staff_count: number; appointments_count: number; transactions_count: number }
+export interface AdminAddon { id: number; code: string; name: string; description: string | null; duration_minutes: number; price: string; is_active: boolean }
 export interface AdminStaffSummary { id: number; name: string | null; email: string | null; phone: string | null; is_active: boolean; staff_type: string; position: string | null; specialization: string | null; is_bookable: boolean; services: Array<{ id: number; name: string }>; services_count: number; appointments_count: number }
 export interface AdminStaffDetail extends AdminStaffSummary { bio: string | null; hire_date: string | null; weekly_schedules: Array<{ id: number; day_of_week: number; start_time: string; end_time: string; ends_next_day: boolean; is_available: boolean }>; schedule_exceptions: Array<{ id: number; exception_date: string; exception_type: string; start_time: string | null; end_time: string | null; ends_next_day: boolean; reason: string | null }> }
 export interface AdminStaffOptions { can_create: boolean; staff_types: string[]; services: Array<{ id: number; name: string }> }
@@ -303,6 +304,10 @@ export async function adminServices(params: { page?: number; q?: string; status?
 export async function createAdminService(payload: Record<string, unknown>) { return (await getClient().post('/admin/services', payload)).data as { data: AdminService; message: string } }
 export async function updateAdminService(id: number, payload: Record<string, unknown>) { return (await getClient().patch(`/admin/services/${id}`, payload)).data as { data: AdminService; message: string } }
 export async function toggleAdminService(id: number) { return (await getClient().patch(`/admin/services/${id}/toggle`)).data as { data: AdminService; message: string } }
+export async function adminAddons(params: { page?: number; q?: string; status?: string } = {}) { return (await getClient().get('/admin/addons', { params })).data as { data: AdminAddon[]; summary: { active: number; inactive: number }; meta: AppointmentListResponse['meta'] } }
+export async function createAdminAddon(payload: Record<string, unknown>) { return (await getClient().post('/admin/addons', payload)).data as { data: AdminAddon; message: string } }
+export async function updateAdminAddon(id: number, payload: Record<string, unknown>) { return (await getClient().patch(`/admin/addons/${id}`, payload)).data as { data: AdminAddon; message: string } }
+export async function toggleAdminAddon(id: number) { return (await getClient().patch(`/admin/addons/${id}/toggle`)).data as { data: AdminAddon; message: string } }
 export async function adminStaff(params: { page?: number; q?: string; status?: string; bookable?: string } = {}) { return (await getClient().get('/admin/staff', { params })).data as { data: AdminStaffSummary[]; summary: { active: number; inactive: number; bookable: number }; meta: AppointmentListResponse['meta'] } }
 export async function adminStaffOptions(): Promise<AdminStaffOptions> { return (await getClient().get('/admin/staff/options')).data.data }
 export async function adminStaffDetail(id: number): Promise<AdminStaffDetail> { return (await getClient().get(`/admin/staff/${id}`)).data.data }

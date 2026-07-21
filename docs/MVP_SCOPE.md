@@ -36,7 +36,7 @@ Users authenticate with either a verified Google account or a verified email and
   - TETHYS FLOW: PHP 649.00, 1 hour.
   - HESTIA WARMTH: PHP 749.00, 1 hour 30 minutes.
   - AURORA BREEZE: PHP 849.00, 2 hours.
-- Ventosa, Hot Compress, Hot Stone, 30-Minute Back Massage, and VIP Room are configuration-backed paid add-ons that customers, Admins, and Receptionists may select during booking. Customers may select multiple add-ons; 30-Minute Back Massage extends the reservation by 30 minutes.
+- Add-ons are shared, admin-editable catalog records. Customers, Admins, and Receptionists may select multiple active add-ons during booking; duration-bearing add-ons extend the reservation.
 - An eligible RFM voucher grants one separate complimentary add-on. It does not discount or replace paid add-ons, and the same add-on cannot be selected both as paid and voucher-based.
 - Business hours are shown as open every day from 1:00 PM to 12:00 MN.
 - Admin can manage therapist profiles and therapist availability. Therapist profiles retain the internal `staff` role and use `staff_type = therapist`.

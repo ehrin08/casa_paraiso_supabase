@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Models\ApplicationSetting;
+use App\Models\Addon;
 use Illuminate\Http\JsonResponse;
 
 class MobilePublicBusinessProfileController
@@ -21,6 +22,7 @@ class MobilePublicBusinessProfileController
                 'facebook_url' => $settings->facebook_url,
                 'messenger_url' => $settings->messenger_url,
                 'map_url' => $settings->map_url,
+                'addons' => Addon::query()->where('is_active', true)->orderBy('name')->get(['name', 'price'])->map(fn (Addon $addon) => [$addon->name, 'PHP '.number_format((float) $addon->price, 2)])->values(),
             ],
         ])->header('Cache-Control', 'no-store');
     }

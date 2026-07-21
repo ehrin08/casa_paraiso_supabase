@@ -133,7 +133,7 @@ Initial active services should mirror the current package menu:
 - HESTIA WARMTH, 90 minutes, PHP 749.00.
 - AURORA BREEZE, 120 minutes, PHP 849.00.
 
-Add-ons are defined in `config/casa.php` rather than managed as standalone service records. Ventosa, Hot Compress, Hot Stone, 30-Minute Back Massage, and VIP Room may be selected as paid appointment add-ons. A separate RFM voucher may grant one complimentary add-on; it never discounts a paid selection. Only 30-Minute Back Massage extends the scheduled duration, by 30 minutes.
+Add-ons are managed as standalone shared catalog records. The initial catalog contains Ventosa, Hot Compress, Hot Stone, 30-Minute Back Massage, and VIP Room. Admins may edit name, description, price, duration, and active state; codes remain stable and add-ons are deactivated rather than deleted. Active records may be selected with any active service. A separate RFM voucher may grant one complimentary add-on; it never discounts a paid selection. Add-on duration extends the scheduled duration.
 
 Key columns:
 
