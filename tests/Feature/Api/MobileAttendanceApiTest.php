@@ -41,6 +41,7 @@ class MobileAttendanceApiTest extends TestCase
         $payload = app(AttendanceQr::class)->current()['payload']; CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-07-21 14:13:10', 'Asia/Manila'));
         $this->withToken($this->token($staff->user))->postJson('/api/v1/staff/attendance/scans', ['payload' => $payload])->assertUnprocessable();
         $this->withToken($this->token($customer))->getJson('/api/v1/attendance-station/qr')->assertForbidden();
+        $this->withToken($this->token($customer))->getJson('/api/v1/attendance-station/pending')->assertNotFound();
     }
 
     private function token(User $user): string { return $user->createToken('android:test', ['mobile'], now()->addDays(30))->plainTextToken; }

@@ -36,7 +36,6 @@ class AttendanceWorkflow
                 'expires_at' => $now->startOfMinute()->addMinute(),
                 'status' => StaffAttendanceScanRequest::STATUS_CONFIRMED,
                 'resolution' => $action,
-                'reviewed_at' => $now,
             ]);
             $attendance->update([$action === 'time_in' ? 'time_in_at' : 'time_out_at' => $now]);
             StaffAttendanceEvent::create([
@@ -49,21 +48,6 @@ class AttendanceWorkflow
                 'recorded_by' => $actor->id,
             ]);
 
-            return $attendance->fresh(['staffProfile.user', 'events.recorder']);
-        });
-    }
-
-    public function confirm(StaffAttendanceScanRequest $scan, string $action, User $actor): StaffAttendance
-    {
-        return DB::transaction(function () use ($scan, $action, $actor): StaffAttendance {
-            $scan = StaffAttendanceScanRequest::query()->lockForUpdate()->findOrFail($scan->id);
-            abort_unless($scan->status === StaffAttendanceScanRequest::STATUS_PENDING, 422, 'This attendance scan was already resolved.');
-            $attendance = StaffAttendance::query()->firstOrCreate(['staff_profile_id' => $scan->staff_profile_id, 'attendance_date' => $scan->attendance_date]);
-            $attendance->refresh();
-            if ($action === 'time_in') { abort_if($attendance->time_in_at, 422, 'This therapist is already clocked in.'); $attendance->update(['time_in_at' => $scan->scanned_at]); }
-            else { abort_if(! $attendance->time_in_at, 422, 'Time out requires a same-day time in.'); abort_if($attendance->time_out_at, 422, 'This therapist is already clocked out.'); $attendance->update(['time_out_at' => $scan->scanned_at]); }
-            $scan->update(['status' => StaffAttendanceScanRequest::STATUS_CONFIRMED, 'resolution' => $action, 'reviewed_by' => $actor->id, 'reviewed_at' => now()]);
-            StaffAttendanceEvent::create(['staff_attendance_id' => $attendance->id, 'staff_profile_id' => $attendance->staff_profile_id, 'scan_request_id' => $scan->id, 'event_type' => $action, 'source' => 'verified_qr', 'occurred_at' => $scan->scanned_at, 'recorded_by' => $actor->id]);
             return $attendance->fresh(['staffProfile.user', 'events.recorder']);
         });
     }

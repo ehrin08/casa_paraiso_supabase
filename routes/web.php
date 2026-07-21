@@ -152,9 +152,6 @@ Route::middleware(['auth', 'active', 'verified', 'role:receptionist', MeasureApi
 Route::middleware(['auth', 'active', 'verified', 'role:super_admin,admin,receptionist'])
     ->prefix('attendance-station')->name('attendance-station.')->group(function (): void {
         Route::get('/qr', [WebAttendanceController::class, 'qr'])->name('qr');
-        Route::get('/pending', [WebAttendanceController::class, 'pending'])->name('pending');
-        Route::post('/scans/{scan}/confirm', [WebAttendanceController::class, 'confirm'])->name('confirm');
-        Route::post('/scans/{scan}/reject', [WebAttendanceController::class, 'reject'])->name('reject');
     });
 
 Route::middleware(['auth', 'active', 'verified', 'role:customer', MeasureApiRequest::class])

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Models\{StaffAttendance, StaffAttendanceScanRequest, StaffProfile};
+use App\Models\{StaffAttendance, StaffProfile};
 use App\Services\{AttendanceQr, AttendanceWorkflow};
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -30,28 +30,7 @@ class MobileAttendanceController
         $staff = $request->user()->staffProfile; abort_unless($staff, 403);
         $date = CarbonImmutable::now('Asia/Manila')->toDateString();
         $attendance = StaffAttendance::query()->where('staff_profile_id', $staff->id)->where('attendance_date', $date)->with('events.recorder')->first();
-        $pending = StaffAttendanceScanRequest::query()->where('staff_profile_id', $staff->id)->where('status', 'pending')->latest('scanned_at')->first();
-        return response()->json(['data' => ['attendance' => $attendance ? $this->attendanceData($attendance) : null, 'pending_scan' => $pending ? $this->scanData($pending) : null]])->header('Cache-Control', 'no-store');
-    }
-
-    public function pending(): JsonResponse
-    {
-        $items = StaffAttendanceScanRequest::query()->where('status', 'pending')->with('staffProfile.user')->orderBy('scanned_at')->get();
-        return response()->json(['data' => $items->map(fn ($scan) => $this->scanData($scan))])->header('Cache-Control', 'no-store');
-    }
-
-    public function confirm(Request $request, StaffAttendanceScanRequest $scan, AttendanceWorkflow $workflow): JsonResponse
-    {
-        $data = $request->validate(['action' => ['required', 'in:time_in,time_out']]);
-        $attendance = $workflow->confirm($scan, $data['action'], $request->user());
-        return response()->json(['data' => $this->attendanceData($attendance), 'message' => 'Attendance '.$data['action'].' confirmed.'])->header('Cache-Control', 'no-store');
-    }
-
-    public function reject(Request $request, StaffAttendanceScanRequest $scan): JsonResponse
-    {
-        abort_unless($scan->status === 'pending', 422, 'This attendance scan was already resolved.');
-        $scan->update(['status' => 'rejected', 'reviewed_by' => $request->user()->id, 'reviewed_at' => now()]);
-        return response()->json(['message' => 'Attendance scan rejected.'])->header('Cache-Control', 'no-store');
+        return response()->json(['data' => ['attendance' => $attendance ? $this->attendanceData($attendance) : null]])->header('Cache-Control', 'no-store');
     }
 
     public function index(Request $request): JsonResponse
@@ -68,6 +47,5 @@ class MobileAttendanceController
         return response()->json(['data' => $this->attendanceData($record), 'message' => 'Attendance correction recorded.'])->header('Cache-Control', 'no-store');
     }
 
-    private function scanData(StaffAttendanceScanRequest $scan): array { return ['id' => $scan->id, 'status' => $scan->status, 'scanned_at' => optional($scan->scanned_at)->toIso8601String(), 'expires_at' => optional($scan->expires_at)->toIso8601String(), 'therapist' => ['id' => $scan->staff_profile_id, 'name' => $scan->staffProfile?->user?->name]]; }
     private function attendanceData(StaffAttendance $attendance): array { return ['id' => $attendance->id, 'attendance_date' => $attendance->attendance_date?->toDateString(), 'time_in_at' => optional($attendance->time_in_at)->toIso8601String(), 'time_out_at' => optional($attendance->time_out_at)->toIso8601String(), 'status' => $attendance->time_out_at ? 'closed' : 'open', 'therapist' => ['id' => $attendance->staff_profile_id, 'name' => $attendance->staffProfile?->user?->name], 'events' => $attendance->events->map(fn ($event) => ['id' => $event->id, 'action' => $event->event_type, 'source' => $event->source, 'occurred_at' => optional($event->occurred_at)->toIso8601String(), 'reason' => $event->reason, 'recorded_by' => $event->recorder?->name])->values()]; }
 }

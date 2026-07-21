@@ -20,6 +20,7 @@ class WebAttendanceTest extends TestCase
             ->assertHeader('Permissions-Policy', 'camera=(self), microphone=(), geolocation=()');
         $this->actingAs($staff->user)->get(route('admin.attendance.index'))->assertForbidden();
         $this->actingAs($receptionist)->get(route('reception.attendance.station'))->assertOk();
+        $this->actingAs($receptionist)->getJson('/attendance-station/pending')->assertNotFound();
         $this->actingAs($receptionist)->get(route('admin.attendance.index'))->assertForbidden();
         $this->actingAs($admin)->get(route('admin.attendance.index'))->assertOk();
     }

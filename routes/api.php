@@ -184,9 +184,6 @@ Route::prefix('v1')->middleware(MeasureApiRequest::class)->group(function (): vo
 
         Route::middleware('role:super_admin,admin,receptionist')->prefix('attendance-station')->group(function (): void {
             Route::get('/qr', [MobileAttendanceController::class, 'qr'])->name('api.v1.attendance.qr');
-            Route::get('/pending', [MobileAttendanceController::class, 'pending'])->name('api.v1.attendance.pending');
-            Route::post('/scans/{scan}/confirm', [MobileAttendanceController::class, 'confirm'])->name('api.v1.attendance.confirm');
-            Route::post('/scans/{scan}/reject', [MobileAttendanceController::class, 'reject'])->name('api.v1.attendance.reject');
         });
 
         Route::middleware('super_admin')->prefix('admin')->group(function (): void {

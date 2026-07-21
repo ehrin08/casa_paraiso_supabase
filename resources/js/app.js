@@ -1041,13 +1041,11 @@ window.attendanceScanner = ({ scanUrl }) => ({
 });
 
 window.attendanceStation = (config) => ({
-    qr: config.initialQr, scans: [], error: '', countdown: '', timer: null,
-    async init() { await this.render(); await this.load(); this.timer = window.setInterval(() => this.tick(), 1000); window.setInterval(() => this.load(), 5000); },
+    qr: config.initialQr, error: '', countdown: '', timer: null,
+    async init() { await this.render(); this.timer = window.setInterval(() => this.tick(), 1000); },
     async render() { const canvas = this.$root.querySelector('#attendance-qr'); if (canvas && this.qr?.payload) await QRCode.toCanvas(canvas, this.qr.payload, { width: 260, margin: 1 }); },
     tick() { const seconds = Math.max(0, Math.ceil((new Date(this.qr.expires_at).getTime() - Date.now()) / 1000)); this.countdown = `0:${String(seconds).padStart(2, '0')}`; if (seconds === 0) this.refreshQr(); },
     async refreshQr() { try { this.qr = (await window.axios.get(config.qrUrl)).data.qr; await this.render(); } catch { this.error = 'The live QR could not refresh.'; } },
-    async load() { try { this.scans = (await window.axios.get(config.pendingUrl)).data.scans || []; } catch { this.error = 'The pending attendance queue could not refresh.'; } },
-    async resolve(id, action = null) { try { const url = action ? config.confirmUrl.replace('__SCAN__', id) : config.rejectUrl.replace('__SCAN__', id); await window.axios.post(url, action ? { action } : {}); await this.load(); } catch (error) { this.error = error?.response?.data?.message || 'This scan could not be resolved.'; } },
 });
 
 Alpine.start();
