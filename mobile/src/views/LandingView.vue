@@ -1,12 +1,19 @@
 <script setup lang="ts">
 import { PhArrowRight, PhCalendarBlank, PhCaretRight, PhLeaf, PhSparkle, PhUsersThree } from '@phosphor-icons/vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { usePairingStore } from '../stores/pairing'
+import { defaultPublicBusinessProfile, loadPublicBusinessProfile } from '../lib/publicBusinessProfile'
 
 const router = useRouter()
 const auth = useAuthStore()
 const pairing = usePairingStore()
+const businessProfile = ref({ ...defaultPublicBusinessProfile })
+
+onMounted(async () => {
+  businessProfile.value = await loadPublicBusinessProfile()
+})
 
 const treatments = [
   { number: '01', name: 'GAIA TOUCH', duration: '1 Hour', price: '499.00', description: 'Signature Full Body Massage with Swedish, Shiatsu, and Traditional Hilot techniques.', includes: ['Signature Full Body Massage', 'Swedish', 'Shiatsu', 'Traditional Hilot'] },
@@ -48,7 +55,7 @@ async function bookAppointment(serviceId?: number): Promise<void> {
 
     <section class="landing__hero" aria-labelledby="landing-title">
       <div class="landing__hero-copy">
-        <p class="landing__eyebrow">Casa Paraiso Body and Wellness Spa</p>
+        <p class="landing__eyebrow">{{ businessProfile.business_name }}</p>
         <h1 id="landing-title">Let the day<br><em>soften here.</em></h1>
         <p class="landing__intro">Thoughtful full-body massage rituals, prepared around your pace and confirmed as soon as your booking succeeds.</p>
         <div class="landing__actions">
@@ -94,11 +101,11 @@ async function bookAppointment(serviceId?: number): Promise<void> {
 
     <section class="landing__section landing__section--dark" id="visit" aria-labelledby="visit-title">
       <div><p class="landing__eyebrow">Optional additions</p><h2>Make the ritual your own.</h2><div class="landing__addons"><div v-for="addon in addons" :key="addon[0]"><strong>{{ addon[0] }}</strong><span>{{ addon[1] }}</span></div></div></div>
-      <aside class="landing__hours"><p class="landing__eyebrow">Plan your visit</p><h2 id="visit-title">Open every day</h2><strong>1:00 PM to 12:00 MN</strong><hr><p>Reserve your spot. You deserve this.</p><button type="button" @click="bookAppointment()">Book your visit <PhCaretRight :size="18" weight="bold" aria-hidden="true" /></button></aside>
+      <aside class="landing__hours"><p class="landing__eyebrow">Plan your visit</p><h2 id="visit-title">Open every day</h2><strong>1:00 PM to 12:00 MN</strong><hr><p class="landing__eyebrow">Find us</p><p class="landing__address">{{ businessProfile.business_address }}</p><p class="landing__landmarks">{{ businessProfile.location_landmarks }}</p><div class="landing__location-actions"><a :href="businessProfile.messenger_url" target="_blank" rel="noopener noreferrer">Message us</a><a :href="businessProfile.facebook_url" target="_blank" rel="noopener noreferrer">Visit Facebook</a><a :href="businessProfile.map_url" target="_blank" rel="noopener noreferrer">Get directions</a></div><button type="button" @click="bookAppointment()">Book your visit <PhCaretRight :size="18" weight="bold" aria-hidden="true" /></button></aside>
     </section>
 
     <section class="landing__reassurance" aria-label="Casa Paraiso care promises"><article><PhCalendarBlank :size="28" weight="duotone" aria-hidden="true" /><h2>Clear appointment status</h2><p>Confirmed visits and completed care remain easy to follow.</p></article><article><PhUsersThree :size="28" weight="duotone" aria-hidden="true" /><h2>Therapist-aware scheduling</h2><p>Available therapist schedules are checked as your booking is confirmed.</p></article><article><PhSparkle :size="28" weight="duotone" aria-hidden="true" /><h2>Care that keeps listening</h2><p>Completed visits can be reviewed through thoughtful service feedback.</p></article></section>
 
-    <footer class="landing__footer"><img src="/images/casa_paraiso_logo.jpg" alt="Casa Paraiso Body and Wellness Spa"><div><strong>Open every day · 1:00 PM to 12:00 MN</strong><p>Successful bookings reserve an available therapist and schedule.</p></div></footer>
+    <footer class="landing__footer"><img src="/images/casa_paraiso_logo.jpg" alt="Casa Paraiso Body and Wellness Spa"><div><strong>Open every day · 1:00 PM to 12:00 MN</strong><p>{{ businessProfile.business_address }}</p><a :href="businessProfile.map_url" target="_blank" rel="noopener noreferrer">Get directions</a></div></footer>
   </main>
 </template>

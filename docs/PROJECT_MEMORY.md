@@ -1,6 +1,6 @@
 # Casa Paraiso Project Memory
 
-> Last reviewed: 2026-07-19
+> Last reviewed: 2026-07-21
 > Review basis: current repository working tree plus verified Casa Paraiso Supabase cutover
 > Role: fast orientation for agents and developers; not an independent source of truth
 
@@ -67,7 +67,7 @@ When sources disagree, identify whether the question concerns intended or curren
 - The primary Compose project runs on Docker Desktop through the guarded `scripts/casa-docker.ps1` wrapper. MariaDB is the frozen 2026-07-17 rollback source; local PostgreSQL 17 is reserved for isolated tests and portability rehearsal; the prior dedicated WSL2 engine remains stopped as an additional rollback copy.
 - The existing Supabase **Casa Paraiso** project (`pnichczvgkdxnhcezqyn`) in Sydney is now authoritative. Application data lives in the private `casa` schema; `casa_migrator` owns DDL/imports and `casa_runtime` has DML/sequence access only. SSL enforcement and `verify-full` CA validation are active, the Data API is disabled, and Supabase API roles have no application-schema access.
 - `casa:transfer-to-postgres` is dry-run-first, preserves identity and business rows in foreign-key order, accepts only the exact migration-owned RFM baseline on an otherwise empty target, resets sequences, and validates every row/count/identity/sequence before commit. The production transfer preserved 21 accounts, passed independent validation and CRUD integrity, and produced checksumed pre/post cutover exports.
-- Admin Settings persists editable business identity/contact details and a payment-form default while displaying code-controlled operating and security safeguards.
+- Admin Settings persists editable business identity, address/landmark guidance, Facebook/Messenger/Google Maps links, contact details, and a payment-form default while displaying code-controlled operating and security safeguards. The public web and mobile landing pages read the same settings; the bundled app obtains public contact details from the unauthenticated /api/v1/public/business-profile endpoint.
 - The Phase 11 application and Supabase database security baselines are implemented. Final Laravel hosting, live Google-provider validation, signing-key backup, and the non-technical handover/operations manual remain incomplete.
 - CRUD audit and repair information is tracked separately in [`CRUD_REMEDIATION_CHECKLIST.md`](CRUD_REMEDIATION_CHECKLIST.md) and [`CRUD_DATA_REPAIR_PLAN.md`](CRUD_DATA_REPAIR_PLAN.md). Never copy its record-level findings here or infer approval to execute a repair.
 
@@ -196,7 +196,7 @@ Key identity entry points are `routes/auth.php`, the shared profile routes in `r
 
 - `admin.settings.index` and `admin.settings.update` are available only to Admin and Super Administrator. User provisioning and role/activation changes remain exclusive to the protected Super Administrator.
 - `ApplicationSetting::updateCurrent` preserves the single settings row across web and mobile writers. The non-production demo seeder creates the configured protected super-administrator account only when that email is absent and never replaces an existing account at that address.
-- Editable settings are business name, contact email, phone, address, and the default payment method used to prefill new Admin and Receptionist forms. The default never settles a transaction by itself.
+- Editable settings are business name, contact email, phone, formal address, landmark guidance, Facebook/Messenger/Google Maps links, and the default payment method used to prefill new Admin and Receptionist forms. The default never settles a transaction by itself.
 - `AddSecurityHeaders` supplies the browser header baseline. `AppServiceProvider` registers named guest/user sensitive rate limiters and can force HTTPS in production.
 - `casa.security` reads `FORCE_HTTPS`, `HSTS_ENABLED`, and `TRUSTED_HOSTS`. Production release checks live in `SECURITY_HARDENING.md`; HSTS must wait until HTTPS is verified.
 - Mobile startup requires the HTTPS Render origin and configured UUID. All builds receive `VITE_BACKEND_URL`, replace stale Quick Tunnel state at startup, and expose no manual pairing UI or deep links. Metadata responses are non-cacheable and rate-limited; exact Capacitor/Vite CORS origins apply, including `X-Request-ID` for timed authenticated API requests. The metadata identity grants no session; password authentication is the current hosted-pilot flow.

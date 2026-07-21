@@ -19,6 +19,10 @@ class ApplicationSettingFactory extends Factory
             'contact_email' => fake()->companyEmail(),
             'contact_phone' => fake()->phoneNumber(),
             'business_address' => fake()->address(),
+            'location_landmarks' => 'Near the town center.',
+            'facebook_url' => 'https://www.facebook.com/61579320037378',
+            'messenger_url' => 'https://m.me/61579320037378',
+            'map_url' => 'https://www.google.com/maps/search/?api=1&query=Casa+Paraiso',
             'default_payment_method' => Transaction::METHOD_CASH,
             'updated_by' => User::factory()->admin(),
         ];

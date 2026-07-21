@@ -65,6 +65,31 @@
                     </div>
 
                     <div>
+                        <x-input-label for="location_landmarks" :value="__('Location landmarks')" />
+                        <textarea id="location_landmarks" name="location_landmarks" rows="3" class="casa-input mt-2">{{ old('location_landmarks', $settings->location_landmarks) }}</textarea>
+                        <p class="mt-2 text-sm leading-6 text-casa-muted">{{ __('Use practical directions, not a second formal address.') }}</p>
+                        <x-input-error class="mt-2" :messages="$errors->get('location_landmarks')" />
+                    </div>
+
+                    <div class="grid gap-5 sm:grid-cols-3">
+                        <div>
+                            <x-input-label for="messenger_url" :value="__('Messenger link')" />
+                            <x-text-input id="messenger_url" name="messenger_url" type="url" class="mt-2" :value="old('messenger_url', $settings->messenger_url)" />
+                            <x-input-error class="mt-2" :messages="$errors->get('messenger_url')" />
+                        </div>
+                        <div>
+                            <x-input-label for="facebook_url" :value="__('Facebook page link')" />
+                            <x-text-input id="facebook_url" name="facebook_url" type="url" class="mt-2" :value="old('facebook_url', $settings->facebook_url)" />
+                            <x-input-error class="mt-2" :messages="$errors->get('facebook_url')" />
+                        </div>
+                        <div>
+                            <x-input-label for="map_url" :value="__('Google Maps link')" />
+                            <x-text-input id="map_url" name="map_url" type="url" class="mt-2" :value="old('map_url', $settings->map_url)" />
+                            <x-input-error class="mt-2" :messages="$errors->get('map_url')" />
+                        </div>
+                    </div>
+
+                    <div>
                         <x-input-label for="default_payment_method" :value="__('Default payment method')" />
                         <select id="default_payment_method" name="default_payment_method" class="casa-input mt-2" required>
                             @foreach (\App\Models\Transaction::PAYMENT_METHODS as $method)

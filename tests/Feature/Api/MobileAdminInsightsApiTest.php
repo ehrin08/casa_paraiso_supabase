@@ -59,15 +59,22 @@ class MobileAdminInsightsApiTest extends TestCase
         $token = $this->token($admin);
 
         $this->withToken($token)->getJson('/api/v1/admin/settings')->assertOk()
-            ->assertJsonPath('data.operating.timezone', 'Asia/Manila');
+            ->assertJsonPath('data.operating.timezone', 'Asia/Manila')
+            ->assertJsonPath('data.settings.business_address', 'Barangay Cuta East, Santa Teresita, Batangas, Philippines')
+            ->assertJsonPath('data.settings.messenger_url', 'https://m.me/61579320037378');
         $this->withToken($token)->patchJson('/api/v1/admin/settings', [
             'business_name' => 'Casa Paraiso Mobile',
             'contact_email' => 'hello@example.test',
             'contact_phone' => '09171234567',
             'business_address' => 'San Pablo City',
+            'location_landmarks' => 'Near the plaza.',
+            'facebook_url' => 'https://www.facebook.com/61579320037378',
+            'messenger_url' => 'https://m.me/61579320037378',
+            'map_url' => 'https://www.google.com/maps/search/?api=1&query=Casa+Paraiso',
             'default_payment_method' => Transaction::METHOD_CASH,
-        ])->assertOk();
-        $this->assertDatabaseHas('application_settings', ['business_name' => 'Casa Paraiso Mobile']);
+        ])->assertOk()
+            ->assertJsonPath('message', 'Business settings updated.');
+        $this->assertDatabaseHas('application_settings', ['business_name' => 'Casa Paraiso Mobile', 'location_landmarks' => 'Near the plaza.']);
     }
 
     private function token(User $user): string

@@ -195,6 +195,23 @@
                             <h2 class="mt-5 font-editorial text-5xl font-semibold leading-none text-casa-cacao">{{ $businessHours['summary'] ?? __('Open every day') }}</h2>
                             <p class="mt-5 text-2xl font-extrabold text-casa-palm">{{ $businessHours['window'] ?? __('1:00 PM to 12:00 MN') }}</p>
                             <div class="casa-divider my-7"></div>
+                            <p class="casa-eyebrow">Find us</p>
+                            <p class="mt-3 text-base font-extrabold leading-7 text-casa-text">{{ $applicationSettings->business_address }}</p>
+                            @if (filled($applicationSettings->location_landmarks))
+                                <p class="mt-2 text-sm leading-6 text-casa-muted">{{ $applicationSettings->location_landmarks }}</p>
+                            @endif
+                            <div class="mt-5 grid gap-2">
+                                @if (filled($applicationSettings->messenger_url))
+                                    <a href="{{ $applicationSettings->messenger_url }}" target="_blank" rel="noopener noreferrer" class="casa-button-primary w-full">{{ __('Message us') }}</a>
+                                @endif
+                                @if (filled($applicationSettings->facebook_url))
+                                    <a href="{{ $applicationSettings->facebook_url }}" target="_blank" rel="noopener noreferrer" class="casa-button-secondary w-full">{{ __('Visit Facebook') }}</a>
+                                @endif
+                                @if (filled($applicationSettings->map_url))
+                                    <a href="{{ $applicationSettings->map_url }}" target="_blank" rel="noopener noreferrer" class="casa-button-secondary w-full">{{ __('Get directions') }}</a>
+                                @endif
+                            </div>
+                            <div class="casa-divider my-7"></div>
                             <p class="font-editorial text-3xl font-semibold italic leading-tight text-casa-cacao">{{ config('casa.marketing_line') }}</p>
                             @guest
                                 <a href="{{ route('login') }}" class="casa-button-primary mt-7 w-full">{{ __('Request your visit') }}</a>
@@ -231,7 +248,10 @@
                     <img src="{{ asset('images/casa_paraiso_logo.jpg') }}" alt="Casa Paraiso Body and Wellness Spa" class="h-14 w-52 object-cover object-center">
                     <div class="text-sm leading-6 text-casa-muted md:text-right">
                         <p class="font-bold text-casa-text">Open every day · 1:00 PM to 12:00 MN</p>
-                        <p>Reservations are confirmed by the Casa Paraiso team.</p>
+                        <p>{{ $applicationSettings->business_address }}</p>
+                        @if (filled($applicationSettings->map_url))
+                            <a href="{{ $applicationSettings->map_url }}" target="_blank" rel="noopener noreferrer" class="font-bold text-casa-palm underline underline-offset-4">{{ __('Get directions') }}</a>
+                        @endif
                     </div>
                 </div>
             </footer>

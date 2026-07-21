@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\V1\MobileCustomerProfileController;
 use App\Http\Controllers\Api\V1\MobileDemoApkController;
 use App\Http\Controllers\Api\V1\MobileGoogleAuthController;
 use App\Http\Controllers\Api\V1\MobileMetaController;
+use App\Http\Controllers\Api\V1\MobilePublicBusinessProfileController;
 use App\Http\Controllers\Api\V1\MobileReceptionAppointmentController;
 use App\Http\Controllers\Api\V1\MobileReceptionCustomerController;
 use App\Http\Controllers\Api\V1\MobileReceptionDashboardController;
@@ -42,6 +43,10 @@ Route::prefix('v1')->middleware(MeasureApiRequest::class)->group(function (): vo
     Route::get('/meta', MobileMetaController::class)
         ->middleware('throttle:mobile-meta')
         ->name('api.v1.meta');
+
+    Route::get('/public/business-profile', MobilePublicBusinessProfileController::class)
+        ->middleware('throttle:60,1')
+        ->name('api.v1.public.business-profile');
 
     Route::post('/auth/login', [MobileAuthController::class, 'login'])
         ->middleware('throttle:mobile-login')
