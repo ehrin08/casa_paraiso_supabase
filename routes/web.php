@@ -50,7 +50,9 @@ Route::get('/', function () {
             ->where('is_active', true)
             ->orderBy('name')
             ->get(),
-        'addons' => Addon::query()->where('is_active', true)->orderBy('name')->get(),
+        'addons' => Addon::tableAvailable()
+            ? Addon::query()->where('is_active', true)->orderBy('name')->get()
+            : collect(),
     ]);
 });
 
