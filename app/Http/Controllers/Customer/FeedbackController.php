@@ -7,7 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\FeedbackRequest;
 use App\Models\Appointment;
 use App\Models\Feedback;
-use App\Services\SentimentClassifier;
+use App\Services\HybridSentimentClassifier;
 use App\Services\FeedbackSentimentUpdater;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -89,7 +89,7 @@ class FeedbackController extends Controller
         ]);
     }
 
-    public function store(FeedbackRequest $request, SentimentClassifier $classifier, FeedbackSentimentUpdater $updater): RedirectResponse
+    public function store(FeedbackRequest $request, HybridSentimentClassifier $classifier, FeedbackSentimentUpdater $updater): RedirectResponse
     {
         $data = $request->validated();
         $customerProfile = $request->user()->customerProfile;

@@ -44,7 +44,7 @@ class MobileStaffFeedbackController
 
     private function relations(): array
     {
-        return ['customerProfile.user', 'service', 'appointment', 'topics'];
+        return ['customerProfile.user', 'service', 'appointment', 'topics', 'sentimentRuns', 'annotations'];
     }
 
     private function pagination($paginator): array

@@ -46,5 +46,15 @@ class SentimentUpgradeTest extends TestCase
             'topic_key' => 'therapist_service',
             'polarity' => 'positive',
         ]);
+        $this->assertDatabaseHas('feedback_sentiment_runs', [
+            'feedback_id' => $appointment->feedback->id,
+            'source' => 'rules',
+            'is_authoritative' => true,
+        ]);
+        $this->assertDatabaseHas('feedback_sentiment_runs', [
+            'feedback_id' => $appointment->feedback->id,
+            'source' => 'model',
+            'is_authoritative' => false,
+        ]);
     }
 }

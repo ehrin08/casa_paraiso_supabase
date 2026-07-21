@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Resources\Api\V1\MobileFeedbackResource;
 use App\Models\Appointment;
 use App\Models\Feedback;
-use App\Services\SentimentClassifier;
+use App\Services\HybridSentimentClassifier;
 use App\Services\FeedbackSentimentUpdater;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -68,7 +68,7 @@ class MobileCustomerFeedbackController
         ])->header('Cache-Control', 'no-store');
     }
 
-    public function store(Request $request, SentimentClassifier $classifier, FeedbackSentimentUpdater $updater): JsonResponse
+    public function store(Request $request, HybridSentimentClassifier $classifier, FeedbackSentimentUpdater $updater): JsonResponse
     {
         $customer = $request->user()->customerProfile;
 

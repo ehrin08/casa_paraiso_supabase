@@ -35,6 +35,8 @@ class Feedback extends Model
         'sentiment_score',
         'sentiment_analysis_version',
         'sentiment_evidence',
+        'sentiment_source',
+        'sentiment_confidence',
         'submitted_at',
     ];
 
@@ -44,6 +46,7 @@ class Feedback extends Model
             'rating' => 'integer',
             'sentiment_score' => 'decimal:2',
             'sentiment_evidence' => 'array',
+            'sentiment_confidence' => 'decimal:4',
             'submitted_at' => 'datetime',
         ];
     }
@@ -66,5 +69,15 @@ class Feedback extends Model
     public function topics()
     {
         return $this->hasMany(FeedbackTopic::class);
+    }
+
+    public function sentimentRuns()
+    {
+        return $this->hasMany(FeedbackSentimentRun::class);
+    }
+
+    public function annotations()
+    {
+        return $this->hasMany(FeedbackAnnotation::class);
     }
 }

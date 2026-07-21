@@ -580,6 +580,8 @@ Indexes:
 
 The additive `feedback_topics` table stores normalized topic findings (`topic_key`, `polarity`, and matched terms) with a unique feedback/topic/polarity constraint and topic/polarity index. Current code-controlled topics are care quality, therapist service, cleanliness/ambience, scheduling/wait time, value/pricing, and pain/comfort.
 
+The hybrid extension adds private append-only `feedback_sentiment_runs` for rules/model/reviewed candidates and `feedback_annotations` for admin adjudication. `feedback.sentiment_source` and `feedback.sentiment_confidence` identify the authoritative projection; customer-facing resources do not expose model diagnostics.
+
 Rules:
 
 - Validate rating from 1 to 5.

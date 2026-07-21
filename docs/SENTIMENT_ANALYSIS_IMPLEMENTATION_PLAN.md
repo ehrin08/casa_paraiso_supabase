@@ -158,6 +158,10 @@ Only after the evaluation gate passes:
 
 The apply command must only be run after reviewing the dry-run transitions and creating the appropriate database export or backup.
 
+## Current implementation status
+
+The local-model foundation is implemented: native PHP JSON-artifact inference, `rules`/`shadow`/`model` mode configuration, append-only sentiment runs, private annotations, admin review endpoints, and a development-only scikit-learn export script. The default remains `shadow`; promotion requires the evaluation gate above and can be rolled back with `SENTIMENT_CLASSIFIER_MODE=rules`.
+
 ## Recommended first implementation slice
 
 Start with Phases 1–3: dataset governance, a small manually verified Casa Paraiso set, and a baseline evaluation of the existing classifier. This produces evidence about whether a trained model is worth the additional deployment and maintenance cost before changing production classification behavior.

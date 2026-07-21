@@ -56,6 +56,23 @@ class MobileAdminInsightsApiTest extends TestCase
         $this->assertDatabaseHas('promotion_suggestions', ['id' => $reward->id, 'status' => PromotionSuggestion::STATUS_DISMISSED]);
     }
 
+    public function test_admin_can_adjudicate_feedback_and_audit_the_review(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $feedback = Feedback::factory()->create(['sentiment_label' => Feedback::SENTIMENT_POSITIVE]);
+
+        $this->withToken($this->token($admin))->patchJson("/api/v1/admin/feedback/{$feedback->id}/review", [
+            'label' => Feedback::SENTIMENT_NEGATIVE,
+            'language' => 'Taglish',
+            'topics' => ['care_quality'],
+            'notes' => 'Reviewed mixed-polarity comment.',
+        ])->assertOk()->assertJsonPath('message', 'Feedback review saved.');
+
+        $this->assertDatabaseHas('feedback', ['id' => $feedback->id, 'sentiment_source' => 'reviewed', 'sentiment_label' => Feedback::SENTIMENT_NEGATIVE]);
+        $this->assertDatabaseHas('feedback_annotations', ['feedback_id' => $feedback->id, 'reviewer_id' => $admin->id, 'status' => 'adjudicated']);
+        $this->assertDatabaseHas('feedback_sentiment_runs', ['feedback_id' => $feedback->id, 'source' => 'reviewed', 'is_authoritative' => true]);
+    }
+
     public function test_admin_can_read_and_update_business_settings(): void
     {
         $admin = User::factory()->admin()->create();

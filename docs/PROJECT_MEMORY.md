@@ -213,6 +213,7 @@ Key identity entry points are `routes/auth.php`, the shared profile routes in `r
 - Sentiment labels are `positive`, `neutral`, and `negative`.
 - Classifier version `2.0.0` stores deterministic evidence plus normalized topic findings for care quality, therapist service, cleanliness/ambience, scheduling/wait time, value/pricing, and pain/comfort. `casa:reclassify-sentiment` previews and idempotently applies derived metadata/topic synchronization.
 - Admin sees full feedback insights, including default 30-day rates, period totals, service/topic breakdowns, and a filterable negative-attention queue in Blade and mobile API/workspace surfaces; staff access is limited to related operational feedback with topic chips and no aggregate insights.
+- A post-MVP hybrid extension is available in shadow mode: native PHP can load a versioned local JSON model, record model/rules candidates in append-only sentiment runs, and keep rules authoritative until the 0.80 confidence and evaluation gate is accepted. Admin review annotations can become the authoritative audited result; customers never receive model diagnostics.
 
 ### Automatic Customer Rewards
 

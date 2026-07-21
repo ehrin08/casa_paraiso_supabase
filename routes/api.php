@@ -169,6 +169,7 @@ Route::prefix('v1')->middleware(MeasureApiRequest::class)->group(function (): vo
 
             Route::get('/feedback', [MobileAdminFeedbackController::class, 'index'])->name('api.v1.admin.feedback.index');
             Route::get('/feedback/{feedback}', [MobileAdminFeedbackController::class, 'show'])->name('api.v1.admin.feedback.show');
+            Route::patch('/feedback/{feedback}/review', [MobileAdminFeedbackController::class, 'review'])->name('api.v1.admin.feedback.review');
             Route::get('/commissions', [MobileAdminCommissionController::class, 'index'])->name('api.v1.admin.commissions.index');
             Route::get('/commissions/{commission}', [MobileAdminCommissionController::class, 'show'])->name('api.v1.admin.commissions.show');
             Route::patch('/commissions/{commission}/pay', [MobileAdminCommissionController::class, 'pay'])->name('api.v1.admin.commissions.pay');

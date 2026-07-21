@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Illuminate\Http\RedirectResponse;
 
 class FeedbackController extends Controller
 {
@@ -40,7 +42,7 @@ class FeedbackController extends Controller
         $direction = $this->indexDirection($request, 'desc');
 
         $feedback = Feedback::query()
-            ->with(['customerProfile.user', 'service', 'appointment', 'topics'])
+            ->with(['customerProfile.user', 'service', 'appointment', 'topics', 'sentimentRuns', 'annotations'])
             ->leftJoin('customer_profiles as feedback_customer_profiles', 'feedback_customer_profiles.id', '=', 'feedback.customer_profile_id')
             ->leftJoin('users as feedback_customers', 'feedback_customers.id', '=', 'feedback_customer_profiles.user_id')
             ->leftJoin('services as feedback_services', 'feedback_services.id', '=', 'feedback.service_id')
@@ -98,10 +100,36 @@ class FeedbackController extends Controller
 
     public function show(Feedback $feedback): View
     {
-        $feedback->load(['customerProfile.user', 'service', 'appointment', 'topics']);
+        $feedback->load(['customerProfile.user', 'service', 'appointment', 'topics', 'sentimentRuns', 'annotations']);
 
         return view('admin.feedback.show', [
             'feedback' => $feedback,
         ]);
+    }
+
+    public function review(Request $request, Feedback $feedback): RedirectResponse
+    {
+        $data = $request->validate([
+            'label' => ['required', Rule::in(Feedback::SENTIMENT_LABELS)],
+            'language' => ['required', Rule::in(['English', 'Tagalog', 'Taglish', 'mixed'])],
+            'topics' => ['nullable', 'array', 'max:6'],
+            'topics.*' => ['string', Rule::in(array_keys(config('sentiment.topics', [])))],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+        $this->applyReview($feedback, $request->user()->id, $data);
+
+        return redirect()->route('admin.feedback.show', $feedback)->with('status', 'feedback-reviewed');
+    }
+
+    private function applyReview(Feedback $feedback, int $reviewerId, array $data): void
+    {
+        DB::transaction(function () use ($feedback, $reviewerId, $data): void {
+            $topics = collect($data['topics'] ?? [])->map(fn (string $key): array => ['key' => $key, 'polarity' => $data['label'] === Feedback::SENTIMENT_NEGATIVE ? 'negative' : 'positive', 'matched_terms' => ['reviewed']])->all();
+            $feedback->annotations()->create(['reviewer_id' => $reviewerId, 'label' => $data['label'], 'language' => $data['language'], 'topics' => $data['topics'] ?? [], 'status' => 'adjudicated', 'notes' => $data['notes'] ?? null, 'adjudicated_at' => now()]);
+            $feedback->forceFill(['sentiment_label' => $data['label'], 'sentiment_score' => match ($data['label']) { Feedback::SENTIMENT_POSITIVE => 1.0, Feedback::SENTIMENT_NEGATIVE => -1.0, default => 0.0 }, 'sentiment_source' => 'reviewed', 'sentiment_confidence' => 1.0, 'sentiment_evidence' => array_merge($feedback->sentiment_evidence ?? [], ['reviewed' => true])])->save();
+            $feedback->topics()->delete();
+            $feedback->topics()->createMany($topics);
+            $feedback->sentimentRuns()->create(['source' => 'reviewed', 'classifier_version' => 'human-review-v1', 'label' => $data['label'], 'score' => $feedback->sentiment_score, 'confidence' => 1.0, 'evidence' => ['language' => $data['language'], 'notes' => $data['notes'] ?? null], 'is_authoritative' => true]);
+        });
     }
 }

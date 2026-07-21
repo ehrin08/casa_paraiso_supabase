@@ -2,6 +2,10 @@
 
 return [
     'version' => '2.0.0',
+    'mode' => env('SENTIMENT_CLASSIFIER_MODE', 'shadow'),
+    'model_path' => env('SENTIMENT_MODEL_PATH', base_path('resources/sentiment/model-v1.json')),
+    'model_threshold' => (float) env('SENTIMENT_MODEL_THRESHOLD', 0.80),
+    'model_version' => 'model-v1.0.0',
     'terms' => [
         'positive' => [
             'en' => [

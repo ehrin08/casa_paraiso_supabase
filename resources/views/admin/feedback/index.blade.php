@@ -92,6 +92,7 @@
                                     <td class="px-4 py-4 text-casa-muted">{{ $item->rating }}/5</td>
                                     <td class="px-4 py-4">
                                         <x-status-badge>{{ ucfirst($item->sentiment_label) }}</x-status-badge>
+                                        <span class="mt-1 block text-[0.65rem] text-casa-muted">{{ ucfirst($item->sentiment_source ?? 'rules') }}{{ $item->sentiment_confidence !== null ? ' · '.number_format((float) $item->sentiment_confidence * 100, 0).'% confidence' : '' }}</span>
                                         @if ($item->topics->isNotEmpty())
                                             <div class="mt-2 flex flex-wrap gap-1 text-[0.65rem] text-casa-muted">
                                                 @foreach ($item->topics as $topic)

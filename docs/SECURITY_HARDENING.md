@@ -25,6 +25,7 @@ Database work follows the account-preservation and environment rules in `AGENTS.
 - [x] Separate `casa_migrator` schema ownership from the DML-only `casa_runtime` Laravel role; the runtime DDL denial is acceptance-tested.
 - [x] Use the Sydney Supavisor session pooler on port 5432 with `verify-full`, the Supabase CA, and project-level SSL enforcement.
 - [x] Disable the unused Supabase Data API and keep Supabase Auth, Storage, Realtime, and privileged keys out of the APK.
+- [x] Keep hybrid sentiment model artifacts local and versioned; customer feedback is not sent to hosted AI services or exported without redaction.
 
 ## Production Environment Gate
 

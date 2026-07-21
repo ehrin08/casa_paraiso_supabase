@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Feedback;
-use App\Services\SentimentClassifier;
+use App\Services\HybridSentimentClassifier;
 use App\Services\FeedbackSentimentUpdater;
 use Illuminate\Console\Command;
 
@@ -13,7 +13,7 @@ class ReclassifySentiment extends Command
 
     protected $description = 'Preview or apply the current English, Tagalog, and Taglish sentiment rules to feedback records.';
 
-    public function handle(SentimentClassifier $classifier, FeedbackSentimentUpdater $updater): int
+    public function handle(HybridSentimentClassifier $classifier, FeedbackSentimentUpdater $updater): int
     {
         $apply = (bool) $this->option('apply');
         $analyzed = 0;

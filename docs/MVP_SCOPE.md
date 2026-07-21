@@ -90,6 +90,8 @@ Users authenticate with either a verified Google account or a verified email and
 - Admin should see feedback summaries that support management decisions.
 - External AI sentiment services are not part of the MVP.
 
+The approved post-MVP emerging-technology extension may use a locally packaged supervised model in shadow/gated mode. The deterministic rules classifier remains the fallback, and no hosted AI service or production Python runtime is required.
+
 ### Reports And Exports
 
 - Admin should have access to useful summaries for appointments, transactions, customers, promotions, and feedback.
