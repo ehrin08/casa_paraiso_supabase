@@ -19,5 +19,9 @@
         "postcss": "^8.4.31",
         "tailwindcss": "^4.3.2",
         "vite": "^7.0.7"
+    },
+    "dependencies": {
+        "html5-qrcode": "^2.3.8",
+        "qrcode": "^1.5.4"
     }
 }

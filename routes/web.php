@@ -34,6 +34,7 @@ use App\Http\Controllers\Staff\CustomerController as StaffCustomerController;
 use App\Http\Controllers\Staff\DashboardController as StaffDashboardController;
 use App\Http\Controllers\Staff\FeedbackController as StaffFeedbackController;
 use App\Http\Controllers\Staff\TransactionController as StaffTransactionController;
+use App\Http\Controllers\WebAttendanceController;
 use App\Models\ApplicationSetting;
 use App\Models\Service;
 use Illuminate\Http\Request;
@@ -68,6 +69,9 @@ Route::middleware(['auth', 'active', 'verified', 'role:super_admin,admin'])
     ->name('admin.')
     ->group(function () {
         Route::get('/dashboard', AdminDashboardController::class)->name('dashboard');
+        Route::get('/attendance', [WebAttendanceController::class, 'index'])->name('attendance.index');
+        Route::get('/attendance/station', [WebAttendanceController::class, 'station'])->name('attendance.station');
+        Route::patch('/attendance/{attendance}/correct', [WebAttendanceController::class, 'correct'])->name('attendance.correct');
         Route::get('/appointments/calendar', AdminAppointmentCalendarController::class)->name('appointments.calendar');
         Route::get('/staff-schedule-roster', [AdminWeeklyRosterController::class, 'show'])->name('staff-roster.show');
         Route::post('/staff-schedule-roster/copy', [AdminWeeklyRosterController::class, 'copy'])->name('staff-roster.copy');
@@ -119,6 +123,8 @@ Route::middleware(['auth', 'active', 'verified', 'role:staff'])
     ->name('staff.')
     ->group(function () {
         Route::get('/dashboard', StaffDashboardController::class)->name('dashboard');
+        Route::get('/attendance', [WebAttendanceController::class, 'staff'])->name('attendance.show');
+        Route::post('/attendance/scan', [WebAttendanceController::class, 'submitScan'])->name('attendance.scan');
         Route::get('/appointments/calendar', StaffAppointmentCalendarController::class)->name('appointments.calendar');
         Route::resource('appointments', StaffAppointmentController::class)->only(['index', 'show']);
         Route::resource('customers', StaffCustomerController::class)->only(['index', 'show']);
@@ -132,6 +138,7 @@ Route::middleware(['auth', 'active', 'verified', 'role:receptionist'])
     ->name('reception.')
     ->group(function () {
         Route::get('/dashboard', ReceptionDashboardController::class)->name('dashboard');
+        Route::get('/attendance', [WebAttendanceController::class, 'station'])->name('attendance.station');
         Route::get('/appointments/calendar', ReceptionAppointmentCalendarController::class)->name('appointments.calendar');
         Route::get('/appointments/available-therapists', [ReceptionAppointmentController::class, 'availableTherapists'])->name('appointments.available-therapists');
         Route::post('/appointments/{appointment}/complete', [ReceptionAppointmentController::class, 'complete'])->name('appointments.complete');
@@ -139,6 +146,14 @@ Route::middleware(['auth', 'active', 'verified', 'role:receptionist'])
         Route::resource('appointments', ReceptionAppointmentController::class)->except('destroy');
         Route::resource('customers', ReceptionCustomerController::class)->only(['index', 'show', 'update']);
         Route::resource('transactions', ReceptionTransactionController::class)->except('destroy');
+    });
+
+Route::middleware(['auth', 'active', 'verified', 'role:super_admin,admin,receptionist'])
+    ->prefix('attendance-station')->name('attendance-station.')->group(function (): void {
+        Route::get('/qr', [WebAttendanceController::class, 'qr'])->name('qr');
+        Route::get('/pending', [WebAttendanceController::class, 'pending'])->name('pending');
+        Route::post('/scans/{scan}/confirm', [WebAttendanceController::class, 'confirm'])->name('confirm');
+        Route::post('/scans/{scan}/reject', [WebAttendanceController::class, 'reject'])->name('reject');
     });
 
 Route::middleware(['auth', 'active', 'verified', 'role:customer'])

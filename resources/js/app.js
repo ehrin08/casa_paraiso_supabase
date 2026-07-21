@@ -2,6 +2,8 @@ import './bootstrap';
 
 import { session as turboSession } from '@hotwired/turbo';
 import Alpine from 'alpinejs';
+import QRCode from 'qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
 
 turboSession.drive = false;
 
@@ -1002,6 +1004,37 @@ window.customerCalendarBooking = (config) => ({
             this.loading = false;
         });
     },
+});
+
+window.attendanceScanner = ({ scanUrl }) => ({
+    working: false, error: '', notice: '', scanner: null,
+    async start() {
+        this.error = ''; this.notice = '';
+        if (!navigator.mediaDevices?.getUserMedia) { this.error = 'This browser cannot access a camera. Use the Android app or ask an administrator for a correction.'; return; }
+        this.working = true;
+        try {
+            this.scanner?.clear().catch(() => {});
+            this.scanner = new Html5Qrcode('attendance-camera');
+            await this.scanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 220, height: 220 } }, async (payload) => {
+                await this.scanner.stop();
+                const response = await window.axios.post(scanUrl, { payload });
+                this.notice = response.data.message; this.working = false;
+            }, () => {});
+        } catch (error) {
+            this.working = false;
+            this.error = error?.response?.data?.message || 'Camera access was not available. Check permission and try again.';
+        }
+    },
+});
+
+window.attendanceStation = (config) => ({
+    qr: config.initialQr, scans: [], error: '', countdown: '', timer: null,
+    async init() { await this.render(); await this.load(); this.timer = window.setInterval(() => this.tick(), 1000); window.setInterval(() => this.load(), 5000); },
+    async render() { const canvas = this.$root.querySelector('#attendance-qr'); if (canvas && this.qr?.payload) await QRCode.toCanvas(canvas, this.qr.payload, { width: 260, margin: 1 }); },
+    tick() { const seconds = Math.max(0, Math.ceil((new Date(this.qr.expires_at).getTime() - Date.now()) / 1000)); this.countdown = `0:${String(seconds).padStart(2, '0')}`; if (seconds === 0) this.refreshQr(); },
+    async refreshQr() { try { this.qr = (await window.axios.get(config.qrUrl)).data.qr; await this.render(); } catch { this.error = 'The live QR could not refresh.'; } },
+    async load() { try { this.scans = (await window.axios.get(config.pendingUrl)).data.scans || []; } catch { this.error = 'The pending attendance queue could not refresh.'; } },
+    async resolve(id, action = null) { try { const url = action ? config.confirmUrl.replace('__SCAN__', id) : config.rejectUrl.replace('__SCAN__', id); await window.axios.post(url, action ? { action } : {}); await this.load(); } catch (error) { this.error = error?.response?.data?.message || 'This scan could not be resolved.'; } },
 });
 
 Alpine.start();
