@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" role="img" aria-labelledby="title desc">
+  <title id="title">Casa Paraiso System Architecture</title>
+  <desc id="desc">Presentation architecture diagram showing users accessing a bundled Capacitor Android app, which communicates only with a Laravel API. Laravel owns authentication and business rules and accesses a private Supabase PostgreSQL schema. Google OAuth and Render HTTPS are external services. Blade, MariaDB, Docker and Cloudflare Quick Tunnel are retained fallback and demonstration paths.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0,0 L12,6 L0,12 z" fill="#4F6A4E"/></marker>
+    <marker id="arrowGold" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0,0 L12,6 L0,12 z" fill="#B38745"/></marker>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="7" stdDeviation="8" flood-color="#232620" flood-opacity=".13"/></filter>
+    <style>
+      .ink{font-family:Arial,Helvetica,sans-serif;fill:#232620}.title{font-size:42px;font-weight:700;letter-spacing:.5px}.subtitle{font-size:20px;fill:#67675F}.layer{font-size:18px;font-weight:700;letter-spacing:2px;fill:#67675F}.h2{font-size:28px;font-weight:700}.body{font-size:20px}.small{font-size:17px}.tiny{font-size:15px}.node{filter:url(#shadow);stroke:#DCD2C2;stroke-width:2}.mobile{fill:#E9F0E7;stroke:#4F6A4E}.backend{fill:#F4E7D6;stroke:#7A3E14}.data{fill:#E7EEE9;stroke:#334736}.external{fill:#F3EBDD;stroke:#B38745}.fallback{fill:#F0ECE5;stroke:#A89F91}.boundary{fill:none;stroke:#B38745;stroke-width:3;stroke-dasharray:12 10}.line{fill:none;stroke:#4F6A4E;stroke-width:5;marker-end:url(#arrow)}.goldline{fill:none;stroke:#B38745;stroke-width:4;marker-end:url(#arrowGold)}.dashline{fill:none;stroke:#8A8275;stroke-width:3;stroke-dasharray:10 8;marker-end:url(#arrowGold)}.pill{fill:#334736}.pilltext{font-size:16px;font-weight:700;fill:#FFFCF7;letter-spacing:1px}
+    </style>
+  </defs>
+  <rect width="1920" height="1080" fill="#F5F0E7"/>
+  <text x="96" y="76" class="ink title">Casa Paraiso · System Architecture</text>
+  <text x="96" y="112" class="ink subtitle">Android-first spa management platform · approved production target</text>
+
+  <text x="110" y="180" class="layer">USERS</text>
+  <text x="505" y="180" class="layer">BUNDLED ANDROID APK</text>
+  <text x="1015" y="180" class="layer">APPLICATION &amp; API AUTHORITY</text>
+  <text x="1530" y="180" class="layer">MANAGED DATA</text>
+
+  <rect x="72" y="208" width="290" height="480" rx="24" class="node external"/>
+  <text x="108" y="262" class="ink h2">Spa team &amp; guests</text>
+  <text x="108" y="306" class="ink body">Customer</text><text x="108" y="334" class="ink small">booking · feedback · profile</text>
+  <text x="108" y="388" class="ink body">Receptionist</text><text x="108" y="416" class="ink small">front desk · payments</text>
+  <text x="108" y="470" class="ink body">Therapist</text><text x="108" y="498" class="ink small">schedule · outcomes · earnings</text>
+  <text x="108" y="552" class="ink body">Administrator</text><text x="108" y="580" class="ink small">operations · insights · control</text>
+  <text x="108" y="636" class="ink small" fill="#67675F">Role-based workspace access</text>
+
+  <rect x="450" y="208" width="445" height="480" rx="24" class="node mobile"/>
+  <rect x="482" y="238" width="170" height="32" rx="16" class="pill"/><text x="567" y="261" text-anchor="middle" class="pilltext">OFFLINE UI BUNDLE</text>
+  <text x="482" y="328" class="ink h2">Capacitor 8 Android</text>
+  <text x="482" y="368" class="ink body">Vue 3 · TypeScript · Vite</text>
+  <text x="482" y="410" class="ink body">Role-specific workspaces</text>
+  <text x="482" y="450" class="ink small">Customer · Reception · Therapist</text>
+  <text x="482" y="478" class="ink small">Admin · Super-admin</text>
+  <line x1="482" y1="512" x2="858" y2="512" stroke="#B8C8B6" stroke-width="2"/>
+  <text x="482" y="552" class="ink body">Secure device services</text>
+  <text x="482" y="584" class="ink small">Android Keystore token storage</text>
+  <text x="482" y="612" class="ink small">Browser + deep link · Preferences</text>
+  <text x="482" y="640" class="ink small">Online-only retry states</text>
+
+  <rect x="965" y="208" width="480" height="480" rx="24" class="node backend"/>
+  <rect x="998" y="238" width="188" height="32" rx="16" class="pill"/><text x="1092" y="261" text-anchor="middle" class="pilltext">TRUST BOUNDARY</text>
+  <text x="998" y="328" class="ink h2">Laravel 12 backend</text>
+  <text x="998" y="368" class="ink body">Sanctum API · /api/v1</text>
+  <text x="998" y="410" class="ink body">Authentication &amp; authorization</text>
+  <text x="998" y="450" class="ink body">Business rules &amp; transactions</text>
+  <text x="998" y="490" class="ink body">RFM promotions &amp; sentiment</text>
+  <text x="998" y="530" class="ink body">Validation · policies · reporting</text>
+  <line x1="998" y1="560" x2="1412" y2="560" stroke="#D9B98C" stroke-width="2"/>
+  <text x="998" y="602" class="ink small">Blade web UI retained as fallback</text>
+  <text x="998" y="634" class="ink small">Runtime role: casa_runtime (DML only)</text>
+
+  <rect x="1515" y="208" width="335" height="480" rx="24" class="node data"/>
+  <rect x="1548" y="238" width="155" height="32" rx="16" class="pill"/><text x="1625" y="261" text-anchor="middle" class="pilltext">PRIVATE DATA</text>
+  <text x="1548" y="328" class="ink h2">Supabase</text>
+  <text x="1548" y="368" class="ink body">PostgreSQL 17</text>
+  <text x="1548" y="414" class="ink body">Private `casa` schema</text>
+  <text x="1548" y="464" class="ink small">casa_migrator: schema changes</text>
+  <text x="1548" y="494" class="ink small">casa_runtime: table DML</text>
+  <text x="1548" y="544" class="ink small">Supavisor · TLS verify-full</text>
+  <text x="1548" y="594" class="ink small">No APK direct access</text>
+  <text x="1548" y="624" class="ink small">Supabase Auth/Data API unused</text>
+
+  <path d="M362 448 C395 448 410 448 450 448" class="line"/>
+  <text x="378" y="426" class="ink tiny">touch + role selection</text>
+  <path d="M895 430 C925 430 940 430 965 430" class="line"/>
+  <text x="902" y="350" class="ink tiny">HTTPS JSON + Sanctum</text>
+  <path d="M1445 430 C1470 430 1490 430 1515 430" class="line"/>
+  <text x="1448" y="350" class="ink tiny">private SQL over TLS</text>
+
+  <rect x="72" y="758" width="1778" height="232" rx="24" class="boundary"/>
+  <text x="106" y="800" class="layer">EXTERNAL IDENTITY · DEPLOYMENT · FALLBACK PATHS</text>
+  <rect x="108" y="838" width="300" height="110" rx="18" class="node external"/>
+  <text x="140" y="882" class="ink h2">Google OAuth</text><text x="140" y="916" class="ink small">PKCE · single-use exchange code</text>
+  <rect x="500" y="838" width="300" height="110" rx="18" class="node external"/>
+  <text x="532" y="882" class="ink h2">Render HTTPS</text><text x="532" y="916" class="ink small">stable production API origin</text>
+  <rect x="892" y="838" width="300" height="110" rx="18" class="node fallback"/>
+  <text x="924" y="882" class="ink h2">Docker + Quick Tunnel</text><text x="924" y="916" class="ink small">local demo backend only</text>
+  <rect x="1284" y="838" width="240" height="110" rx="18" class="node fallback"/>
+  <text x="1316" y="882" class="ink h2">MariaDB</text><text x="1316" y="916" class="ink small">read-only rollback source</text>
+  <rect x="1580" y="838" width="220" height="110" rx="18" class="node fallback"/>
+  <text x="1612" y="882" class="ink h2">Blade web</text><text x="1612" y="916" class="ink small">inherited fallback UI</text>
+
+  <path d="M258 838 C540 736 650 690 650 688" class="goldline"/>
+  <text x="295" y="790" class="ink tiny">system browser → casaparaiso://oauth/callback</text>
+  <path d="M650 838 C650 770 1120 740 1120 688" class="goldline"/>
+  <text x="722" y="780" class="ink tiny">compiled backend origin</text>
+  <path d="M1042 838 C1042 770 1180 735 1180 688" class="dashline"/>
+  <path d="M1404 838 C1404 770 1300 735 1300 688" class="dashline"/>
+  <path d="M1690 838 C1690 770 1350 735 1350 688" class="dashline"/>
+  <text x="1494" y="784" class="ink tiny">fallback / rollback only</text>
+
+  <text x="96" y="1038" class="ink small">Security invariant: the APK talks to Laravel only; Laravel is the sole authority that talks to Supabase.</text>
+</svg>
