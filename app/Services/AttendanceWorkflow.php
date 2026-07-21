@@ -1,0 +1,48 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\{StaffAttendance, StaffAttendanceEvent, StaffAttendanceScanRequest, StaffProfile, User};
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
+
+class AttendanceWorkflow
+{
+    public function requestScan(StaffProfile $staff, string $payload): StaffAttendanceScanRequest
+    {
+        abort_unless($staff->staff_type === StaffProfile::TYPE_THERAPIST && $staff->user?->is_active, 422, 'Only active therapists can use attendance scanning.');
+        $bucket = app(AttendanceQr::class)->validate($payload); $now = CarbonImmutable::now('Asia/Manila');
+        return DB::transaction(function () use ($staff, $bucket, $now): StaffAttendanceScanRequest {
+            $pending = StaffAttendanceScanRequest::query()->where('staff_profile_id', $staff->id)->where('status', StaffAttendanceScanRequest::STATUS_PENDING)->lockForUpdate()->first();
+            abort_if($pending, 422, 'Your previous attendance scan is awaiting confirmation.');
+            return StaffAttendanceScanRequest::create(['staff_profile_id' => $staff->id, 'attendance_date' => $now->toDateString(), 'qr_bucket' => $bucket, 'scanned_at' => $now, 'expires_at' => $now->startOfMinute()->addMinute(), 'status' => StaffAttendanceScanRequest::STATUS_PENDING]);
+        });
+    }
+
+    public function confirm(StaffAttendanceScanRequest $scan, string $action, User $actor): StaffAttendance
+    {
+        return DB::transaction(function () use ($scan, $action, $actor): StaffAttendance {
+            $scan = StaffAttendanceScanRequest::query()->lockForUpdate()->findOrFail($scan->id);
+            abort_unless($scan->status === StaffAttendanceScanRequest::STATUS_PENDING, 422, 'This attendance scan was already resolved.');
+            $attendance = StaffAttendance::query()->firstOrCreate(['staff_profile_id' => $scan->staff_profile_id, 'attendance_date' => $scan->attendance_date]);
+            $attendance->refresh();
+            if ($action === 'time_in') { abort_if($attendance->time_in_at, 422, 'This therapist is already clocked in.'); $attendance->update(['time_in_at' => $scan->scanned_at]); }
+            else { abort_if(! $attendance->time_in_at, 422, 'Time out requires a same-day time in.'); abort_if($attendance->time_out_at, 422, 'This therapist is already clocked out.'); $attendance->update(['time_out_at' => $scan->scanned_at]); }
+            $scan->update(['status' => StaffAttendanceScanRequest::STATUS_CONFIRMED, 'resolution' => $action, 'reviewed_by' => $actor->id, 'reviewed_at' => now()]);
+            StaffAttendanceEvent::create(['staff_attendance_id' => $attendance->id, 'staff_profile_id' => $attendance->staff_profile_id, 'scan_request_id' => $scan->id, 'event_type' => $action, 'source' => 'verified_qr', 'occurred_at' => $scan->scanned_at, 'recorded_by' => $actor->id]);
+            return $attendance->fresh(['staffProfile.user', 'events.recorder']);
+        });
+    }
+
+    public function correct(StaffAttendance $attendance, string $action, CarbonImmutable $occurredAt, string $reason, User $actor): StaffAttendance
+    {
+        return DB::transaction(function () use ($attendance, $action, $occurredAt, $reason, $actor): StaffAttendance {
+            $attendance = StaffAttendance::query()->lockForUpdate()->findOrFail($attendance->id);
+            abort_unless($occurredAt->timezone('Asia/Manila')->toDateString() === $attendance->attendance_date->toDateString(), 422, 'Correction time must be within the attendance date.');
+            if ($action === 'time_in') { abort_if($attendance->time_out_at && $occurredAt->greaterThan($attendance->time_out_at), 422, 'Time in cannot be after time out.'); $attendance->update(['time_in_at' => $occurredAt]); }
+            else { abort_if(! $attendance->time_in_at, 422, 'Time out requires a time in.'); abort_if($occurredAt->lessThan($attendance->time_in_at), 422, 'Time out cannot be before time in.'); $attendance->update(['time_out_at' => $occurredAt]); }
+            StaffAttendanceEvent::create(['staff_attendance_id' => $attendance->id, 'staff_profile_id' => $attendance->staff_profile_id, 'event_type' => $action, 'source' => 'admin_correction', 'occurred_at' => $occurredAt, 'recorded_by' => $actor->id, 'reason' => $reason]);
+            return $attendance->fresh(['staffProfile.user', 'events.recorder']);
+        });
+    }
+}

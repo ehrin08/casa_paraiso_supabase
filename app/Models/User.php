@@ -131,4 +131,9 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(TherapistCommission::class, 'paid_by');
     }
+
+    public function recordedAttendanceEvents()
+    {
+        return $this->hasMany(StaffAttendanceEvent::class, 'recorded_by');
+    }
 }

@@ -83,4 +83,9 @@ class StaffProfile extends Model
     {
         return $this->hasMany(TherapistCommission::class);
     }
+
+    public function attendances()
+    {
+        return $this->hasMany(StaffAttendance::class);
+    }
 }

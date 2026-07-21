@@ -2,6 +2,7 @@
 import { onMounted } from 'vue'
 import { formatAppointmentDate, formatPeso } from '../lib/appointments'
 import { useReceptionStore } from '../stores/reception'
+import AttendanceStation from '../components/AttendanceStation.vue'
 
 const emit = defineEmits<{ navigate: [tab: 'appointments' | 'customers' | 'payments'] }>()
 const store = useReceptionStore()
@@ -14,6 +15,7 @@ onMounted(() => store.loadDashboard())
     <p v-if="store.error" class="alert" role="alert">{{ store.error }}</p>
     <div v-if="store.loading" class="loading" role="status">Loading front desk…</div>
     <template v-else-if="store.dashboard">
+      <AttendanceStation />
       <div class="metric-grid">
         <button @click="emit('navigate','appointments')"><strong>{{ store.dashboard.summary.today }}</strong><span>Visits today</span></button>
         <button @click="emit('navigate','appointments')"><strong>{{ store.dashboard.summary.upcoming }}</strong><span>Upcoming</span></button>

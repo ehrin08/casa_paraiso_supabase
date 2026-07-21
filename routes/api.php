@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\MobileAdminServiceController;
 use App\Http\Controllers\Api\V1\MobileAdminSettingController;
 use App\Http\Controllers\Api\V1\MobileAdminStaffController;
 use App\Http\Controllers\Api\V1\MobileAdminUserController;
+use App\Http\Controllers\Api\V1\MobileAttendanceController;
 use App\Http\Controllers\Api\V1\MobileAuthController;
 use App\Http\Controllers\Api\V1\MobileCustomerAppointmentController;
 use App\Http\Controllers\Api\V1\MobileCustomerBookingController;
@@ -102,6 +103,8 @@ Route::prefix('v1')->middleware(MeasureApiRequest::class)->group(function (): vo
         });
 
         Route::middleware('role:staff')->prefix('staff')->group(function (): void {
+            Route::get('/attendance', [MobileAttendanceController::class, 'mine'])->name('api.v1.staff.attendance.mine');
+            Route::post('/attendance/scans', [MobileAttendanceController::class, 'scan'])->name('api.v1.staff.attendance.scan');
             Route::get('/dashboard', MobileStaffDashboardController::class)->name('api.v1.staff.dashboard');
             Route::get('/appointments', [MobileStaffAppointmentController::class, 'index'])->name('api.v1.staff.appointments.index');
             Route::get('/appointments/{appointment}', [MobileStaffAppointmentController::class, 'show'])->name('api.v1.staff.appointments.show');
@@ -118,6 +121,8 @@ Route::prefix('v1')->middleware(MeasureApiRequest::class)->group(function (): vo
         });
 
         Route::middleware('role:super_admin,admin')->prefix('admin')->group(function (): void {
+            Route::get('/attendance', [MobileAttendanceController::class, 'index'])->name('api.v1.admin.attendance.index');
+            Route::patch('/attendance/{attendance}/correct', [MobileAttendanceController::class, 'correct'])->name('api.v1.admin.attendance.correct');
             Route::get('/dashboard', MobileAdminDashboardController::class)->name('api.v1.admin.dashboard');
 
             Route::get('/appointments', [MobileReceptionAppointmentController::class, 'index'])->name('api.v1.admin.appointments.index');
@@ -175,6 +180,13 @@ Route::prefix('v1')->middleware(MeasureApiRequest::class)->group(function (): vo
             Route::get('/reports/export', [MobileAdminReportController::class, 'export'])->name('api.v1.admin.reports.export');
             Route::get('/settings', [MobileAdminSettingController::class, 'show'])->name('api.v1.admin.settings.show');
             Route::patch('/settings', [MobileAdminSettingController::class, 'update'])->name('api.v1.admin.settings.update');
+        });
+
+        Route::middleware('role:super_admin,admin,receptionist')->prefix('attendance-station')->group(function (): void {
+            Route::get('/qr', [MobileAttendanceController::class, 'qr'])->name('api.v1.attendance.qr');
+            Route::get('/pending', [MobileAttendanceController::class, 'pending'])->name('api.v1.attendance.pending');
+            Route::post('/scans/{scan}/confirm', [MobileAttendanceController::class, 'confirm'])->name('api.v1.attendance.confirm');
+            Route::post('/scans/{scan}/reject', [MobileAttendanceController::class, 'reject'])->name('api.v1.attendance.reject');
         });
 
         Route::middleware('super_admin')->prefix('admin')->group(function (): void {
