@@ -14,11 +14,11 @@
     </head>
     <body class="font-sans antialiased">
         @php
-            $servicePackages = config('casa.service_packages', []);
+            $packageDetailsBySlug = collect(config('casa.service_packages', []))->keyBy('slug');
             $addons = config('casa.addons', []);
             $businessHours = config('casa.business_hours', []);
             $homeUrl = auth()->check() ? route(auth()->user()->homeRouteName()) : null;
-            $startingRate = (float) collect($servicePackages)->min('price');
+            $startingRate = $services->min('price');
         @endphp
 
         <x-page-loading />
@@ -87,7 +87,7 @@
                                 </div>
                                 <div class="col-span-2 bg-casa-paper p-4 sm:col-span-1">
                                     <dt class="text-[0.65rem] font-extrabold uppercase tracking-[0.13em] text-casa-muted">From</dt>
-                                    <dd class="mt-1.5 text-sm font-bold text-casa-text">PHP {{ number_format($startingRate, 2) }}</dd>
+                                    <dd class="mt-1.5 text-sm font-bold text-casa-text">{{ $startingRate === null ? __('Contact us') : 'PHP '.number_format((float) $startingRate, 2) }}</dd>
                                 </div>
                             </dl>
                         </div>
@@ -116,26 +116,43 @@
                         <div class="grid gap-6 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)] lg:items-end">
                             <div>
                                 <p class="casa-eyebrow">Signature treatments</p>
-                                <h2 class="mt-5 font-editorial text-5xl font-semibold leading-none text-casa-ink sm:text-6xl">Four ways to return to yourself.</h2>
+                                <h2 class="mt-5 font-editorial text-5xl font-semibold leading-none text-casa-ink sm:text-6xl">Treatments made for your return to yourself.</h2>
                             </div>
                             <p class="max-w-2xl text-sm leading-7 text-casa-muted lg:justify-self-end sm:text-base">Each ritual keeps its time, inclusions, and price clear before you book an appointment. Add-ons can be coordinated with our team before your visit.</p>
                         </div>
 
                         <div class="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                            @foreach ($servicePackages as $package)
+                            @foreach ($services as $service)
+                                @php
+                                    $durationParts = [];
+                                    $hours = intdiv($service->duration_minutes, 60);
+                                    $minutes = $service->duration_minutes % 60;
+
+                                    if ($hours > 0) {
+                                        $durationParts[] = $hours.' '.($hours === 1 ? __('Hour') : __('Hours'));
+                                    }
+
+                                    if ($minutes > 0) {
+                                        $durationParts[] = $minutes.' '.($minutes === 1 ? __('Minute') : __('Minutes'));
+                                    }
+
+                                    $inclusions = $packageDetailsBySlug->get($service->slug)['includes'] ?? [];
+                                @endphp
                                 <article class="casa-editorial-card group flex min-h-full flex-col p-6 transition duration-200 hover:-translate-y-1 hover:border-casa-brass/55 sm:p-7">
                                     <div class="flex items-start justify-between gap-4">
                                         <span class="font-editorial text-4xl font-semibold text-casa-brass/70">{{ str_pad((string) ($loop->index + 1), 2, '0', STR_PAD_LEFT) }}</span>
-                                        <span class="rounded-full border border-casa-border bg-casa-sand/55 px-3 py-1.5 text-[0.65rem] font-extrabold uppercase tracking-[0.1em] text-casa-muted">{{ $package['duration_label'] }}</span>
+                                        <span class="rounded-full border border-casa-border bg-casa-sand/55 px-3 py-1.5 text-[0.65rem] font-extrabold uppercase tracking-[0.1em] text-casa-muted">{{ implode(' ', $durationParts) }}</span>
                                     </div>
-                                    <h3 class="mt-8 font-editorial text-3xl font-semibold text-casa-cacao">{{ $package['name'] }}</h3>
-                                    <p class="mt-2 text-xl font-extrabold text-casa-palm">PHP {{ number_format((float) $package['price'], 2) }}</p>
-                                    <p class="mt-5 text-sm leading-7 text-casa-muted">{{ $package['description'] }}</p>
-                                    <div class="mt-6 flex flex-wrap gap-2">
-                                        @foreach ($package['includes'] as $include)
-                                            <span class="rounded-full border border-casa-border bg-casa-paper px-3 py-1.5 text-[0.68rem] font-bold text-casa-muted">{{ $include }}</span>
-                                        @endforeach
-                                    </div>
+                                    <h3 class="mt-8 font-editorial text-3xl font-semibold text-casa-cacao">{{ $service->name }}</h3>
+                                    <p class="mt-2 text-xl font-extrabold text-casa-palm">PHP {{ number_format((float) $service->price, 2) }}</p>
+                                    <p class="mt-5 text-sm leading-7 text-casa-muted">{{ $service->description }}</p>
+                                    @if ($inclusions !== [])
+                                        <div class="mt-6 flex flex-wrap gap-2">
+                                            @foreach ($inclusions as $inclusion)
+                                                <span class="rounded-full border border-casa-border bg-casa-paper px-3 py-1.5 text-[0.68rem] font-bold text-casa-muted">{{ $inclusion }}</span>
+                                            @endforeach
+                                        </div>
+                                    @endif
                                 </article>
                             @endforeach
                         </div>

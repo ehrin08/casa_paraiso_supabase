@@ -35,11 +35,18 @@ use App\Http\Controllers\Staff\DashboardController as StaffDashboardController;
 use App\Http\Controllers\Staff\FeedbackController as StaffFeedbackController;
 use App\Http\Controllers\Staff\TransactionController as StaffTransactionController;
 use App\Models\ApplicationSetting;
+use App\Models\Service;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome', ['applicationSettings' => ApplicationSetting::current()]);
+    return view('welcome', [
+        'applicationSettings' => ApplicationSetting::current(),
+        'services' => Service::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(),
+    ]);
 });
 
 Route::get('/dashboard', function (Request $request) {
