@@ -1023,6 +1023,8 @@ window.attendanceScanner = ({ scanUrl }) => ({
         if (!navigator.mediaDevices?.getUserMedia) { this.error = 'This browser cannot access a camera. Use the Android app or ask an administrator for a correction.'; return; }
         this.working = true;
         try {
+            const permissionStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+            permissionStream.getTracks().forEach((track) => track.stop());
             this.scanner?.clear().catch(() => {});
             this.scanner = new Html5Qrcode('attendance-camera');
             await this.scanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 220, height: 220 } }, async (payload) => {

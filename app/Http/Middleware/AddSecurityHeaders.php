@@ -12,11 +12,15 @@ class AddSecurityHeaders
     {
         $response = $next($request);
 
+        $permissionsPolicy = $request->routeIs('staff.attendance.show')
+            ? 'camera=(self), microphone=(), geolocation=()'
+            : 'camera=(), microphone=(), geolocation=()';
+
         foreach ([
             'X-Content-Type-Options' => 'nosniff',
             'X-Frame-Options' => 'SAMEORIGIN',
             'Referrer-Policy' => 'strict-origin-when-cross-origin',
-            'Permissions-Policy' => 'camera=(), microphone=(), geolocation=()',
+            'Permissions-Policy' => $permissionsPolicy,
             'Cross-Origin-Opener-Policy' => 'same-origin-allow-popups',
         ] as $name => $value) {
             if (! $response->headers->has($name)) {
