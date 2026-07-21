@@ -43,7 +43,7 @@
                             @auth
                                 <a href="{{ $homeUrl }}" class="casa-button-primary">{{ __('Open workspace') }}</a>
                             @else
-                                <a href="{{ route('login') }}" class="casa-button-primary">{{ __('Reserve') }}</a>
+                                <a href="{{ route('login') }}" class="casa-button-primary">{{ __('Login') }}</a>
                             @endauth
                         </nav>
                     @endif

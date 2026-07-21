@@ -62,13 +62,13 @@ class ExampleTest extends TestCase
         $this->assertStringContainsString('scroll-margin-block-start: var(--casa-landing-header-height);', $css);
     }
 
-    public function test_guest_entry_points_use_reserve_without_signup_promotion(): void
+    public function test_guest_entry_points_use_login_without_signup_promotion(): void
     {
         $this->get('/')
             ->assertOk()
             ->assertSee('aria-label="Account navigation"', false)
-            ->assertSee('href="'.route('login').'" class="casa-button-primary">Reserve</a>', false)
-            ->assertDontSee('>Log in</a>', false);
+            ->assertSee('href="'.route('login').'" class="casa-button-primary">Login</a>', false)
+            ->assertDontSee('>Reserve</a>', false);
 
         $login = $this->get('/login');
 

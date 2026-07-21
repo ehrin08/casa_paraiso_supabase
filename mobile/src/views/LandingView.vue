@@ -50,7 +50,7 @@ async function bookAppointment(serviceId?: number): Promise<void> {
         <button type="button" @click="scrollToSection('how-it-works')">How it works</button>
         <button type="button" @click="scrollToSection('visit')">Visit hours</button>
       </nav>
-      <button class="landing__reserve" type="button" @click="bookAppointment()">Book</button>
+      <button class="landing__reserve" type="button" @click="bookAppointment()">Login</button>
     </header>
 
     <section class="landing__hero" aria-labelledby="landing-title">
