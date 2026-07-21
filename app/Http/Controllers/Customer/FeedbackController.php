@@ -8,6 +8,7 @@ use App\Http\Requests\FeedbackRequest;
 use App\Models\Appointment;
 use App\Models\Feedback;
 use App\Services\SentimentClassifier;
+use App\Services\FeedbackSentimentUpdater;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -88,7 +89,7 @@ class FeedbackController extends Controller
         ]);
     }
 
-    public function store(FeedbackRequest $request, SentimentClassifier $classifier): RedirectResponse
+    public function store(FeedbackRequest $request, SentimentClassifier $classifier, FeedbackSentimentUpdater $updater): RedirectResponse
     {
         $data = $request->validated();
         $customerProfile = $request->user()->customerProfile;
@@ -118,6 +119,8 @@ class FeedbackController extends Controller
         if (! $feedback->wasRecentlyCreated) {
             throw ValidationException::withMessages(['appointment_id' => __('Feedback was already submitted for this appointment.')]);
         }
+
+        $updater->persist($feedback, $sentiment);
 
         return redirect()
             ->route('customer.feedback.index')

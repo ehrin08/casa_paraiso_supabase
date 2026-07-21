@@ -43,7 +43,16 @@
                             <td class="px-4 py-4 font-semibold text-casa-text">{{ $item->customerProfile?->user?->name }}</td>
                             <td class="px-4 py-4 text-casa-muted">{{ $item->service?->name }}</td>
                             <td class="px-4 py-4 text-casa-muted">{{ $item->rating }}/5</td>
-                            <td class="px-4 py-4"><x-status-badge>{{ ucfirst($item->sentiment_label) }}</x-status-badge></td>
+                                    <td class="px-4 py-4">
+                                        <x-status-badge>{{ ucfirst($item->sentiment_label) }}</x-status-badge>
+                                        @if ($item->topics->isNotEmpty())
+                                            <div class="mt-2 flex flex-wrap gap-1 text-[0.65rem] text-casa-muted">
+                                                @foreach ($item->topics as $topic)
+                                                    <span class="rounded-full bg-casa-bg px-2 py-1">{{ str($topic->topic_key)->replace('_', ' ')->title() }}</span>
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                    </td>
                             <td class="px-4 py-4"><a href="{{ route('staff.feedback.show', $item) }}" class="font-bold text-casa-primary hover:text-casa-primary-dark">{{ __('Open') }}</a></td>
                         </tr>
                     @endforeach

@@ -28,7 +28,7 @@ class FeedbackController extends Controller
         $direction = $this->indexDirection($request, 'desc');
 
         $feedback = Feedback::query()
-            ->with(['customerProfile.user', 'service', 'appointment'])
+            ->with(['customerProfile.user', 'service', 'appointment', 'topics'])
             ->leftJoin('customer_profiles as feedback_customer_profiles', 'feedback_customer_profiles.id', '=', 'feedback.customer_profile_id')
             ->leftJoin('users as feedback_customers', 'feedback_customers.id', '=', 'feedback_customer_profiles.user_id')
             ->leftJoin('services as feedback_services', 'feedback_services.id', '=', 'feedback.service_id')
@@ -56,7 +56,7 @@ class FeedbackController extends Controller
 
     public function show(Request $request, Feedback $feedback): View
     {
-        $feedback->load(['customerProfile.user', 'service', 'appointment']);
+        $feedback->load(['customerProfile.user', 'service', 'appointment', 'topics']);
 
         abort_unless((int) $feedback->appointment?->staff_profile_id === (int) ($request->user()->staffProfile?->id ?? 0), 403);
 

@@ -17,6 +17,9 @@ class MobileFeedbackResource extends JsonResource
             'rating' => $this->rating,
             'comment' => $this->comment,
             'sentiment' => $this->sentiment_label,
+            'analysis_version' => $this->sentiment_analysis_version,
+            'evidence' => $this->sentiment_evidence,
+            'topics' => $this->topics->map(fn ($topic): array => ['key' => $topic->topic_key, 'polarity' => $topic->polarity, 'matched_terms' => $topic->matched_terms ?? []])->values(),
             'submitted_at' => $this->timestamp($this->submitted_at),
             'service' => $this->service ? [
                 'id' => $this->service->id,

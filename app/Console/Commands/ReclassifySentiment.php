@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Feedback;
 use App\Services\SentimentClassifier;
+use App\Services\FeedbackSentimentUpdater;
 use Illuminate\Console\Command;
 
 class ReclassifySentiment extends Command
@@ -12,7 +13,7 @@ class ReclassifySentiment extends Command
 
     protected $description = 'Preview or apply the current English, Tagalog, and Taglish sentiment rules to feedback records.';
 
-    public function handle(SentimentClassifier $classifier): int
+    public function handle(SentimentClassifier $classifier, FeedbackSentimentUpdater $updater): int
     {
         $apply = (bool) $this->option('apply');
         $analyzed = 0;
@@ -21,14 +22,21 @@ class ReclassifySentiment extends Command
 
         Feedback::query()
             ->orderBy('id')
-            ->chunkById(100, function ($feedback) use ($classifier, $apply, &$analyzed, &$changed, &$transitions): void {
+            ->with('topics')
+            ->chunkById(100, function ($feedback) use ($classifier, $updater, $apply, &$analyzed, &$changed, &$transitions): void {
                 foreach ($feedback as $record) {
                     $analyzed++;
                     $sentiment = $classifier->classify($record->rating, $record->comment);
 
+                    $currentTopics = $record->topics->map(fn ($topic): string => "{$topic->topic_key}:{$topic->polarity}:".implode(',', $topic->matched_terms ?? []))->sort()->values()->all();
+                    $newTopics = collect($sentiment['topics'])->map(fn (array $topic): string => "{$topic['key']}:{$topic['polarity']}:".implode(',', $topic['matched_terms']))->sort()->values()->all();
+
                     if ($record->sentiment_label === $sentiment['label']
                         && $record->sentiment_score !== null
-                        && (float) $record->sentiment_score === $sentiment['score']) {
+                        && (float) $record->sentiment_score === $sentiment['score']
+                        && $record->sentiment_analysis_version === $sentiment['version']
+                        && $record->sentiment_evidence === $sentiment['evidence']
+                        && $currentTopics === $newTopics) {
                         continue;
                     }
 
@@ -37,10 +45,7 @@ class ReclassifySentiment extends Command
                     $transitions[$transition] = ($transitions[$transition] ?? 0) + 1;
 
                     if ($apply) {
-                        $record->forceFill([
-                            'sentiment_label' => $sentiment['label'],
-                            'sentiment_score' => $sentiment['score'],
-                        ])->save();
+                        $updater->persist($record, $sentiment);
                     }
                 }
             });

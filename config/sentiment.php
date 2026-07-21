@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'version' => '2.0.0',
     'terms' => [
         'positive' => [
             'en' => [
@@ -50,5 +51,38 @@ return [
     'contrast_words' => [
         'and', 'but', 'however', 'although', 'though', 'yet',
         'at', 'pero', 'ngunit', 'subalit', 'bagaman', 'kahit', 'kaso',
+    ],
+
+    'topics' => [
+        'care_quality' => [
+            'label' => 'Care quality',
+            'positive' => ['good', 'great', 'excellent', 'amazing', 'wonderful', 'professional', 'satisfied', 'helpful', 'mahusay', 'magaling', 'maayos', 'nasiyahan', 'serbisyo'],
+            'negative' => ['bad', 'poor', 'awful', 'terrible', 'disappointed', 'unsatisfied', 'unprofessional', 'pangit', 'masama', 'dismayado', 'reklamo', 'reklamo'],
+        ],
+        'therapist_service' => [
+            'label' => 'Therapist service',
+            'positive' => ['friendly', 'kind', 'accommodating', 'alaga', 'mabait', 'bait', 'care'],
+            'negative' => ['rude', 'unprofessional', 'bastos', 'hassle'],
+        ],
+        'cleanliness_ambience' => [
+            'label' => 'Cleanliness and ambience',
+            'positive' => ['clean', 'calming', 'comfortable', 'malinis', 'komportable', 'relaks', 'nakakarelax'],
+            'negative' => ['dirty', 'smelly', 'uncomfortable', 'marumi', 'mabaho', 'baho'],
+        ],
+        'scheduling_wait' => [
+            'label' => 'Scheduling and wait time',
+            'positive' => ['prompt', 'fast', 'mabilis', 'on time', 'on-time'],
+            'negative' => ['late', 'slow', 'matagal', 'tagal', 'mabagal', 'hintay', 'waiting', 'wait'],
+        ],
+        'value_pricing' => [
+            'label' => 'Value and pricing',
+            'positive' => ['worth it', 'sulit', 'sulit na sulit', 'recommend', 'irerekomenda'],
+            'negative' => ['overpriced', 'waste', 'not worth it', 'waste of money', 'sayang', 'kulang'],
+        ],
+        'pain_comfort' => [
+            'label' => 'Pain and comfort',
+            'positive' => ['relaxing', 'relaxed', 'relax', 'masarap', 'walang sakit'],
+            'negative' => ['painful', 'hurt', 'pain', 'masakit', 'sakit', 'bitin'],
+        ],
     ],
 ];

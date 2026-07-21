@@ -33,6 +33,8 @@ class Feedback extends Model
         'comment',
         'sentiment_label',
         'sentiment_score',
+        'sentiment_analysis_version',
+        'sentiment_evidence',
         'submitted_at',
     ];
 
@@ -41,6 +43,7 @@ class Feedback extends Model
         return [
             'rating' => 'integer',
             'sentiment_score' => 'decimal:2',
+            'sentiment_evidence' => 'array',
             'submitted_at' => 'datetime',
         ];
     }
@@ -58,5 +61,10 @@ class Feedback extends Model
     public function service()
     {
         return $this->belongsTo(Service::class);
+    }
+
+    public function topics()
+    {
+        return $this->hasMany(FeedbackTopic::class);
     }
 }

@@ -8,8 +8,10 @@ class SentimentClassifier
 {
     private const BOUNDARY = '__boundary__';
 
+    public const ANALYSIS_VERSION = '2.0.0';
+
     /**
-     * @return array{label: string, score: float}
+     * @return array{label: string, score: float, version: string, evidence: array<string, mixed>, topics: array<int, array{key: string, polarity: string, matched_terms: array<int, string}>}
      */
     public function classify(int $rating, ?string $comment): array
     {
@@ -66,7 +68,48 @@ class SentimentClassifier
             default => 0.0,
         };
 
-        return ['label' => $label, 'score' => $score];
+        $topicFindings = $this->topicFindings($tokens, $config, $negations, $contrastWords);
+
+        return [
+            'label' => $label,
+            'score' => $score,
+            'version' => (string) ($config['version'] ?? self::ANALYSIS_VERSION),
+            'evidence' => [
+                'rating_label' => $ratingLabel,
+                'lexical_score' => $lexicalScore,
+                'matched_words' => $matchedWords,
+            ],
+            'topics' => $topicFindings,
+        ];
+    }
+
+    private function topicFindings(array $tokens, array $config, array $negations, array $contrastWords): array
+    {
+        $findings = [];
+
+        foreach (($config['topics'] ?? []) as $key => $topic) {
+            $matches = ['positive' => [], 'negative' => []];
+            foreach (['positive' => 1, 'negative' => -1] as $polarity => $value) {
+                foreach ((array) ($topic[$polarity] ?? []) as $term) {
+                    $termTokens = explode(' ', mb_strtolower((string) $term));
+                    for ($index = 0; $index <= count($tokens) - count($termTokens); $index++) {
+                        if (array_slice($tokens, $index, count($termTokens)) !== $termTokens) {
+                            continue;
+                        }
+                        $effective = $this->isNegated($tokens, $index, $negations, $contrastWords) ? -$value : $value;
+                        $matches[$effective > 0 ? 'positive' : 'negative'][] = (string) $term;
+                    }
+                }
+            }
+            foreach ($matches as $polarity => $terms) {
+                $terms = array_values(array_unique($terms));
+                if ($terms !== []) {
+                    $findings[] = ['key' => (string) $key, 'polarity' => $polarity, 'matched_terms' => $terms];
+                }
+            }
+        }
+
+        return $findings;
     }
 
     /**

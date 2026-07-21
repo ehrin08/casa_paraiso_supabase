@@ -39,6 +39,12 @@ class SentimentUpgradeTest extends TestCase
             'appointment_id' => $appointment->id,
             'sentiment_label' => Feedback::SENTIMENT_POSITIVE,
             'sentiment_score' => '1.00',
+            'sentiment_analysis_version' => '2.0.0',
+        ]);
+        $this->assertDatabaseHas('feedback_topics', [
+            'feedback_id' => $appointment->feedback->id,
+            'topic_key' => 'therapist_service',
+            'polarity' => 'positive',
         ]);
     }
 }

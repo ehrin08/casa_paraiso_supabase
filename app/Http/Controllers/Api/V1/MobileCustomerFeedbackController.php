@@ -6,6 +6,7 @@ use App\Http\Resources\Api\V1\MobileFeedbackResource;
 use App\Models\Appointment;
 use App\Models\Feedback;
 use App\Services\SentimentClassifier;
+use App\Services\FeedbackSentimentUpdater;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -67,7 +68,7 @@ class MobileCustomerFeedbackController
         ])->header('Cache-Control', 'no-store');
     }
 
-    public function store(Request $request, SentimentClassifier $classifier): JsonResponse
+    public function store(Request $request, SentimentClassifier $classifier, FeedbackSentimentUpdater $updater): JsonResponse
     {
         $customer = $request->user()->customerProfile;
 
@@ -81,7 +82,7 @@ class MobileCustomerFeedbackController
             'comment' => ['nullable', 'string', 'max:5000'],
         ]);
 
-        $feedback = DB::transaction(function () use ($data, $customer, $classifier): Feedback {
+        $feedback = DB::transaction(function () use ($data, $customer, $classifier, $updater): Feedback {
             $appointment = Appointment::query()
                 ->where('customer_profile_id', $customer->id)
                 ->whereKey($data['appointment_id'])
@@ -103,7 +104,7 @@ class MobileCustomerFeedbackController
             $comment = filled($data['comment'] ?? null) ? trim((string) $data['comment']) : null;
             $sentiment = $classifier->classify((int) $data['rating'], $comment);
 
-            return Feedback::query()->create([
+            $feedback = Feedback::query()->create([
                 'appointment_id' => $appointment->id,
                 'customer_profile_id' => $customer->id,
                 'service_id' => $appointment->service_id,
@@ -113,6 +114,8 @@ class MobileCustomerFeedbackController
                 'sentiment_score' => $sentiment['score'],
                 'submitted_at' => now(),
             ]);
+
+            return $updater->persist($feedback, $sentiment);
         });
 
         $feedback->load(['service', 'appointment']);

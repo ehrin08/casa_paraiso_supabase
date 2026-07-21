@@ -11,8 +11,15 @@
     <x-app-card>
         <x-stat-strip :items="[
             ['label' => __('Rating'), 'value' => $feedback->rating.'/5', 'meta' => __('Customer score'), 'tone' => 'gold'],
-            ['label' => __('Sentiment'), 'value' => ucfirst($feedback->sentiment_label), 'meta' => __('English, Tagalog, and Taglish rules'), 'tone' => 'green'],
+            ['label' => __('Sentiment'), 'value' => ucfirst($feedback->sentiment_label), 'meta' => __('Analysis ').($feedback->sentiment_analysis_version ?? '1.0'), 'tone' => 'green'],
         ]" />
         <p class="mt-6 whitespace-pre-line rounded-2xl bg-casa-bg p-5 text-sm leading-7 text-casa-muted">{{ $feedback->comment ?: __('No written comment.') }}</p>
+        @if ($feedback->topics->isNotEmpty())
+            <div class="mt-5 flex flex-wrap gap-2">
+                @foreach ($feedback->topics as $topic)
+                    <span class="rounded-full bg-casa-bg px-3 py-2 text-xs font-bold text-casa-muted">{{ str($topic->topic_key)->replace('_', ' ')->title() }}</span>
+                @endforeach
+            </div>
+        @endif
     </x-app-card>
 </x-app-layout>

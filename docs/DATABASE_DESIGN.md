@@ -564,6 +564,8 @@ Key columns:
 - `comment` nullable
 - `sentiment_label`
 - `sentiment_score` nullable decimal(5,2)
+- `sentiment_analysis_version` nullable classifier version
+- `sentiment_evidence` nullable JSON explanation (rating label, lexical score, matched-word count)
 - `submitted_at`
 - `created_at`, `updated_at`
 
@@ -576,10 +578,13 @@ Indexes:
 - Index on `sentiment_label`
 - Index on `submitted_at`
 
+The additive `feedback_topics` table stores normalized topic findings (`topic_key`, `polarity`, and matched terms) with a unique feedback/topic/polarity constraint and topic/polarity index. Current code-controlled topics are care quality, therapist service, cleanliness/ambience, scheduling/wait time, value/pricing, and pain/comfort.
+
 Rules:
 
 - Validate rating from 1 to 5.
 - Default sentiment logic maps high ratings to positive, middle ratings to neutral, and low ratings to negative, then refines with code-controlled English, Tagalog, and Taglish keyword, phrase, and nearby-negation rules.
+- Classifier version `2.0.0` also stores deterministic evidence and topic findings; `casa:reclassify-sentiment` remains dry-run-first and synchronizes derived metadata and topic rows when `--apply` is explicitly used.
 - Allow only one feedback record per appointment in the MVP.
 
 Relationships:

@@ -40,4 +40,15 @@ class SentimentClassifierTest extends TestCase
             }, $result['score'], $comment ?? 'No comment');
         }
     }
+
+    public function test_it_returns_versioned_explainable_topic_findings(): void
+    {
+        $result = app(SentimentClassifier::class)->classify(5, 'The room was not clean, the therapist was kind, but the wait was late.');
+
+        $this->assertSame(SentimentClassifier::ANALYSIS_VERSION, $result['version']);
+        $this->assertSame('negative', $result['label']);
+        $this->assertSame('negative', collect($result['topics'])->firstWhere('key', 'cleanliness_ambience')['polarity']);
+        $this->assertSame('positive', collect($result['topics'])->firstWhere('key', 'therapist_service')['polarity']);
+        $this->assertSame(3, $result['evidence']['matched_words']);
+    }
 }

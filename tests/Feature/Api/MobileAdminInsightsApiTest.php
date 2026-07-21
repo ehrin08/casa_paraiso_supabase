@@ -28,7 +28,10 @@ class MobileAdminInsightsApiTest extends TestCase
         $reward = PromotionSuggestion::factory()->create(['status' => PromotionSuggestion::STATUS_SUGGESTED, 'expires_at' => now()->addDays(30)]);
 
         $this->withToken($token)->getJson('/api/v1/admin/feedback')->assertOk()
-            ->assertJsonPath('data.0.id', $feedback->id)->assertJsonPath('summary.positive', 1);
+            ->assertJsonPath('data.0.id', $feedback->id)
+            ->assertJsonPath('summary.positive', 1)
+            ->assertJsonPath('overview.total', 1)
+            ->assertJsonPath('overview.date_from', now()->subDays(29)->toDateString());
         $this->withToken($token)->getJson('/api/v1/admin/commissions')->assertOk()
             ->assertJsonPath('data.0.id', $commission->id)->assertJsonPath('data.0.therapist.id', $staff->id);
         $this->withToken($token)->getJson('/api/v1/admin/promotions')->assertOk()

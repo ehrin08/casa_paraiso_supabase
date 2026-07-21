@@ -210,7 +210,8 @@ Key identity entry points are `routes/auth.php`, the shared profile routes in `r
 - A customer may submit one feedback record for an eligible completed appointment.
 - Ratings 4–5 default positive, 3 neutral, and 1–2 negative. English, Tagalog, and mixed Taglish keyword/phrase polarity plus nearby negation may refine the label; negative written evidence overrides high ratings while 1–2 star ratings remain negative. No external AI service is used.
 - Sentiment labels are `positive`, `neutral`, and `negative`.
-- Admin sees full feedback insights; staff access is limited to related operational feedback.
+- Classifier version `2.0.0` stores deterministic evidence plus normalized topic findings for care quality, therapist service, cleanliness/ambience, scheduling/wait time, value/pricing, and pain/comfort. `casa:reclassify-sentiment` previews and idempotently applies derived metadata/topic synchronization.
+- Admin sees full feedback insights, including default 30-day rates, period totals, service/topic breakdowns, and a filterable negative-attention queue in Blade and mobile API/workspace surfaces; staff access is limited to related operational feedback with topic chips and no aggregate insights.
 
 ### Automatic Customer Rewards
 

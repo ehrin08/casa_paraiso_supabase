@@ -57,6 +57,9 @@ export interface MobileFeedback {
   rating: number
   comment: string | null
   sentiment: 'positive' | 'neutral' | 'negative'
+  analysis_version?: string | null
+  evidence?: Record<string, unknown> | null
+  topics?: Array<{ key: string; polarity: 'positive' | 'negative'; matched_terms: string[] }>
   submitted_at: string | null
   service: { id: number; name: string } | null
   appointment: { id: number; appointment_number: string; completed_at: string | null } | null
@@ -147,7 +150,8 @@ export interface StaffCustomerDetail extends StaffCustomerSummary {
   email: string | null; address: string | null; contact_preference: string | null; notes: string | null
   appointments: Array<{ id: number; appointment_number: string; status: string; starts_at: string | null; service: string | null; transaction: { amount: string; payment_status: string } | null; feedback: { rating: number; comment: string | null; sentiment: string } | null }>
 }
-export interface StaffFeedback { id: number; rating: number; comment: string | null; sentiment: 'positive' | 'neutral' | 'negative'; submitted_at: string | null; customer: AppointmentParty | null; service: AppointmentParty | null; appointment: { id: number; appointment_number: string } | null }
+export interface StaffFeedback { id: number; rating: number; comment: string | null; sentiment: 'positive' | 'neutral' | 'negative'; analysis_version?: string | null; evidence?: Record<string, unknown> | null; topics?: Array<{ key: string; polarity: 'positive' | 'negative'; matched_terms: string[] }>; submitted_at: string | null; customer: AppointmentParty | null; service: AppointmentParty | null; appointment: { id: number; appointment_number: string } | null }
+export interface AdminFeedbackOverview { total: number; positive_rate: number; negative_rate: number; previous_total: number; attention: number; date_from: string; date_to: string; service_breakdown: Array<{ id: number | null; name: string | null; total: number; negative: number }>; topic_breakdown: Array<{ key: string; total: number; negative: number }> }
 export interface StaffCommission { id: number; type: 'earning' | 'adjustment'; status: 'pending' | 'paid'; basis_amount: string; rate: string; amount: string; earned_at: string | null; paid_at: string | null; notes: string | null; appointment: { id: number; appointment_number: string; service: string | null } | null; transaction: { id: number; transaction_number: string } | null }
 export interface AdminDashboard {
   summary: { today: number; upcoming: number; payments_today: string; today_appointments: number; upcoming_appointments: number; today_revenue: string; new_feedback: number; available_rewards: number; customers: number; active_services: number; bookable_therapists: number }
@@ -313,7 +317,7 @@ export async function copyAdminRoster(week: string): Promise<AdminRoster> { retu
 export async function addAdminRosterShift(weekId: number, payload: Record<string, unknown>): Promise<AdminRoster> { return (await getClient().post(`/admin/staff-roster/${weekId}/shifts`, payload)).data }
 export async function deleteAdminRosterShift(weekId: number, shiftId: number): Promise<AdminRoster> { return (await getClient().delete(`/admin/staff-roster/${weekId}/shifts/${shiftId}`)).data }
 export async function publishAdminRoster(weekId: number): Promise<AdminRoster> { return (await getClient().post(`/admin/staff-roster/${weekId}/publish`)).data }
-export async function adminFeedback(params: { page?: number; sentiment?: string; q?: string } = {}) { return (await getClient().get('/admin/feedback', { params })).data as { data: StaffFeedback[]; summary: { positive: number; neutral: number; negative: number }; meta: AppointmentListResponse['meta'] } }
+export async function adminFeedback(params: { page?: number; sentiment?: string; q?: string; date_from?: string; date_to?: string; service_id?: number; topic?: string } = {}) { return (await getClient().get('/admin/feedback', { params })).data as { data: StaffFeedback[]; summary: { positive: number; neutral: number; negative: number }; overview: AdminFeedbackOverview; meta: AppointmentListResponse['meta'] } }
 export async function adminCommissions(params: { page?: number; status?: string; staff_profile_id?: number; date_from?: string; date_to?: string } = {}) { return (await getClient().get('/admin/commissions', { params })).data as { data: AdminCommission[]; summary: { pending: string; paid: string; net: string }; staff: AppointmentParty[]; meta: AppointmentListResponse['meta'] } }
 export async function payAdminCommission(id: number, payload: { paid_at: string; notes?: string }) { return (await getClient().patch(`/admin/commissions/${id}/pay`, payload)).data as { data: AdminCommission; message: string } }
 export async function adminPromotions(params: { page?: number; lifecycle?: string; q?: string } = {}) { return (await getClient().get('/admin/promotions', { params })).data as { data: AdminPromotion[]; summary: { available: number; reserved: number; used: number; expired: number; dismissed: number }; settings: { promotion_voucher_validity_days: number | null; validity_options: number[] }; presets: AdminPromotionPreset[]; addons: Array<{ code: string; name: string }>; meta: AppointmentListResponse['meta'] } }
