@@ -53,6 +53,11 @@
         <span class="transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true">→</span>
     </a>
 
+    <p class="mt-5 text-center text-sm leading-6 text-casa-muted">
+        By continuing, you agree to Casa Paraiso’s transparent data practices.
+        <a href="{{ route('privacy-policy') }}" class="font-bold text-casa-primary underline decoration-casa-gold underline-offset-4 transition hover:text-casa-primary-dark focus:outline-none focus:ring-2 focus:ring-casa-gold focus:ring-offset-2">Read the Security &amp; Privacy Policy</a>.
+    </p>
+
     <details data-login-instructions class="group mt-6 overflow-hidden rounded-2xl border border-casa-border bg-casa-paper">
         <summary class="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-bold text-casa-text transition hover:bg-casa-sand/55 [&::-webkit-details-marker]:hidden">
             <span>Sign-in instructions</span>

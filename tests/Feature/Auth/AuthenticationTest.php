@@ -24,9 +24,24 @@ class AuthenticationTest extends TestCase
         $this->get('/login')
             ->assertOk()
             ->assertSee('Continue with Google')
+            ->assertSee('By continuing, you agree to Casa Paraiso’s transparent data practices.')
+            ->assertSee('href="'.route('privacy-policy').'"', false)
+            ->assertSee('Read the Security &amp; Privacy Policy', false)
             ->assertSee('name="password"', false)
             ->assertSee('Show password')
             ->assertSee('x-bind:type=', false);
+    }
+
+    public function test_privacy_policy_is_public_and_describes_current_data_practices(): void
+    {
+        $this->get(route('privacy-policy'))
+            ->assertOk()
+            ->assertSee('Security &amp; Privacy Policy', false)
+            ->assertSee('Information we collect')
+            ->assertSee('How we use information')
+            ->assertSee('Who can access it')
+            ->assertSee('Security and your choices')
+            ->assertSee('Questions');
     }
 
     public function test_active_user_can_sign_in_with_a_password(): void

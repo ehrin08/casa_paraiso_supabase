@@ -51,6 +51,12 @@ Route::get('/', function () {
     ]);
 });
 
+Route::get('/privacy-policy', function () {
+    return view('privacy-policy', [
+        'applicationSettings' => ApplicationSetting::current(),
+    ]);
+})->name('privacy-policy');
+
 Route::get('/dashboard', function (Request $request) {
     return redirect()->route($request->user()->homeRouteName());
 })->middleware(['auth', 'active', 'verified'])->name('dashboard');
