@@ -110,7 +110,8 @@ class TherapistCommissionTest extends TestCase
             ->assertSeeInOrder(['Pending commission', 'PHP 220.00'])
             ->assertSeeInOrder(['Paid commission', 'PHP 50.00'])
             ->assertSeeInOrder(['Net commission', 'PHP 270.00'])
-            ->assertSee('View commission history');
+            ->assertSee('View commission history')
+            ->assertDontSee('My commissions');
 
         $this->actingAs($staff->user)
             ->get(route('staff.commissions.index', absolute: false))
