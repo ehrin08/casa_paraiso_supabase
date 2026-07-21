@@ -20,8 +20,9 @@ class MobileAttendanceController
         $data = $request->validate(['payload' => ['required', 'string', 'max:4096']]);
         $staff = $request->user()->staffProfile;
         abort_unless($staff, 403);
-        $scan = $workflow->requestScan($staff, $data['payload']);
-        return response()->json(['data' => $this->scanData($scan), 'message' => 'Scan submitted for on-site confirmation.'], 201)->header('Cache-Control', 'no-store');
+        $attendance = $workflow->scanAndVerify($staff, $request->user(), $data['payload']);
+        $action = $attendance->time_out_at ? 'time out' : 'time in';
+        return response()->json(['data' => $this->attendanceData($attendance), 'message' => "Attendance {$action} recorded automatically."], 201)->header('Cache-Control', 'no-store');
     }
 
     public function mine(Request $request): JsonResponse

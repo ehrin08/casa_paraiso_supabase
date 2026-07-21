@@ -22,8 +22,9 @@ class WebAttendanceController extends Controller
     public function submitScan(Request $request, AttendanceWorkflow $workflow): JsonResponse
     {
         $data = $request->validate(['payload' => ['required', 'string', 'max:4096']]); $staff = $request->user()->staffProfile; abort_unless($staff, 403);
-        $scan = $workflow->requestScan($staff, $data['payload']);
-        return response()->json(['message' => 'Scan submitted for on-site confirmation.', 'scan' => $this->scanData($scan)], 201);
+        $attendance = $workflow->scanAndVerify($staff, $request->user(), $data['payload']);
+        $action = $attendance->time_out_at ? 'time out' : 'time in';
+        return response()->json(['message' => "Attendance {$action} recorded automatically."], 201);
     }
 
     public function station(AttendanceQr $qr): View { return view('attendance.station', ['qr' => $qr->current()]); }

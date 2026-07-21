@@ -8,14 +8,48 @@ use Illuminate\Support\Facades\DB;
 
 class AttendanceWorkflow
 {
-    public function requestScan(StaffProfile $staff, string $payload): StaffAttendanceScanRequest
+    public function scanAndVerify(StaffProfile $staff, User $actor, string $payload): StaffAttendance
     {
         abort_unless($staff->staff_type === StaffProfile::TYPE_THERAPIST && $staff->user?->is_active, 422, 'Only active therapists can use attendance scanning.');
         $bucket = app(AttendanceQr::class)->validate($payload); $now = CarbonImmutable::now('Asia/Manila');
-        return DB::transaction(function () use ($staff, $bucket, $now): StaffAttendanceScanRequest {
-            $pending = StaffAttendanceScanRequest::query()->where('staff_profile_id', $staff->id)->where('status', StaffAttendanceScanRequest::STATUS_PENDING)->lockForUpdate()->first();
-            abort_if($pending, 422, 'Your previous attendance scan is awaiting confirmation.');
-            return StaffAttendanceScanRequest::create(['staff_profile_id' => $staff->id, 'attendance_date' => $now->toDateString(), 'qr_bucket' => $bucket, 'scanned_at' => $now, 'expires_at' => $now->startOfMinute()->addMinute(), 'status' => StaffAttendanceScanRequest::STATUS_PENDING]);
+        return DB::transaction(function () use ($staff, $actor, $bucket, $now): StaffAttendance {
+            $existingScan = StaffAttendanceScanRequest::query()
+                ->where('staff_profile_id', $staff->id)
+                ->where('qr_bucket', $bucket)
+                ->lockForUpdate()
+                ->first();
+            abort_if($existingScan, 422, 'This attendance QR code was already scanned. Wait for the next live code before scanning again.');
+
+            $attendance = StaffAttendance::query()->firstOrCreate([
+                'staff_profile_id' => $staff->id,
+                'attendance_date' => $now->toDateString(),
+            ]);
+            $attendance->refresh();
+            $action = ! $attendance->time_in_at ? 'time_in' : 'time_out';
+            abort_if($attendance->time_out_at, 422, 'Your attendance is already complete for today.');
+
+            $scan = StaffAttendanceScanRequest::create([
+                'staff_profile_id' => $staff->id,
+                'attendance_date' => $now->toDateString(),
+                'qr_bucket' => $bucket,
+                'scanned_at' => $now,
+                'expires_at' => $now->startOfMinute()->addMinute(),
+                'status' => StaffAttendanceScanRequest::STATUS_CONFIRMED,
+                'resolution' => $action,
+                'reviewed_at' => $now,
+            ]);
+            $attendance->update([$action === 'time_in' ? 'time_in_at' : 'time_out_at' => $now]);
+            StaffAttendanceEvent::create([
+                'staff_attendance_id' => $attendance->id,
+                'staff_profile_id' => $attendance->staff_profile_id,
+                'scan_request_id' => $scan->id,
+                'event_type' => $action,
+                'source' => 'auto_verified_qr',
+                'occurred_at' => $now,
+                'recorded_by' => $actor->id,
+            ]);
+
+            return $attendance->fresh(['staffProfile.user', 'events.recorder']);
         });
     }
 

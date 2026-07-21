@@ -24,11 +24,16 @@ class WebAttendanceTest extends TestCase
         $this->actingAs($admin)->get(route('admin.attendance.index'))->assertOk();
     }
 
-    public function test_therapist_can_submit_a_web_scan_and_station_can_read_queue(): void
+    public function test_therapist_web_scan_is_verified_immediately(): void
     {
-        $staff = StaffProfile::factory()->create(); $receptionist = User::factory()->receptionist()->create();
+        $staff = StaffProfile::factory()->create();
         $payload = app(AttendanceQr::class)->current()['payload'];
-        $this->actingAs($staff->user)->postJson(route('staff.attendance.scan'), ['payload' => $payload])->assertCreated();
-        $this->actingAs($receptionist)->getJson(route('attendance-station.pending'))->assertOk()->assertJsonCount(1, 'scans');
+        $this->actingAs($staff->user)
+            ->postJson(route('staff.attendance.scan'), ['payload' => $payload])
+            ->assertCreated()
+            ->assertJsonPath('message', 'Attendance time in recorded automatically.');
+
+        $this->assertDatabaseHas('staff_attendances', ['staff_profile_id' => $staff->id]);
+        $this->assertDatabaseHas('staff_attendance_scan_requests', ['staff_profile_id' => $staff->id, 'status' => 'confirmed', 'resolution' => 'time_in']);
     }
 }

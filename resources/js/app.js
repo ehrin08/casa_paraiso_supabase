@@ -1031,6 +1031,7 @@ window.attendanceScanner = ({ scanUrl }) => ({
                 await this.scanner.stop();
                 const response = await window.axios.post(scanUrl, { payload });
                 this.notice = response.data.message; this.working = false;
+                window.setTimeout(() => window.location.reload(), 900);
             }, () => {});
         } catch (error) {
             this.working = false;

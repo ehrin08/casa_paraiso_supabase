@@ -329,7 +329,7 @@ export async function adminReports(params: Record<string, string | number | unde
 export async function exportAdminReport(params: Record<string, string | undefined> = {}): Promise<Blob> { return (await getClient().get('/admin/reports/export', { params, responseType: 'blob' })).data }
 export async function staffDashboard(): Promise<StaffDashboard> { return (await getClient().get('/staff/dashboard')).data.data }
 export async function staffAttendance(): Promise<{ attendance: AttendanceRecord | null; pending_scan: AttendanceScan | null }> { return (await getClient().get('/staff/attendance')).data.data }
-export async function submitAttendanceScan(payload: string): Promise<{ data: AttendanceScan; message: string }> { return (await getClient().post('/staff/attendance/scans', { payload })).data }
+export async function submitAttendanceScan(payload: string): Promise<{ data: AttendanceRecord; message: string }> { return (await getClient().post('/staff/attendance/scans', { payload })).data }
 export async function attendanceQr(): Promise<{ payload: string; expires_at: string; bucket: string }> { return (await getClient().get('/attendance-station/qr')).data.data }
 export async function pendingAttendanceScans(): Promise<AttendanceScan[]> { return (await getClient().get('/attendance-station/pending')).data.data }
 export async function confirmAttendanceScan(id: number, action: 'time_in' | 'time_out'): Promise<{ data: AttendanceRecord; message: string }> { return (await getClient().post(`/attendance-station/scans/${id}/confirm`, { action })).data }
