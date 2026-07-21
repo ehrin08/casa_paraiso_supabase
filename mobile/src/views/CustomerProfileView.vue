@@ -11,7 +11,7 @@ const auth = useAuthStore()
 const router = useRouter()
 const form = reactive({ name: '', phone: '', address: '', contact_preference: '' })
 const password = reactive({ current: '', next: '', confirmation: '' })
-const { initialLoading, loadInitial } = useInitialLoad()
+const { initialLoading, loadInitial } = useInitialLoad(() => profileStore.hasLoaded())
 
 watch(() => profileStore.profile, (value) => {
   if (!value) return

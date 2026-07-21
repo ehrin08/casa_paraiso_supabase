@@ -42,6 +42,11 @@ class FeedbackController extends Controller
             ->orderByDesc('feedback.submitted_at')
             ->paginate((int) config('casa.pagination.per_page', 15))
             ->withQueryString();
+        $summary = Feedback::query()
+            ->selectRaw('SUM(CASE WHEN sentiment_label = ? THEN 1 ELSE 0 END) AS positive', [Feedback::SENTIMENT_POSITIVE])
+            ->selectRaw('SUM(CASE WHEN sentiment_label = ? THEN 1 ELSE 0 END) AS neutral', [Feedback::SENTIMENT_NEUTRAL])
+            ->selectRaw('SUM(CASE WHEN sentiment_label = ? THEN 1 ELSE 0 END) AS negative', [Feedback::SENTIMENT_NEGATIVE])
+            ->first();
 
         return view('admin.feedback.index', [
             'feedback' => $feedback,
@@ -49,11 +54,7 @@ class FeedbackController extends Controller
             'search' => $search,
             'sort' => $sort,
             'direction' => $direction,
-            'summary' => [
-                'positive' => Feedback::query()->where('sentiment_label', Feedback::SENTIMENT_POSITIVE)->count(),
-                'neutral' => Feedback::query()->where('sentiment_label', Feedback::SENTIMENT_NEUTRAL)->count(),
-                'negative' => Feedback::query()->where('sentiment_label', Feedback::SENTIMENT_NEGATIVE)->count(),
-            ],
+            'summary' => ['positive' => (int) $summary?->positive, 'neutral' => (int) $summary?->neutral, 'negative' => (int) $summary?->negative],
         ]);
     }
 

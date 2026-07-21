@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { formatAppointmentDate, formatPeso } from '../lib/appointments'
 import { paymentStatusLabel } from '../lib/reception'
 import { sentimentLabel } from '../lib/staff'
@@ -8,8 +8,9 @@ import MobileSkeleton from '../components/MobileSkeleton.vue'
 import { useInitialLoad } from '../composables/useInitialLoad'
 
 const store=useStaffStore();const section=ref<'customers'|'feedback'>('customers')
-const { initialLoading, loadInitial } = useInitialLoad()
-onMounted(()=>void loadInitial(()=>Promise.all([store.loadCustomers(),store.loadFeedback()])))
+const { initialLoading, loadInitial } = useInitialLoad(() => store.hasCustomers())
+onMounted(()=>void loadInitial(()=>store.loadCustomers()))
+watch(section, value => { if(value==='feedback') void store.loadFeedback() })
 </script>
 
 <template>

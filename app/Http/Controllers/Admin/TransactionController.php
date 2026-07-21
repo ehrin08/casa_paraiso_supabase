@@ -53,6 +53,11 @@ class TransactionController extends Controller
             ->orderByDesc('transactions.created_at')
             ->paginate((int) config('casa.pagination.per_page', 15))
             ->withQueryString();
+        $summary = Transaction::query()
+            ->selectRaw('SUM(CASE WHEN payment_status = ? THEN amount ELSE 0 END) AS paid', [Transaction::PAYMENT_PAID])
+            ->selectRaw('SUM(CASE WHEN payment_status IN (?, ?) THEN amount ELSE 0 END) AS unpaid', [Transaction::PAYMENT_UNPAID, Transaction::PAYMENT_PARTIAL])
+            ->selectRaw('COUNT(*) AS transaction_count')
+            ->first();
 
         return view('admin.transactions.index', [
             'transactions' => $transactions,
@@ -60,11 +65,7 @@ class TransactionController extends Controller
             'search' => $search,
             'sort' => $sort,
             'direction' => $direction,
-            'summary' => [
-                'paid' => Transaction::query()->where('payment_status', Transaction::PAYMENT_PAID)->sum('amount'),
-                'unpaid' => Transaction::query()->whereIn('payment_status', [Transaction::PAYMENT_UNPAID, Transaction::PAYMENT_PARTIAL])->sum('amount'),
-                'count' => Transaction::query()->count(),
-            ],
+            'summary' => ['paid' => $summary?->paid ?? 0, 'unpaid' => $summary?->unpaid ?? 0, 'count' => (int) $summary?->transaction_count],
         ]);
     }
 

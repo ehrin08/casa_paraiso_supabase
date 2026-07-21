@@ -13,6 +13,7 @@ import {
   type BookingOptions,
   type MobileAppointment,
 } from '../lib/api'
+import { invalidateMobileData, loadMobileData, REFERENCE_TTL_MS } from '../lib/mobileDataCache'
 
 export const useCustomerBookingStore = defineStore('customerBooking', () => {
   const options = ref<BookingOptions | null>(null)
@@ -54,7 +55,8 @@ export const useCustomerBookingStore = defineStore('customerBooking', () => {
     selectedSlot.value = null
     notes.value = ''
     try {
-      options.value = await customerBookingOptions()
+      await loadMobileData('customer:booking-options', REFERENCE_TTL_MS, async () => { options.value = await customerBookingOptions() })
+      if (!options.value) throw new Error('Booking options are unavailable.')
       month.value = options.value.booking_window.initial_month
       serviceId.value = options.value.services.some(service => service.id === preselectedServiceId)
         ? preselectedServiceId ?? null
@@ -127,6 +129,7 @@ export const useCustomerBookingStore = defineStore('customerBooking', () => {
         requested_start_at: selectedSlot.value.starts_at,
         customer_notes: notes.value.trim() || undefined,
       })
+      invalidateMobileData('customer:')
       return { appointment: response.data, message: response.message }
     } catch (reason) {
       capture(reason)
@@ -151,11 +154,12 @@ export const useCustomerBookingStore = defineStore('customerBooking', () => {
     error.value = failure.message
     fields.value = failure.fields ?? {}
   }
+  function reset(): void { options.value=null;availability.value=null;serviceId.value=null;therapistId.value=null;addonCodes.value=[];voucherId.value=null;month.value='';selectedDate.value='';selectedSlot.value=null;notes.value='';clearError() }
 
   return {
     options, availability, serviceId, therapistId, addonCodes, voucherId, month, selectedDate, selectedSlot, notes,
     loading, finding, submitting, error, fields, selectedService, selectedAddons, expectedAmount, availableDates, slots, calendarDays, calendarMonthLabel,
     loadOptions, selectionChanged, serviceChanged, toggleAddon, findAvailability, book, selectDate, selectSlot,
-    previousMonth, nextMonth,
+    previousMonth, nextMonth, reset,
   }
 })

@@ -154,6 +154,35 @@ class AutomatedAppointmentQueueTest extends TestCase
         $this->assertDatabaseCount('transactions', 0);
     }
 
+    public function test_admin_service_queue_uses_the_fixed_fifteen_record_page_size(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $staff = StaffProfile::factory()->create();
+        $customer = CustomerProfile::factory()->create();
+        $service = Service::factory()->create();
+
+        foreach (range(1, 16) as $offset) {
+            Appointment::factory()->for($customer)->for($service)->for($staff, 'staffProfile')->create([
+                'appointment_number' => sprintf('APT-PAGED-%02d', $offset),
+                'status' => Appointment::STATUS_CONFIRMED,
+                'scheduled_start_at' => now()->addDays($offset),
+                'scheduled_end_at' => now()->addDays($offset)->addHour(),
+            ]);
+        }
+
+        $this->actingAs($admin)
+            ->get(route('admin.appointments.index', absolute: false))
+            ->assertOk()
+            ->assertSee('APT-PAGED-15')
+            ->assertDontSee('APT-PAGED-16');
+
+        $this->actingAs($admin)
+            ->get(route('admin.appointments.index', ['queue_page' => 2], false))
+            ->assertOk()
+            ->assertSee('APT-PAGED-16')
+            ->assertDontSee('APT-PAGED-01');
+    }
+
     public function test_future_completion_and_staff_mutations_are_rejected(): void
     {
         $admin = User::factory()->admin()->create();

@@ -19,41 +19,21 @@ use Illuminate\View\View;
 
 class AppointmentController extends Controller
 {
-    public function index(
-        Request $request,
-        RfmAddonVoucher $addonVouchers,
-    ): View {
-        $customerProfile = $request->user()->customerProfile;
-        $customerProfileId = $customerProfile?->id ?? 0;
+    public function index(Request $request): View
+    {
+        $customerProfileId = $request->user()->customerProfile?->id ?? 0;
 
-        $summary = [
-            'upcoming' => Appointment::query()
-                ->where('customer_profile_id', $customerProfileId)
-                ->where('status', Appointment::STATUS_CONFIRMED)
-                ->where('scheduled_start_at', '>=', now())
-                ->count(),
-            'cancelled' => Appointment::query()
-                ->where('customer_profile_id', $customerProfileId)
-                ->where('status', Appointment::STATUS_CANCELLED)
-                ->count(),
-            'completed' => Appointment::query()
-                ->where('customer_profile_id', $customerProfileId)
-                ->where('status', Appointment::STATUS_COMPLETED)
-                ->count(),
-        ];
+        $summaryRow = Appointment::query()
+            ->where('customer_profile_id', $customerProfileId)
+            ->selectRaw('SUM(CASE WHEN status = ? AND scheduled_start_at >= ? THEN 1 ELSE 0 END) AS upcoming', [Appointment::STATUS_CONFIRMED, now()])
+            ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS cancelled', [Appointment::STATUS_CANCELLED])
+            ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS completed', [Appointment::STATUS_COMPLETED])
+            ->first();
+        $summary = ['upcoming' => (int) $summaryRow?->upcoming, 'cancelled' => (int) $summaryRow?->cancelled, 'completed' => (int) $summaryRow?->completed];
 
         return view('customer.appointments.index', [
             'summary' => $summary,
             'initialMonth' => now()->format('Y-m'),
-            'services' => Service::query()->with('staffProfiles.user')->where('is_active', true)->orderBy('name')->get(),
-            'staffProfiles' => StaffProfile::query()
-                ->with(['user', 'services'])
-                ->where('is_bookable', true)
-                ->whereHas('user', fn ($query) => $query->where('is_active', true))
-                ->get()
-                ->sortBy('user.name'),
-            'vouchers' => $customerProfile ? $addonVouchers->availableFor($customerProfile) : collect(),
-            'addons' => collect(config('casa.addons', [])),
         ]);
     }
 
@@ -95,6 +75,10 @@ class AppointmentController extends Controller
         Request $request,
         RfmAddonVoucher $addonVouchers,
     ): View {
+        $data = $request->validate([
+            'service_id' => ['nullable', 'integer', 'exists:services,id'],
+            'requested_start_at' => ['nullable', 'date'],
+        ]);
         $customerProfile = $request->user()->customerProfile;
 
         return view('customer.appointments.create', [
@@ -107,6 +91,8 @@ class AppointmentController extends Controller
                 ->sortBy('user.name'),
             'vouchers' => $customerProfile ? $addonVouchers->availableFor($customerProfile) : collect(),
             'addons' => collect(config('casa.addons', [])),
+            'preselectedServiceId' => isset($data['service_id']) ? (int) $data['service_id'] : null,
+            'initialRequestedAt' => filled($data['requested_start_at'] ?? null) ? Carbon::parse($data['requested_start_at'])->format('Y-m-d\TH:i') : null,
         ]);
     }
 

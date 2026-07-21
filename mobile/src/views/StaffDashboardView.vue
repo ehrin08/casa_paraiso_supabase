@@ -12,11 +12,11 @@ onMounted(() => store.loadDashboard())
 <template>
   <section class="page" aria-labelledby="staff-today-title">
     <header><p class="eyebrow">My treatment day</p><h1 id="staff-today-title">Today at Casa Paraiso</h1><p v-if="store.dashboard">{{ store.dashboard.profile.specialization || 'Spa therapist' }}</p></header>
-    <p v-if="store.error" class="alert" role="alert">{{ store.error }}</p><div v-if="store.loading" class="loading">Loading your day…</div>
+    <p v-if="store.error" class="alert" role="alert">{{ store.error }}</p><div v-if="store.loading && !store.dashboard" class="loading">Loading your day…</div>
     <template v-else-if="store.dashboard">
       <StaffAttendanceCard />
       <div class="metrics"><button @click="emit('navigate','schedule')"><strong>{{store.dashboard.summary.assigned_today}}</strong><span>Assigned today</span></button><button @click="emit('navigate','schedule')"><strong>{{store.dashboard.summary.upcoming}}</strong><span>Upcoming</span></button><button @click="emit('navigate','guests')"><strong>{{store.dashboard.summary.feedback}}</strong><span>Guest reviews</span></button><button @click="emit('navigate','earnings')"><strong>{{formatPeso(store.dashboard.commissions.pending)}}</strong><span>Pending earnings</span></button></div>
-      <section><div class="title"><h2>Today’s agenda</h2><button @click="store.loadDashboard()">Refresh</button></div><div v-if="store.dashboard.today_appointments.length" class="list"><article v-for="item in store.dashboard.today_appointments" :key="item.id" class="card"><b>{{formatAppointmentDate(item.starts_at)}}</b><strong>{{item.customer?.name}}</strong><span>{{item.service?.name}}</span><small>{{item.status.replace('_',' ')}}</small></article></div><div v-else class="empty"><h3>No assigned visits today</h3><p>Your confirmed treatments will appear here.</p></div></section>
+      <section><div class="title"><h2>Today’s agenda</h2><button @click="store.loadDashboard(true)">Refresh</button></div><div v-if="store.dashboard.today_appointments.length" class="list"><article v-for="item in store.dashboard.today_appointments" :key="item.id" class="card"><b>{{formatAppointmentDate(item.starts_at)}}</b><strong>{{item.customer?.name}}</strong><span>{{item.service?.name}}</span><small>{{item.status.replace('_',' ')}}</small></article></div><div v-else class="empty"><h3>No assigned visits today</h3><p>Your confirmed treatments will appear here.</p></div></section>
     </template>
   </section>
 </template>

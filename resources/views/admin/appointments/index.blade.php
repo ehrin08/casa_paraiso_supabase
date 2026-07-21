@@ -8,15 +8,15 @@
             </p>
         </div>
 
-        <button
-            type="button"
+        <a
+            href="{{ route('admin.appointments.create') }}"
             class="casa-button-primary"
-            x-data=""
-            x-on:click="$dispatch('calendar-booking-selected', { startsAt: @js(optional($calendarAppointment->scheduled_start_at)->format('Y-m-d\TH:i')), staffId: '' }); $dispatch('open-modal', 'calendar-appointment-create')"
+            data-panel-link
+            data-turbo="false"
         >
             <x-nav-icon name="calendar" class="size-4" />
             {{ __('Add appointment') }}
-        </button>
+        </a>
     </x-slot>
 
     <div class="space-y-5">
@@ -26,14 +26,14 @@
             ['label' => __('Cancelled'), 'value' => $summary['cancelled'], 'meta' => __('Visits no longer scheduled'), 'tone' => 'gold'],
         ]" />
 
-        <x-app-card>
+        <x-app-card id="service-queue">
             <div class="flex flex-col gap-3 border-b border-casa-border pb-5 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <p class="casa-section-label">{{ __('Service queue') }}</p>
                     <h2 class="mt-2 font-display text-2xl font-black text-casa-text">{{ __('Next visits to serve') }}</h2>
                     <p class="mt-2 text-sm text-casa-muted">{{ __('Overdue and ready visits lead the queue, followed by upcoming confirmed appointments.') }}</p>
                 </div>
-                <span class="casa-filter-chip">{{ trans_choice(':count visit|:count visits', $serviceQueue->count()) }}</span>
+                <span class="casa-filter-chip">{{ trans_choice(':count visit|:count visits', $serviceQueue->total()) }}</span>
             </div>
 
             <div class="mt-5 space-y-3">
@@ -77,6 +77,7 @@
                     <x-empty-state title="{{ __('The service queue is clear') }}" description="{{ __('New customer bookings will appear here as soon as they are confirmed automatically.') }}" />
                 @endforelse
             </div>
+            {{ $serviceQueue->links() }}
         </x-app-card>
 
         <x-operational-calendar
@@ -86,19 +87,7 @@
             role="admin"
             :services="$services"
             :staff-profiles="$staffProfiles"
+            :create-url="route('admin.appointments.create')"
         />
     </div>
-
-    <x-modal name="calendar-appointment-create" :show="old('_modal') === 'calendar-appointment-create'" maxWidth="5xl" focusable>
-        <div class="p-5">
-            @include('admin.appointments.partials.form', [
-                'appointment' => $calendarAppointment,
-                'action' => route('admin.appointments.calendar.store'),
-                'method' => 'POST',
-                'submitLabel' => __('Confirm appointment'),
-                'modalName' => 'calendar-appointment-create',
-                'fixedStatus' => \App\Models\Appointment::STATUS_CONFIRMED,
-            ])
-        </div>
-    </x-modal>
 </x-app-layout>

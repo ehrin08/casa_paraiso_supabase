@@ -12,7 +12,7 @@ const store = useCustomerFeedbackStore()
 const selected = ref<EligibleFeedbackAppointment | null>(null)
 const rating = ref(5)
 const comment = ref('')
-const { initialLoading, loadInitial } = useInitialLoad()
+const { initialLoading, loadInitial } = useInitialLoad(() => store.hasLoaded())
 
 onMounted(() => void loadInitial(async () => {
   await store.load()
@@ -37,7 +37,7 @@ async function submit(): Promise<void> {
   <section class="customer-page" aria-labelledby="feedback-title">
     <header class="page-heading">
       <div><p class="eyebrow">Share your experience</p><h1 id="feedback-title">Feedback</h1><p>Your comments help Casa Paraiso care for every visit.</p></div>
-      <button class="icon-button" aria-label="Refresh feedback" :disabled="store.loading" @click="store.load(store.meta.current_page)"><PhArrowClockwise :size="23" weight="bold" aria-hidden="true" /></button>
+      <button class="icon-button" aria-label="Refresh feedback" :disabled="store.loading || store.refreshing" @click="store.load(store.meta.current_page, true)"><PhArrowClockwise :size="23" weight="bold" aria-hidden="true" /></button>
     </header>
 
     <div class="summary-strip" aria-label="Feedback summary">

@@ -20,6 +20,9 @@ class ExampleTest extends TestCase
         $this->assertStringContainsString("link.hasAttribute('data-panel-link')", $script);
         $this->assertStringContainsString("url.pathname.includes('/export')", $script);
         $this->assertStringContainsString("form.method.toLowerCase() !== 'get'", $script);
+        $this->assertStringContainsString('const panelCache = new Map()', $script);
+        $this->assertStringContainsString('const panelCacheTtl = 60000', $script);
+        $this->assertStringContainsString('panelCache.clear()', $script);
         $this->assertStringNotContainsString("prefetch.rel = 'prefetch'", $script);
     }
 

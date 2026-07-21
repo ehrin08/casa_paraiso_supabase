@@ -32,34 +32,30 @@ class AppointmentController extends Controller
             ? (string) $request->query('mode')
             : 'bookings';
 
-        $calendarAppointment = new Appointment([
-            'scheduled_start_at' => now()->addDay()->setTime(13, 0),
-            'status' => Appointment::STATUS_CONFIRMED,
-        ]);
+        $summary = Appointment::query()
+            ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS confirmed', [Appointment::STATUS_CONFIRMED])
+            ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS completed', [Appointment::STATUS_COMPLETED])
+            ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS cancelled', [Appointment::STATUS_CANCELLED])
+            ->first();
 
         return view('admin.appointments.index', [
             'mode' => $mode,
             'initialWeek' => now()->startOfWeek(Carbon::SUNDAY)->toDateString(),
-            'summary' => [
-                'confirmed' => Appointment::query()->where('status', Appointment::STATUS_CONFIRMED)->count(),
-                'completed' => Appointment::query()->where('status', Appointment::STATUS_COMPLETED)->count(),
-                'cancelled' => Appointment::query()->where('status', Appointment::STATUS_CANCELLED)->count(),
-            ],
+            'summary' => ['confirmed' => (int) $summary?->confirmed, 'completed' => (int) $summary?->completed, 'cancelled' => (int) $summary?->cancelled],
             'services' => Service::query()->where('is_active', true)->orderBy('name')->get(),
-            'addons' => collect(config('casa.addons', [])),
             'staffProfiles' => StaffProfile::query()
                 ->with('user')
                 ->where('is_bookable', true)
                 ->whereHas('user', fn ($query) => $query->where('is_active', true))
                 ->get()
                 ->sortBy('user.name'),
-            'customers' => CustomerProfile::query()->with('user')->get()->sortBy('user.name')->values(),
-            'calendarAppointment' => $calendarAppointment,
             'serviceQueue' => Appointment::query()
                 ->with(['customerProfile.user', 'service', 'staffProfile.user', 'addons'])
                 ->where('status', Appointment::STATUS_CONFIRMED)
                 ->orderBy('scheduled_start_at')
-                ->get(),
+                ->paginate((int) config('casa.pagination.per_page', 15), ['*'], 'queue_page')
+                ->withQueryString()
+                ->fragment('service-queue'),
         ]);
     }
 

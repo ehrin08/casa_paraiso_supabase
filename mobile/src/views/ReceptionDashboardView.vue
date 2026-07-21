@@ -13,7 +13,7 @@ onMounted(() => store.loadDashboard())
   <section class="ops-page" aria-labelledby="desk-title">
     <header><p class="eyebrow">Front desk</p><h1 id="desk-title">Today at Casa Paraiso</h1><p>Keep arrivals, bookings, and payments moving smoothly.</p></header>
     <p v-if="store.error" class="alert" role="alert">{{ store.error }}</p>
-    <div v-if="store.loading" class="loading" role="status">Loading front desk…</div>
+    <div v-if="store.loading && !store.dashboard" class="loading" role="status">Loading front desk…</div>
     <template v-else-if="store.dashboard">
       <AttendanceStation />
       <div class="metric-grid">
@@ -22,7 +22,7 @@ onMounted(() => store.loadDashboard())
         <button @click="emit('navigate','customers')"><strong>{{ store.dashboard.summary.customers }}</strong><span>Customers</span></button>
         <button @click="emit('navigate','payments')"><strong>{{ formatPeso(store.dashboard.summary.payments_today) }}</strong><span>Paid today</span></button>
       </div>
-      <section class="today" aria-labelledby="today-title"><div class="section-title"><h2 id="today-title">Today’s schedule</h2><button @click="store.loadDashboard()">Refresh</button></div>
+      <section class="today" aria-labelledby="today-title"><div class="section-title"><h2 id="today-title">Today’s schedule</h2><button @click="store.loadDashboard(true)">Refresh</button></div>
         <div v-if="store.dashboard.today_appointments.length" class="ops-list"><article v-for="appointment in store.dashboard.today_appointments" :key="appointment.id" class="ops-card"><div class="time">{{ formatAppointmentDate(appointment.starts_at) }}</div><strong>{{ appointment.customer?.name }}</strong><span>{{ appointment.service?.name }} · {{ appointment.therapist?.name }}</span><small :data-status="appointment.status">{{ appointment.status.replace('_',' ') }}</small></article></div>
         <div v-else class="empty-state"><h3>No visits today</h3><p>New bookings will appear here.</p></div>
       </section>

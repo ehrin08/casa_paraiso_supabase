@@ -1,9 +1,10 @@
 import { ref } from 'vue'
 
-export function useInitialLoad() {
-  const initialLoading = ref(true)
+export function useInitialLoad(hasData: () => boolean = () => false) {
+  const initialLoading = ref(!hasData())
 
   async function loadInitial(task: () => Promise<unknown>): Promise<void> {
+    initialLoading.value = !hasData()
     try {
       await task()
     } finally {

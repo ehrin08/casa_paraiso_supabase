@@ -9,5 +9,5 @@ const route = useRoute(); const router = useRouter()
 const tab = computed(() => ['staff', 'services', 'roster'].includes(String(route.query.manage)) ? String(route.query.manage) : 'staff')
 const items = [{ id: 'staff', label: 'Therapists' }, { id: 'services', label: 'Services' }, { id: 'roster', label: 'Roster' }]
 </script>
-<template><section><MobileSegmentedControl label="Management areas" :active-id="tab" :items="items" @select="router.replace({query:{...route.query,manage:$event}})"/><AdminStaffView v-if="tab==='staff'"/><AdminServicesView v-else-if="tab==='services'"/><AdminRosterView v-else/></section></template>
+<template><section><MobileSegmentedControl label="Management areas" :active-id="tab" :items="items" @select="router.replace({query:{...route.query,manage:$event}})"/><KeepAlive><AdminStaffView v-if="tab==='staff'"/><AdminServicesView v-else-if="tab==='services'"/><AdminRosterView v-else/></KeepAlive></section></template>
 <style scoped>:deep(.page){padding-top:1.25rem!important}</style>

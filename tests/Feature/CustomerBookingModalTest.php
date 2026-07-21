@@ -14,15 +14,17 @@ class CustomerBookingModalTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_my_appointments_embeds_booking_modal_and_keeps_full_page_fallback(): void
+    public function test_my_appointments_loads_the_booking_form_lazily_and_keeps_full_page_fallback(): void
     {
         $customer = CustomerProfile::factory()->create();
 
         $this->actingAs($customer->user)
             ->get(route('customer.appointments.index', absolute: false))
             ->assertOk()
-            ->assertSee('customer-book-appointment', false)
-            ->assertSee('_booking_context', false)
+            ->assertSee(route('customer.appointments.create', absolute: false), false)
+            ->assertSee('data-panel-link', false)
+            ->assertDontSee('customer-book-appointment', false)
+            ->assertDontSee('_booking_context', false)
             ->assertSee('Book appointment');
 
         $this->actingAs($customer->user)
@@ -31,27 +33,29 @@ class CustomerBookingModalTest extends TestCase
             ->assertSee('Book an appointment');
     }
 
-    public function test_calendar_validation_failure_reopens_modal_with_old_input_and_inline_errors(): void
+    public function test_booking_page_accepts_validated_service_and_date_preselection(): void
     {
         $customer = CustomerProfile::factory()->create();
+        $service = Service::factory()->create();
+        $requestedStart = now()->addDays(8)->setTime(15, 30);
+
+        $this->actingAs($customer->user)
+            ->get(route('customer.appointments.create', [
+                'service_id' => $service->id,
+                'requested_start_at' => $requestedStart->format('Y-m-d H:i:s'),
+            ], false))
+            ->assertOk()
+            ->assertSee('value="'.$service->id.'" selected', false)
+            ->assertSee('value="'.$requestedStart->format('Y-m-d\TH:i').'"', false);
 
         $this->actingAs($customer->user)
             ->from(route('customer.appointments.index', absolute: false))
-            ->post(route('customer.appointments.store', absolute: false), [
-                '_booking_context' => 'calendar',
-                'service_id' => '',
-                'requested_start_at' => '',
-                'customer_notes' => 'Keep this note.',
-            ])
+            ->get(route('customer.appointments.create', [
+                'service_id' => 999999,
+                'requested_start_at' => 'not-a-date',
+            ], false))
             ->assertRedirect(route('customer.appointments.index', absolute: false))
             ->assertSessionHasErrors(['service_id', 'requested_start_at']);
-
-        $this->get(route('customer.appointments.index', absolute: false))
-            ->assertOk()
-            ->assertSee('initialShow: true', false)
-            ->assertSee('Keep this note.')
-            ->assertSee('booking-date-selected', false)
-            ->assertSee('preselectDate', false);
     }
 
     public function test_calendar_submission_still_creates_an_immediately_confirmed_booking(): void

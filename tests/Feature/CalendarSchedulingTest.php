@@ -442,20 +442,18 @@ class CalendarSchedulingTest extends TestCase
         $this->assertTrue($ids->contains($second->id));
     }
 
-    public function test_admin_calendar_page_exposes_confirmed_creation_modal_and_selection_hooks(): void
+    public function test_admin_calendar_page_loads_the_creation_form_lazily_through_the_panel(): void
     {
         $admin = User::factory()->admin()->create();
 
         $this->actingAs($admin)
             ->get(route('admin.appointments.index', absolute: false))
             ->assertOk()
-            ->assertSee('calendar-appointment-create', false)
-            ->assertSee(route('admin.appointments.calendar.store', absolute: false), false)
-            ->assertSee('calendar-booking-selected', false)
-            ->assertSee('Confirmed reservation')
-            ->assertSee('Appointment time')
-            ->assertDontSee('Requested time')
-            ->assertSee('Add appointment on this day');
+            ->assertSee(route('admin.appointments.create', absolute: false), false)
+            ->assertSee('data-panel-link', false)
+            ->assertSee('createUrl:', false)
+            ->assertDontSee('calendar-appointment-create', false)
+            ->assertDontSee(route('admin.appointments.calendar.store', absolute: false), false);
     }
 
     public function test_admin_calendar_creation_saves_confirmed_reservation_and_returns_to_calendar(): void

@@ -11,7 +11,7 @@ import { useInitialLoad } from '../composables/useInitialLoad'
 
 const store=useStaffStore();const finishTarget=ref<OperationalAppointment|null>(null);const noShowTarget=ref<OperationalAppointment|null>(null)
 const payment=reactive({amount:'',status:'paid',method:'Cash',paidAt:'',notes:''})
-const { initialLoading, loadInitial } = useInitialLoad()
+const { initialLoading, loadInitial } = useInitialLoad(() => store.hasAppointments())
 onMounted(()=>void loadInitial(()=>store.loadAppointments()))
 function noShow(item:OperationalAppointment):void{noShowTarget.value=item}
 async function confirmNoShow(reason?:string):Promise<void>{if(!noShowTarget.value)return;const item=noShowTarget.value;noShowTarget.value=null;await store.noShow(item,reason||undefined)}

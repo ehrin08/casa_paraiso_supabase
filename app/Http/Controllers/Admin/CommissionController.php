@@ -83,10 +83,12 @@ class CommissionController extends Controller
 
     private function totals($query): array
     {
-        return [
-            'pending' => (clone $query)->where('status', TherapistCommission::STATUS_PENDING)->sum('commission_amount'),
-            'paid' => (clone $query)->where('status', TherapistCommission::STATUS_PAID)->sum('commission_amount'),
-            'net' => (clone $query)->sum('commission_amount'),
-        ];
+        $summary = $query
+            ->selectRaw('SUM(CASE WHEN status = ? THEN commission_amount ELSE 0 END) AS pending', [TherapistCommission::STATUS_PENDING])
+            ->selectRaw('SUM(CASE WHEN status = ? THEN commission_amount ELSE 0 END) AS paid', [TherapistCommission::STATUS_PAID])
+            ->selectRaw('SUM(commission_amount) AS net')
+            ->first();
+
+        return ['pending' => $summary?->pending ?? 0, 'paid' => $summary?->paid ?? 0, 'net' => $summary?->net ?? 0];
     }
 }

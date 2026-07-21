@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { computed, watchEffect } from 'vue'
+import { computed, onBeforeUnmount, onMounted, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { PhCalendarBlank, PhChatsCircle, PhUserCircle } from '@phosphor-icons/vue'
 import MobileWorkspaceShell, { type MobileNavigationItem } from '../components/MobileWorkspaceShell.vue'
 import { useAuthStore } from '../stores/auth'
+import { useCustomerFeedbackStore } from '../stores/customerFeedback'
+import { useCustomerProfileStore } from '../stores/customerProfile'
+import { scheduleMobilePreload } from '../lib/mobileDataCache'
 import AdminWorkspaceView from './AdminWorkspaceView.vue'
 import CustomerAppointmentsView from './CustomerAppointmentsView.vue'
 import CustomerFeedbackView from './CustomerFeedbackView.vue'
@@ -14,6 +17,9 @@ import StaffWorkspaceView from './StaffWorkspaceView.vue'
 const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
+const feedbackStore = useCustomerFeedbackStore()
+const profileStore = useCustomerProfileStore()
+let cancelPreload = (): void => undefined
 const title = computed(() => ({ admin: 'Admin workspace', reception: 'Reception workspace', staff: 'Therapist workspace', customer: 'My appointments' }[auth.user?.workspace ?? 'customer']))
 const customerItems: MobileNavigationItem[] = [
   { id: 'appointments', label: 'Appointments', icon: PhCalendarBlank },
@@ -32,6 +38,8 @@ const feedbackAppointmentId = computed(() => route.query.appointment ? Number(ro
 function workspacePath(section: string, query: Record<string, string | undefined> = {}): void { void router.push({ path: `/workspace/customer/${section}`, query }) }
 function openFeedback(appointmentId: number): void { workspacePath('feedback', { appointment: String(appointmentId) }) }
 function selectCustomerTab(id: string): void { workspacePath(id) }
+onMounted(() => { if(auth.user?.workspace==='customer') cancelPreload=scheduleMobilePreload(()=>Promise.all([feedbackStore.load(),profileStore.load()])) })
+onBeforeUnmount(()=>cancelPreload())
 </script>
 
 <template>
@@ -47,9 +55,11 @@ function selectCustomerTab(id: string): void { workspacePath(id) }
     @select="selectCustomerTab"
     @sign-out="leave"
   >
-    <CustomerAppointmentsView v-if="customerTab === 'appointments'" :service-id="route.query.service ? Number(route.query.service) : null" @feedback="openFeedback" />
-    <CustomerFeedbackView v-else-if="customerTab === 'feedback'" :appointment-id="feedbackAppointmentId" />
-    <CustomerProfileView v-else />
+    <KeepAlive>
+      <CustomerAppointmentsView v-if="customerTab === 'appointments'" :service-id="route.query.service ? Number(route.query.service) : null" @feedback="openFeedback" />
+      <CustomerFeedbackView v-else-if="customerTab === 'feedback'" :appointment-id="feedbackAppointmentId" />
+      <CustomerProfileView v-else />
+    </KeepAlive>
   </MobileWorkspaceShell>
   <ReceptionWorkspaceView v-else-if="auth.user?.workspace === 'reception'" />
   <StaffWorkspaceView v-else-if="auth.user?.workspace === 'staff'" />

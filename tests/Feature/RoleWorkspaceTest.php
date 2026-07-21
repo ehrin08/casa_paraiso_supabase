@@ -125,6 +125,7 @@ class RoleWorkspaceTest extends TestCase
             ->assertSee('data-workspace-role="customer"', false)
             ->assertSee('data-role-navigation="customer"', false)
             ->assertSee('data-desktop-sidebar', false)
+            ->assertSee('data-turbo-preload', false)
             ->assertSee('data-mobile-customer-navigation', false)
             ->assertSee('Customer lounge')
             ->assertSeeInOrder(['Appointments', 'Feedback', 'Profile'])
@@ -133,6 +134,24 @@ class RoleWorkspaceTest extends TestCase
             ->assertSee(route('customer.feedback.index'), false)
             ->assertSee(route('profile.edit'), false)
             ->assertSee(route('logout'), false);
+
+        $html = $this->actingAs($customer)->get('/customer/appointments')->getContent();
+        $this->assertSame(2, substr_count($html, 'data-turbo-preload'));
+    }
+
+    public function test_authenticated_web_responses_include_application_database_and_query_timing(): void
+    {
+        $customer = User::factory()->customer()->create();
+
+        $timing = $this->actingAs($customer)
+            ->get('/customer/appointments')
+            ->assertOk()
+            ->headers->get('Server-Timing');
+
+        $this->assertIsString($timing);
+        $this->assertStringContainsString('app;dur=', $timing);
+        $this->assertStringContainsString('db;dur=', $timing);
+        $this->assertStringContainsString('queries;desc=', $timing);
     }
 
     public function test_turbo_exclusions_are_explicit_for_panels_logout_and_exports(): void

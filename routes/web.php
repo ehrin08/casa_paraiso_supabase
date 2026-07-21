@@ -37,6 +37,7 @@ use App\Http\Controllers\Staff\TransactionController as StaffTransactionControll
 use App\Http\Controllers\WebAttendanceController;
 use App\Models\ApplicationSetting;
 use App\Models\Service;
+use App\Http\Middleware\MeasureApiRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -54,7 +55,7 @@ Route::get('/dashboard', function (Request $request) {
     return redirect()->route($request->user()->homeRouteName());
 })->middleware(['auth', 'active', 'verified'])->name('dashboard');
 
-Route::middleware(['auth', 'active', 'verified'])->group(function () {
+Route::middleware(['auth', 'active', 'verified', MeasureApiRequest::class])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->middleware('throttle:user-sensitive')->name('profile.destroy');
@@ -64,7 +65,7 @@ Route::middleware(['auth', 'active', 'verified'])->group(function () {
     Route::get('/profile/password/google/callback', [GooglePasswordSetupController::class, 'callback'])->middleware('throttle:user-sensitive')->name('profile.password.google.callback');
 });
 
-Route::middleware(['auth', 'active', 'verified', 'role:super_admin,admin'])
+Route::middleware(['auth', 'active', 'verified', 'role:super_admin,admin', MeasureApiRequest::class])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
@@ -111,14 +112,14 @@ Route::middleware(['auth', 'active', 'verified', 'role:super_admin,admin'])
         Route::patch('/settings', [AdminSettingController::class, 'update'])->name('settings.update');
     });
 
-Route::middleware(['auth', 'active', 'verified', 'super_admin'])
+Route::middleware(['auth', 'active', 'verified', 'super_admin', MeasureApiRequest::class])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
         Route::resource('users', AdminUserManagementController::class)->only(['index', 'store', 'update']);
     });
 
-Route::middleware(['auth', 'active', 'verified', 'role:staff'])
+Route::middleware(['auth', 'active', 'verified', 'role:staff', MeasureApiRequest::class])
     ->prefix('staff')
     ->name('staff.')
     ->group(function () {
@@ -133,7 +134,7 @@ Route::middleware(['auth', 'active', 'verified', 'role:staff'])
         Route::resource('feedback', StaffFeedbackController::class)->only(['index', 'show']);
     });
 
-Route::middleware(['auth', 'active', 'verified', 'role:receptionist'])
+Route::middleware(['auth', 'active', 'verified', 'role:receptionist', MeasureApiRequest::class])
     ->prefix('reception')
     ->name('reception.')
     ->group(function () {
@@ -156,7 +157,7 @@ Route::middleware(['auth', 'active', 'verified', 'role:super_admin,admin,recepti
         Route::post('/scans/{scan}/reject', [WebAttendanceController::class, 'reject'])->name('reject');
     });
 
-Route::middleware(['auth', 'active', 'verified', 'role:customer'])
+Route::middleware(['auth', 'active', 'verified', 'role:customer', MeasureApiRequest::class])
     ->prefix('customer')
     ->name('customer.')
     ->group(function () {

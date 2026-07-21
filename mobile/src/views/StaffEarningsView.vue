@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { formatAppointmentDate, formatPeso } from '../lib/appointments'
 import { paymentStatusLabel } from '../lib/reception'
 import { commissionRate, commissionStatusLabel } from '../lib/staff'
@@ -8,8 +8,9 @@ import MobileSkeleton from '../components/MobileSkeleton.vue'
 import { useInitialLoad } from '../composables/useInitialLoad'
 
 const store=useStaffStore();const section=ref<'commissions'|'payments'>('commissions')
-const { initialLoading, loadInitial } = useInitialLoad()
-onMounted(()=>void loadInitial(()=>Promise.all([store.loadCommissions(),store.loadTransactions()])))
+const { initialLoading, loadInitial } = useInitialLoad(() => store.hasCommissions())
+onMounted(()=>void loadInitial(()=>store.loadCommissions()))
+watch(section, value => { if(value==='payments') void store.loadTransactions() })
 </script>
 
 <template>

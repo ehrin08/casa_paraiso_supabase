@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { PhCalendarBlank, PhCurrencyCircleDollar, PhHouse, PhUsersThree } from '@phosphor-icons/vue'
 import MobileWorkspaceShell, { type MobileNavigationItem } from '../components/MobileWorkspaceShell.vue'
 import { useAuthStore } from '../stores/auth'
+import { useStaffStore } from '../stores/staff'
+import { scheduleMobilePreload } from '../lib/mobileDataCache'
 import StaffAppointmentsView from './StaffAppointmentsView.vue'
 import StaffDashboardView from './StaffDashboardView.vue'
 import StaffEarningsView from './StaffEarningsView.vue'
 import StaffGuestsView from './StaffGuestsView.vue'
 
-const route = useRoute(); const auth = useAuthStore(); const router = useRouter()
+const route = useRoute(); const auth = useAuthStore(); const router = useRouter(); const staff=useStaffStore()
 const items: MobileNavigationItem[] = [
   { id: 'dashboard', label: 'Today', icon: PhHouse }, { id: 'schedule', label: 'Schedule', icon: PhCalendarBlank },
   { id: 'guests', label: 'Guests', icon: PhUsersThree }, { id: 'earnings', label: 'Earnings', icon: PhCurrencyCircleDollar },
@@ -17,5 +19,8 @@ const items: MobileNavigationItem[] = [
 async function leave(): Promise<void> { if (await auth.signOut()) await router.replace('/sign-in') }
 const tab = computed(() => ['dashboard', 'schedule', 'guests', 'earnings'].includes(String(route.params.section)) ? String(route.params.section) : 'dashboard')
 function select(id: string): void { void router.push(`/workspace/staff/${id}`) }
+let cancelPreload=():void=>undefined
+onMounted(()=>{cancelPreload=scheduleMobilePreload(()=>Promise.all([staff.loadAppointments(),staff.loadCustomers()]))})
+onBeforeUnmount(()=>cancelPreload())
 </script>
-<template><MobileWorkspaceShell :account-label="auth.user?.name ?? 'Therapist'" navigation-label="Therapist navigation" :active-id="tab" :items="items" home-id="dashboard" :working="auth.working" :error="auth.error" @select="select" @sign-out="leave"><StaffDashboardView v-if="tab==='dashboard'" @navigate="select"/><StaffAppointmentsView v-else-if="tab==='schedule'"/><StaffGuestsView v-else-if="tab==='guests'"/><StaffEarningsView v-else/></MobileWorkspaceShell></template>
+<template><MobileWorkspaceShell :account-label="auth.user?.name ?? 'Therapist'" navigation-label="Therapist navigation" :active-id="tab" :items="items" home-id="dashboard" :working="auth.working" :error="auth.error" @select="select" @sign-out="leave"><KeepAlive><StaffDashboardView v-if="tab==='dashboard'" @navigate="select"/><StaffAppointmentsView v-else-if="tab==='schedule'"/><StaffGuestsView v-else-if="tab==='guests'"/><StaffEarningsView v-else/></KeepAlive></MobileWorkspaceShell></template>

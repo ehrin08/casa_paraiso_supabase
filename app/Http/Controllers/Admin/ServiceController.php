@@ -43,6 +43,10 @@ class ServiceController extends Controller
             ->orderBy('name')
             ->paginate((int) config('casa.pagination.per_page', 15))
             ->withQueryString();
+        $summary = Service::query()
+            ->selectRaw('SUM(CASE WHEN is_active THEN 1 ELSE 0 END) AS active_count')
+            ->selectRaw('SUM(CASE WHEN NOT is_active THEN 1 ELSE 0 END) AS inactive_count')
+            ->first();
 
         return view('admin.services.index', [
             'services' => $services,
@@ -50,8 +54,8 @@ class ServiceController extends Controller
             'status' => $status,
             'sort' => $sort,
             'direction' => $direction,
-            'activeCount' => Service::query()->where('is_active', true)->count(),
-            'inactiveCount' => Service::query()->where('is_active', false)->count(),
+            'activeCount' => (int) $summary?->active_count,
+            'inactiveCount' => (int) $summary?->inactive_count,
         ]);
     }
 

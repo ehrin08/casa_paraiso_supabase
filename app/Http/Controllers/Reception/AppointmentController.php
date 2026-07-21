@@ -27,26 +27,35 @@ class AppointmentController extends Controller
 {
     public function index(Request $request): View
     {
+        $summary = Appointment::query()
+            ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS confirmed', [Appointment::STATUS_CONFIRMED])
+            ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS completed', [Appointment::STATUS_COMPLETED])
+            ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS cancelled', [Appointment::STATUS_CANCELLED])
+            ->first();
+
         return view('reception.appointments.index', [
             'mode' => in_array($request->query('mode'), ['bookings', 'availability'], true) ? $request->query('mode') : 'bookings',
             'initialWeek' => now()->startOfWeek(Carbon::SUNDAY)->toDateString(),
-            'summary' => [
-                'confirmed' => Appointment::query()->where('status', Appointment::STATUS_CONFIRMED)->count(),
-                'completed' => Appointment::query()->where('status', Appointment::STATUS_COMPLETED)->count(),
-                'cancelled' => Appointment::query()->where('status', Appointment::STATUS_CANCELLED)->count(),
-            ],
-            'calendarAppointment' => new Appointment([
-                'scheduled_start_at' => now()->addDay()->setTime(13, 0),
-                'status' => Appointment::STATUS_CONFIRMED,
-            ]),
-            ...$this->selectors(),
+            'summary' => ['confirmed' => (int) $summary?->confirmed, 'completed' => (int) $summary?->completed, 'cancelled' => (int) $summary?->cancelled],
+            'services' => Service::query()->where('is_active', true)->orderBy('name')->get(),
+            'staffProfiles' => StaffProfile::query()->with('user')->where('is_bookable', true)->whereHas('user', fn ($query) => $query->where('is_active', true))->get()->sortBy('user.name')->values(),
         ]);
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
+        $data = $request->validate([
+            'customer_profile_id' => ['nullable', 'integer', 'exists:customer_profiles,id'],
+            'staff_profile_id' => ['nullable', 'integer', 'exists:staff_profiles,id'],
+            'scheduled_start_at' => ['nullable', 'date'],
+        ]);
         return view('reception.appointments.form', [
-            'appointment' => new Appointment(['scheduled_start_at' => now()->addDay()->setTime(13, 0), 'status' => Appointment::STATUS_CONFIRMED]),
+            'appointment' => new Appointment([
+                'scheduled_start_at' => filled($data['scheduled_start_at'] ?? null) ? Carbon::parse($data['scheduled_start_at']) : now()->addDay()->setTime(13, 0),
+                'status' => Appointment::STATUS_CONFIRMED,
+                'customer_profile_id' => $data['customer_profile_id'] ?? null,
+                'staff_profile_id' => $data['staff_profile_id'] ?? null,
+            ]),
             ...$this->selectors(),
         ]);
     }

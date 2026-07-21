@@ -1,5 +1,5 @@
 @php
-    $initialRequestedAt = old('requested_start_at');
+    $initialRequestedAt = old('requested_start_at', $initialRequestedAt ?? null);
     $initialMonth = $initialRequestedAt
         ? \Illuminate\Support\Carbon::parse($initialRequestedAt)->format('Y-m')
         : now()->addDay()->format('Y-m');
@@ -43,7 +43,7 @@
         vouchers: @js($bookingVouchers),
         addonOptions: @js($bookingAddons),
         initialMonth: @js($initialMonth),
-        initialServiceId: @js((string) old('service_id', '')),
+        initialServiceId: @js((string) old('service_id', $preselectedServiceId ?? '')),
         initialStaffId: @js((string) old('preferred_staff_profile_id', '')),
         initialVoucherId: @js((string) old('promotion_suggestion_id', '')),
         initialAddonCodes: @js(old('addon_codes', [])),
@@ -160,7 +160,7 @@
                     <select id="service_id_fallback" name="service_id" class="casa-input mt-2" required>
                         <option value="">{{ __('Select service') }}</option>
                         @foreach ($services as $service)
-                            <option value="{{ $service->id }}" @selected((int) old('service_id') === $service->id)>{{ $service->name }}</option>
+                            <option value="{{ $service->id }}" @selected((int) old('service_id', $preselectedServiceId ?? 0) === $service->id)>{{ $service->name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -259,7 +259,7 @@
             <noscript>
                 <div class="mt-5">
                     <x-input-label for="requested_start_at_fallback" :value="__('Preferred date and time')" />
-                    <x-text-input id="requested_start_at_fallback" name="requested_start_at" type="datetime-local" class="mt-2" :value="old('requested_start_at', now()->addDay()->setTime(14, 0)->format('Y-m-d\TH:i'))" required />
+                    <x-text-input id="requested_start_at_fallback" name="requested_start_at" type="datetime-local" class="mt-2" :value="old('requested_start_at', $initialRequestedAt ?: now()->addDay()->setTime(14, 0)->format('Y-m-d\TH:i'))" required />
                     <p class="mt-2 text-xs leading-5 text-casa-muted">{{ __('JavaScript is off, so the server will verify this time when you book.') }}</p>
                 </div>
             </noscript>

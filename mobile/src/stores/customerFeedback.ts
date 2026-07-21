@@ -7,6 +7,7 @@ import {
   type EligibleFeedbackAppointment,
   type MobileFeedback,
 } from '../lib/api'
+import { hasMobileData, invalidateMobileData, loadMobileData, OPERATIONAL_TTL_MS } from '../lib/mobileDataCache'
 
 export const useCustomerFeedbackStore = defineStore('customerFeedback', () => {
   const feedback = ref<MobileFeedback[]>([])
@@ -14,24 +15,30 @@ export const useCustomerFeedbackStore = defineStore('customerFeedback', () => {
   const summary = ref({ awaiting_feedback: 0, submitted: 0 })
   const meta = ref({ current_page: 1, last_page: 1, per_page: 15, total: 0, from: null as number | null, to: null as number | null })
   const loading = ref(false)
+  const refreshing = ref(false)
   const submitting = ref(false)
   const error = ref('')
   const notice = ref('')
   const fields = ref<Record<string, string[]>>({})
 
-  async function load(page = 1): Promise<void> {
-    loading.value = true
+  const cacheKey = (page = 1) => `customer:feedback:${page}`
+  const hasLoaded = (page = 1) => hasMobileData(cacheKey(page))
+  async function load(page = 1, force = false): Promise<void> {
+    const initial = !hasLoaded(page)
+    if (initial) loading.value = true; else refreshing.value = true
     error.value = ''
     try {
-      const response = await customerFeedback(page)
-      feedback.value = response.data
-      eligibleAppointments.value = response.eligible_appointments
-      summary.value = response.summary
-      meta.value = response.meta
+      await loadMobileData(cacheKey(page), OPERATIONAL_TTL_MS, async () => {
+        const response = await customerFeedback(page)
+        feedback.value = response.data
+        eligibleAppointments.value = response.eligible_appointments
+        summary.value = response.summary
+        meta.value = response.meta
+      }, force)
     } catch (reason) {
       error.value = apiError(reason).message
     } finally {
-      loading.value = false
+      loading.value = false; refreshing.value = false
     }
   }
 
@@ -47,7 +54,8 @@ export const useCustomerFeedbackStore = defineStore('customerFeedback', () => {
         comment: comment.trim() || undefined,
       })
       notice.value = response.message
-      await load(1)
+      invalidateMobileData('customer:')
+      await load(1, true)
       return true
     } catch (reason) {
       const failure = apiError(reason)
@@ -59,5 +67,6 @@ export const useCustomerFeedbackStore = defineStore('customerFeedback', () => {
     }
   }
 
-  return { feedback, eligibleAppointments, summary, meta, loading, submitting, error, notice, fields, load, submit }
+  function reset(): void { feedback.value = []; eligibleAppointments.value = []; summary.value = { awaiting_feedback: 0, submitted: 0 }; meta.value = { current_page: 1, last_page: 1, per_page: 15, total: 0, from: null, to: null }; error.value = ''; notice.value = ''; fields.value = {} }
+  return { feedback, eligibleAppointments, summary, meta, loading, refreshing, submitting, error, notice, fields, hasLoaded, load, submit, reset }
 })

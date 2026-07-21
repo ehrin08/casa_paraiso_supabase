@@ -30,6 +30,8 @@ function emptyApi(path: string): unknown {
   if (path === '/api/v1/admin/settings') return { data: { settings: { business_name: 'Casa Paraiso', contact_email: null, contact_phone: null, business_address: null, default_payment_method: 'cash' }, payment_methods: ['cash'], operating: { timezone: 'Asia/Manila', opens_at: '13:00', closes_at: '00:00', slot_interval_minutes: 30, commission_rate: '0.22' }, security: [] } }
   if (path === '/api/v1/admin/staff/options') return { data: { can_create: true, staff_types: ['therapist'], services: [] } }
   if (path === '/api/v1/admin/users') return { data: [], roles: ['customer', 'staff', 'receptionist', 'admin'], meta }
+  if (path === '/api/v1/attendance-station/qr') return { data: { payload: 'casa-paraiso-playwright-attendance', expires_at: '2027-01-01T00:00:00+08:00', bucket: 'playwright' } }
+  if (path === '/api/v1/attendance-station/pending') return { data: [] }
   if (path.includes('/appointments')) return { data: [], summary: { upcoming: 0, completed: 0, cancelled: 0, confirmed: 0, no_show: 0 }, meta }
   if (path.includes('/feedback')) return { data: [], eligible_appointments: [], summary: { awaiting_feedback: 0, submitted: 0, positive: 0, neutral: 0, negative: 0 }, meta }
   if (path.includes('/customers')) return { data: [], meta }
@@ -76,7 +78,8 @@ async function mockBackend(page: Page, holdMeta = false): Promise<MockBackend> {
 
 async function pairAndSignIn(page: Page, email: string): Promise<void> {
   await mockBackend(page)
-  await page.goto('/sign-in')
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Book', exact: true }).click()
   await page.getByLabel('Email').fill(email)
   await page.getByLabel('Password').fill('password')
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
@@ -131,12 +134,31 @@ test('landing remains explorable while pairing and opens sign-in after booking i
   await expect(page.getByRole('heading', { name: /Let the day soften here/i })).toBeVisible()
   await expect(page).toHaveScreenshot('landing-phone.png')
   const booking = page.getByRole('button', { name: 'Book an appointment' }).click()
-  await expect(page.getByRole('status')).toContainText('Connecting to Casa Paraiso')
+  await expect(page.getByRole('status')).toContainText('Checking the secure Casa Paraiso connection')
   await expect(page.getByRole('heading', { name: /Let the day soften here/i })).toBeVisible()
   backend.releaseMeta()
   await booking
   await expect(page.getByRole('heading', { name: 'Welcome to Casa Paraiso' })).toBeVisible()
   await expect(page).toHaveScreenshot('sign-in-phone.png')
+})
+
+test('cached feedback stays visible while a four-second refresh is pending', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'android-pixel-7', 'Cached navigation timing uses the reference Android viewport.')
+  await pairAndSignIn(page, 'customer@example.test')
+
+  const navigation = page.getByRole('navigation', { name: 'Customer navigation' })
+  await navigation.getByRole('button', { name: 'Feedback' }).click()
+  await expect(page.getByText('No feedback yet')).toBeVisible()
+
+  await page.route(`${server}/api/v1/customer/feedback**`, async route => {
+    await new Promise(resolve => setTimeout(resolve, 4_000))
+    await route.fulfill({ json: emptyApi('/api/v1/customer/feedback') })
+  })
+
+  await page.getByRole('button', { name: 'Refresh feedback' }).click()
+  await expect(navigation.getByRole('button', { name: 'Feedback' })).toHaveAttribute('aria-current', 'page', { timeout: 100 })
+  await expect(page.getByText('No feedback yet')).toBeVisible({ timeout: 100 })
+  await expect(page.getByRole('button', { name: 'Refresh feedback' })).toBeDisabled()
 })
 
 test('full-screen booking sheet calendar manages focus, selection, and dismissal', async ({ page }, testInfo) => {

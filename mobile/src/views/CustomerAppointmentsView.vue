@@ -19,7 +19,7 @@ const openId = ref<number | null>(null)
 const bookingOpen = ref(false)
 const cancelTarget = ref<MobileAppointment | null>(null)
 const successMessage = ref('')
-const { initialLoading, loadInitial } = useInitialLoad()
+const { initialLoading, loadInitial } = useInitialLoad(() => store.hasLoaded())
 
 onMounted(() => void loadInitial(() => store.load()))
 watch(() => props.serviceId, serviceId => { if (serviceId) bookingOpen.value = true }, { immediate: true })
@@ -50,7 +50,7 @@ async function booked(message: string): Promise<void> {
         <h1 id="appointments-title">My appointments</h1>
         <p class="intro">Your time and therapist are reserved as soon as booking succeeds.</p>
       </div>
-      <button class="icon-button" aria-label="Refresh appointments" :disabled="store.loading" @click="store.load(store.meta.current_page)"><PhArrowClockwise :size="23" weight="bold" aria-hidden="true" /></button>
+        <button class="icon-button" aria-label="Refresh appointments" :disabled="store.loading || store.refreshing" @click="store.load(store.meta.current_page, true)"><PhArrowClockwise :size="23" weight="bold" aria-hidden="true" /></button>
     </header>
 
     <button class="primary book-button" @click="bookingOpen = true">Book an appointment</button>

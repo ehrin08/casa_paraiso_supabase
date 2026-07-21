@@ -437,6 +437,16 @@ window.operationalCalendar = (config) => ({
         const time = slot?.time || '13:00';
         const startsAt = `${this.selectedDate}T${time}`;
 
+        if (this.createUrl) {
+            const url = new URL(this.createUrl, window.location.origin);
+            url.searchParams.set('scheduled_start_at', startsAt);
+            if (resource?.id && resource.id !== 'requests') {
+                url.searchParams.set('staff_profile_id', String(resource.id));
+            }
+            void openPanel(url);
+            return;
+        }
+
         window.dispatchEvent(new CustomEvent('calendar-booking-selected', {
             detail: {
                 staffId: resource?.id === 'requests' ? '' : String(resource?.id || ''),
@@ -1218,6 +1228,9 @@ const panelElements = () => {
     };
 };
 
+const panelCache = new Map();
+const panelCacheTtl = 60000;
+
 const closeModalWithin = (root) => {
     if (!root || !modalStore().active) {
         return;
@@ -1329,6 +1342,32 @@ const panelPageHtml = (doc) => {
     `;
 };
 
+const renderPanelHtml = (pageHtml) => {
+    const { host, content } = panelElements();
+
+    if (!host || !content) {
+        return false;
+    }
+
+    closeModalWithin(content);
+    content.innerHTML = pageHtml;
+    host.classList.add('is-open');
+    host.classList.remove('is-loading');
+    host.setAttribute('aria-hidden', 'false');
+    syncBodyScrollLock();
+
+    const heading = content.querySelector('h1, h2');
+    const { title } = panelElements();
+
+    if (title) {
+        title.textContent = heading?.textContent?.trim() || 'Workspace panel';
+    }
+
+    window.Alpine?.initTree(content);
+    content.querySelector('input, select, textarea, button, a')?.focus({ preventScroll: true });
+    return true;
+};
+
 const openPanel = async (url) => {
     let { host, content } = panelElements();
 
@@ -1337,7 +1376,22 @@ const openPanel = async (url) => {
         return;
     }
 
-    setPanelLoading(url);
+    const cached = panelCache.get(url.href);
+    const cachedHtml = cached?.html;
+    const cacheIsFresh = cached && Date.now() - cached.fetchedAt < panelCacheTtl;
+
+    if (cachedHtml) {
+        if (!renderPanelHtml(cachedHtml)) {
+            window.location.href = url.href;
+            return;
+        }
+
+        if (cacheIsFresh) {
+            return;
+        }
+    } else {
+        setPanelLoading(url);
+    }
 
     try {
         const response = await window.fetch(url.href, {
@@ -1360,6 +1414,8 @@ const openPanel = async (url) => {
             return;
         }
 
+        panelCache.set(url.href, { html: pageHtml, fetchedAt: Date.now() });
+
         ({ host, content } = panelElements());
 
         if (!host || !content) {
@@ -1367,20 +1423,11 @@ const openPanel = async (url) => {
             return;
         }
 
-        content.innerHTML = pageHtml;
-        host.classList.remove('is-loading');
-
-        const heading = content.querySelector('h1, h2');
-        const { title } = panelElements();
-
-        if (title) {
-            title.textContent = heading?.textContent?.trim() || 'Workspace panel';
-        }
-
-        window.Alpine?.initTree(content);
-        content.querySelector('input, select, textarea, button, a')?.focus({ preventScroll: true });
+        renderPanelHtml(pageHtml);
     } catch {
-        window.location.href = url.href;
+        if (!cachedHtml) {
+            window.location.href = url.href;
+        }
     }
 };
 
@@ -1391,12 +1438,17 @@ document.addEventListener('turbo:before-render', (event) => {
 });
 
 document.addEventListener('turbo:visit', () => {
+    performance.mark('casa-web-navigation-start');
     showPageLoading(150);
 });
 
 document.addEventListener('turbo:load', () => {
     prepareFastNavigation();
     hidePageLoading();
+    if (performance.getEntriesByName('casa-web-navigation-start').length) {
+        performance.measure('casa-web-navigation', { start: 'casa-web-navigation-start', end: performance.now() });
+        performance.clearMarks('casa-web-navigation-start');
+    }
 });
 
 document.addEventListener('turbo:before-cache', () => {
@@ -1463,6 +1515,10 @@ document.addEventListener('submit', (event) => {
 
     if (!(form instanceof HTMLFormElement) || form.hasAttribute('data-no-loading')) {
         return;
+    }
+
+    if (form.method.toLowerCase() !== 'get') {
+        panelCache.clear();
     }
 
     if (form.getAttribute('data-turbo') === 'true') {

@@ -7,10 +7,10 @@
         </div>
         <div class="flex flex-wrap gap-3">
             <a href="{{ route('customer.appointments.history') }}" class="casa-button-secondary">{{ __('My appointments') }}</a>
-            <button type="button" class="casa-button-primary" x-data="" x-on:click="$dispatch('booking-date-selected', { date: @js(now()->addDay()->toDateString()) }); $dispatch('open-modal', 'customer-book-appointment')">
+            <a href="{{ route('customer.appointments.create') }}" class="casa-button-primary" data-panel-link data-turbo="false">
                 <x-nav-icon name="calendar" class="size-4" />
                 {{ __('Book appointment') }}
-            </button>
+            </a>
         </div>
     </x-slot>
 
@@ -56,13 +56,4 @@
         </section>
     </div>
 
-    <x-modal name="customer-book-appointment" :show="old('_booking_context') === 'calendar'" maxWidth="6xl" focusable>
-        <div class="max-h-[90vh] overflow-y-auto p-4 sm:p-6">
-            <div class="mb-5 flex items-start justify-between gap-4">
-                <div><p class="casa-eyebrow">{{ __('My appointments') }}</p><h2 class="mt-2 font-editorial text-3xl font-semibold text-casa-text">{{ __('Book appointment') }}</h2><a href="{{ route('customer.appointments.create') }}" class="mt-2 inline-block text-sm font-bold text-casa-primary">{{ __('Open the full booking page') }}</a></div>
-                <button type="button" class="casa-icon-button" aria-label="{{ __('Close booking') }}" x-on:click="$dispatch('close-modal', 'customer-book-appointment')">×</button>
-            </div>
-            @include('customer.appointments.partials.form', ['bookingContext' => 'calendar'])
-        </div>
-    </x-modal>
 </x-app-layout>

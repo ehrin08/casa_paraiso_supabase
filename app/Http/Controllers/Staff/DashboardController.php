@@ -28,23 +28,13 @@ class DashboardController extends Controller
         $todayAppointments = collect();
 
         if ($staffProfile) {
-            $summary['assignedToday'] = Appointment::query()
+            $appointmentSummary = Appointment::query()
                 ->where('staff_profile_id', $staffProfile->id)
-                ->where('status', Appointment::STATUS_CONFIRMED)
-                ->whereDate('scheduled_start_at', $today)
-                ->count();
-
-            $summary['upcoming'] = Appointment::query()
-                ->where('staff_profile_id', $staffProfile->id)
-                ->where('status', Appointment::STATUS_CONFIRMED)
-                ->where('scheduled_start_at', '>', now())
-                ->count();
-
-            $summary['completedToday'] = Appointment::query()
-                ->where('staff_profile_id', $staffProfile->id)
-                ->where('status', Appointment::STATUS_COMPLETED)
-                ->whereDate('completed_at', $today)
-                ->count();
+                ->selectRaw('SUM(CASE WHEN status = ? AND scheduled_start_at >= ? AND scheduled_start_at < ? THEN 1 ELSE 0 END) AS assigned_today', [Appointment::STATUS_CONFIRMED, $today, $today->copy()->addDay()])
+                ->selectRaw('SUM(CASE WHEN status = ? AND scheduled_start_at > ? THEN 1 ELSE 0 END) AS upcoming', [Appointment::STATUS_CONFIRMED, now()])
+                ->selectRaw('SUM(CASE WHEN status = ? AND completed_at >= ? AND completed_at < ? THEN 1 ELSE 0 END) AS completed_today', [Appointment::STATUS_COMPLETED, $today, $today->copy()->addDay()])
+                ->first();
+            $summary = ['assignedToday' => (int) $appointmentSummary?->assigned_today, 'upcoming' => (int) $appointmentSummary?->upcoming, 'completedToday' => (int) $appointmentSummary?->completed_today];
 
             $todayAppointments = Appointment::query()
                 ->with(['customerProfile.user', 'service'])
@@ -54,17 +44,13 @@ class DashboardController extends Controller
                 ->limit(6)
                 ->get();
 
-            $commissionQuery = TherapistCommission::query()
-                ->where('staff_profile_id', $staffProfile->id);
-            $commissionTotals = [
-                'pending' => (clone $commissionQuery)
-                    ->where('status', TherapistCommission::STATUS_PENDING)
-                    ->sum('commission_amount'),
-                'paid' => (clone $commissionQuery)
-                    ->where('status', TherapistCommission::STATUS_PAID)
-                    ->sum('commission_amount'),
-                'net' => (clone $commissionQuery)->sum('commission_amount'),
-            ];
+            $commissionSummary = TherapistCommission::query()
+                ->where('staff_profile_id', $staffProfile->id)
+                ->selectRaw('SUM(CASE WHEN status = ? THEN commission_amount ELSE 0 END) AS pending', [TherapistCommission::STATUS_PENDING])
+                ->selectRaw('SUM(CASE WHEN status = ? THEN commission_amount ELSE 0 END) AS paid', [TherapistCommission::STATUS_PAID])
+                ->selectRaw('SUM(commission_amount) AS net')
+                ->first();
+            $commissionTotals = ['pending' => $commissionSummary?->pending ?? 0, 'paid' => $commissionSummary?->paid ?? 0, 'net' => $commissionSummary?->net ?? 0];
         }
 
         return view('staff.dashboard', [

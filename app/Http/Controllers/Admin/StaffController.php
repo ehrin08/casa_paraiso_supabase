@@ -55,6 +55,15 @@ class StaffController extends Controller
             ->orderBy('users.name')
             ->paginate((int) config('casa.pagination.per_page', 15))
             ->withQueryString();
+        $accountSummary = User::query()
+            ->where('role', User::ROLE_STAFF)
+            ->selectRaw('SUM(CASE WHEN is_active THEN 1 ELSE 0 END) AS active_count')
+            ->selectRaw('SUM(CASE WHEN NOT is_active THEN 1 ELSE 0 END) AS inactive_count')
+            ->first();
+        $serviceSummary = Service::query()
+            ->selectRaw('SUM(CASE WHEN is_active THEN 1 ELSE 0 END) AS active_count')
+            ->selectRaw('SUM(CASE WHEN NOT is_active THEN 1 ELSE 0 END) AS inactive_count')
+            ->first();
 
         return view('admin.staff.index', [
             'staffProfiles' => $staffProfiles,
@@ -63,8 +72,8 @@ class StaffController extends Controller
             'bookable' => $bookable,
             'sort' => $sort,
             'direction' => $direction,
-            'activeAccountCount' => User::query()->where('role', User::ROLE_STAFF)->where('is_active', true)->count(),
-            'inactiveAccountCount' => User::query()->where('role', User::ROLE_STAFF)->where('is_active', false)->count(),
+            'activeAccountCount' => (int) $accountSummary?->active_count,
+            'inactiveAccountCount' => (int) $accountSummary?->inactive_count,
             'bookableCount' => StaffProfile::query()->where('is_bookable', true)->count(),
             'serviceCatalog' => Service::query()
                 ->withCount(['staffProfiles', 'appointments'])
@@ -73,8 +82,8 @@ class StaffController extends Controller
                 ->paginate((int) config('casa.pagination.per_page', 15), ['*'], 'services_page')
                 ->withQueryString()
                 ->fragment('service-catalog'),
-            'activeServiceCount' => Service::query()->where('is_active', true)->count(),
-            'inactiveServiceCount' => Service::query()->where('is_active', false)->count(),
+            'activeServiceCount' => (int) $serviceSummary?->active_count,
+            'inactiveServiceCount' => (int) $serviceSummary?->inactive_count,
         ]);
     }
 

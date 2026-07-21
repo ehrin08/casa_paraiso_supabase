@@ -27,7 +27,7 @@ class MeasureApiRequest
         $response = $next($request);
         $durationMilliseconds = (hrtime(true) - $startedAt) / 1_000_000;
 
-        Log::log($durationMilliseconds >= 1000 ? 'warning' : 'info', 'mobile_api_request', [
+        Log::log($durationMilliseconds >= 1000 ? 'warning' : 'info', 'http_request', [
             'request_id' => $requestId,
             'route' => $request->route()?->getName(),
             'method' => $request->method(),
@@ -38,7 +38,7 @@ class MeasureApiRequest
         ]);
 
         $response->headers->set('X-Request-ID', $requestId);
-        $response->headers->set('Server-Timing', sprintf('app;dur=%.1f, db;dur=%.1f', $durationMilliseconds, $queryMilliseconds));
+        $response->headers->set('Server-Timing', sprintf('app;dur=%.1f, db;dur=%.1f, queries;desc="%d"', $durationMilliseconds, $queryMilliseconds, $queryCount));
 
         return $response;
     }

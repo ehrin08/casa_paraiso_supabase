@@ -6,6 +6,15 @@ import { apiError, configureApi, exchangeGoogle, login, logout, me, setToken, ty
 import { beginGoogleAuthorization, clearGooglePending, isGoogleCallback, readGoogleCallback } from '../lib/googleAuth'
 import { clearSession, readSession, writeSession } from '../lib/session'
 import { usePairingStore } from './pairing'
+import { invalidateMobileData } from '../lib/mobileDataCache'
+import { useCustomerAppointmentsStore } from './customerAppointments'
+import { useCustomerBookingStore } from './customerBooking'
+import { useCustomerFeedbackStore } from './customerFeedback'
+import { useCustomerProfileStore } from './customerProfile'
+import { useReceptionStore } from './reception'
+import { useStaffStore } from './staff'
+import { useAdminStore } from './admin'
+import { useAdminInsightsStore } from './adminInsights'
 
 const DEVICE_KEY = 'casa.mobile.device-id'
 
@@ -100,7 +109,12 @@ export const useAuthStore = defineStore('auth', () => {
     finally { working.value = false }
   }
 
-  async function clear(): Promise<void> { user.value = null; setToken(''); await clearSession() }
+  async function clear(): Promise<void> {
+    user.value = null; setToken(''); invalidateMobileData()
+    useCustomerAppointmentsStore().reset(); useCustomerBookingStore().reset(); useCustomerFeedbackStore().reset(); useCustomerProfileStore().reset()
+    useReceptionStore().reset(); useStaffStore().reset(); useAdminStore().reset(); useAdminInsightsStore().reset()
+    await clearSession()
+  }
   function applyProfile(name: string, phone: string | null): void {
     if (user.value) user.value = { ...user.value, name, phone }
   }

@@ -7,7 +7,7 @@ import MobileSkeleton from '../components/MobileSkeleton.vue'
 import { useInitialLoad } from '../composables/useInitialLoad'
 
 const store=useReceptionStore(); const form=reactive({phone:'',address:'',contact_preference:'',notes:''})
-const { initialLoading, loadInitial } = useInitialLoad()
+const { initialLoading, loadInitial } = useInitialLoad(() => store.hasCustomers())
 watch(()=>store.selectedCustomer,(value)=>{if(value){form.phone=value.phone??'';form.address=value.address??'';form.contact_preference=value.contact_preference??'';form.notes=value.notes??''}},{immediate:true})
 onMounted(()=>void loadInitial(()=>store.loadCustomers()))
 async function save():Promise<void>{if(!store.selectedCustomer)return;await store.saveCustomer(store.selectedCustomer.id,{phone:form.phone||null,address:form.address||null,contact_preference:form.contact_preference||null,notes:form.notes||null})}

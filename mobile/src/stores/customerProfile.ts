@@ -7,22 +7,27 @@ import {
   updatePassword,
   type CustomerProfileData,
 } from '../lib/api'
+import { hasMobileData, invalidateMobileData, loadMobileData, REFERENCE_TTL_MS } from '../lib/mobileDataCache'
 
 export const useCustomerProfileStore = defineStore('customerProfile', () => {
   const profile = ref<CustomerProfileData | null>(null)
   const loading = ref(false)
+  const refreshing = ref(false)
   const saving = ref(false)
   const changingPassword = ref(false)
   const error = ref('')
   const notice = ref('')
   const fields = ref<Record<string, string[]>>({})
 
-  async function load(): Promise<void> {
-    loading.value = true
+  const cacheKey = 'customer:profile'
+  const hasLoaded = () => hasMobileData(cacheKey)
+  async function load(force = false): Promise<void> {
+    const initial = !hasLoaded()
+    if (initial) loading.value = true; else refreshing.value = true
     clearMessages()
-    try { profile.value = await customerProfile() }
+    try { await loadMobileData(cacheKey, REFERENCE_TTL_MS, async () => { profile.value = await customerProfile() }, force) }
     catch (reason) { capture(reason) }
-    finally { loading.value = false }
+    finally { loading.value = false; refreshing.value = false }
   }
 
   async function save(payload: { name: string; phone: string; address: string; contact_preference: string }): Promise<boolean> {
@@ -36,6 +41,7 @@ export const useCustomerProfileStore = defineStore('customerProfile', () => {
         contact_preference: payload.contact_preference || undefined,
       })
       profile.value = response.data
+      invalidateMobileData('customer:profile')
       notice.value = response.message
       return true
     } catch (reason) { capture(reason); return false }
@@ -62,5 +68,6 @@ export const useCustomerProfileStore = defineStore('customerProfile', () => {
     fields.value = failure.fields ?? {}
   }
 
-  return { profile, loading, saving, changingPassword, error, notice, fields, load, save, changePassword }
+  function reset(): void { profile.value = null; error.value = ''; notice.value = ''; fields.value = {} }
+  return { profile, loading, refreshing, saving, changingPassword, error, notice, fields, hasLoaded, load, save, changePassword, reset }
 })
