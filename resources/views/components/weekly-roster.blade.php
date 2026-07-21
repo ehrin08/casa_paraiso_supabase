@@ -16,9 +16,18 @@
         </div>
     </div>
     <div class="flex flex-wrap gap-2 px-4 py-3 text-sm font-bold text-casa-muted sm:px-5">
-        <span class="casa-filter-chip" x-text="publishedAt ? '{{ __('Published') }}' : '{{ __('Not yet published') }}'"></span>
-        <span class="casa-filter-chip" x-show="hasDraft">{{ __('Draft changes are not bookable') }}</span>
-        <span x-show="loading">{{ __('Loading…') }}</span>
+        <span class="casa-filter-chip inline-flex items-center gap-1.5" x-bind:class="publishedAt ? 'text-casa-palm' : 'text-casa-cacao'">
+            <svg class="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                <path x-show="publishedAt" stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/>
+                <path x-show="!publishedAt" stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"/>
+            </svg>
+            <span x-text="publishedAt ? '{{ __('Published') }}' : '{{ __('Not yet published') }}'"></span>
+        </span>
+        <span class="casa-filter-chip inline-flex items-center gap-1.5 text-casa-cacao" x-show="hasDraft">
+            <svg class="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg>
+            <span>{{ __('Draft changes are not bookable') }}</span>
+        </span>
+        <span x-show="loading" role="status">{{ __('Loading…') }}</span>
     </div>
     <p class="mx-4 mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 sm:mx-5" x-show="error" x-text="error" role="alert"></p>
     <div class="hidden overflow-x-auto lg:block" tabindex="0" role="region" aria-label="{{ __('Scrollable weekly therapist roster') }}">

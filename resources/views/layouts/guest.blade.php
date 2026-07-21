@@ -18,6 +18,7 @@
         'font-sans text-casa-text antialiased',
         'lg:h-dvh lg:overflow-hidden' => $fitDesktopViewport,
     ])>
+        <a href="#main-content" class="sr-only rounded-lg bg-casa-paper px-4 py-3 font-bold text-casa-cacao focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-[100]">Skip to main content</a>
         <x-page-loading />
         <x-toast-stack />
 
@@ -34,7 +35,7 @@
             ])>
                 <picture class="absolute inset-0">
                     <source media="(max-width: 1200px)" srcset="{{ asset('images/spa/spa-auth-720.webp') }}">
-                    <img src="{{ asset('images/spa/spa-auth-1024.webp') }}" alt="A warmly lit tropical spa treatment room" class="h-full w-full object-cover" fetchpriority="high">
+                    <img src="{{ asset('images/spa/spa-auth-1024.webp') }}" alt="" class="h-full w-full object-cover" fetchpriority="high">
                 </picture>
                 <div class="absolute inset-0 bg-gradient-to-t from-casa-charcoal via-casa-charcoal/22 to-casa-charcoal/15"></div>
 
@@ -64,6 +65,7 @@
             </section>
 
             <main
+                id="main-content"
                 data-guest-scroll-region="{{ $fitDesktopViewport ? 'true' : 'false' }}"
                 @class([
                     'flex min-h-screen items-center justify-center px-4 py-8 sm:px-8 lg:px-10',

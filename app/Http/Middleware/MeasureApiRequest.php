@@ -37,9 +37,10 @@ class MeasureApiRequest
             'db_duration_ms' => round($queryMilliseconds, 1),
         ]);
 
-        return $response
-            ->header('X-Request-ID', $requestId)
-            ->header('Server-Timing', sprintf('app;dur=%.1f, db;dur=%.1f', $durationMilliseconds, $queryMilliseconds));
+        $response->headers->set('X-Request-ID', $requestId);
+        $response->headers->set('Server-Timing', sprintf('app;dur=%.1f, db;dur=%.1f', $durationMilliseconds, $queryMilliseconds));
+
+        return $response;
     }
 
     private function requestId(Request $request): string

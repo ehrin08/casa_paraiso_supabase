@@ -35,11 +35,12 @@ class MobileDemoApkDownloadTest extends TestCase
 
         config(['casa.mobile.demo_apk_enabled' => true]);
 
-        $this->get('/api/v1/demo/Casa-Paraiso-Mobile.apk')
+        $response = $this->get('/api/v1/demo/Casa-Paraiso-Mobile.apk')
             ->assertOk()
-            ->assertDownload('Casa-Paraiso-Mobile-v1.0.1.apk')
-            ->assertHeader('Content-Type', 'application/vnd.android.package-archive')
-            ->assertHeaderContains('Cache-Control', 'no-store');
+            ->assertDownload('Casa-Paraiso-Mobile-v1.0.1.apk');
+
+        $this->assertEquals('application/vnd.android.package-archive', $response->headers->get('Content-Type'));
+        $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
     }
 
     public function test_apk_returns_not_found_when_the_release_artifact_is_missing(): void

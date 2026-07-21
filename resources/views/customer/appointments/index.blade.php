@@ -40,7 +40,13 @@
                         <template x-for="day in calendarDays" x-bind:key="day.date">
                             <button type="button" class="min-h-16 rounded-xl border p-2 text-left transition sm:min-h-24 sm:p-2.5" x-on:click="selectDate(day.date)" x-on:keydown.right.prevent="moveDate(day.date, 1)" x-on:keydown.left.prevent="moveDate(day.date, -1)" x-on:keydown.down.prevent="moveDate(day.date, 7)" x-on:keydown.up.prevent="moveDate(day.date, -7)" x-bind:aria-label="`${day.date}, ${day.events.length} appointments`" x-bind:tabindex="selectedDate === day.date ? 0 : -1" x-bind:data-customer-calendar-day="day.date" x-bind:class="selectedDate === day.date ? 'border-casa-palm bg-casa-palm text-white shadow-md' : day.inMonth ? 'border-casa-border bg-casa-paper text-casa-text hover:border-casa-brass' : 'border-casa-border/50 bg-casa-sand/30 text-casa-muted/45'" role="gridcell">
                                 <span class="text-sm font-extrabold" x-text="day.label"></span>
-                                <span class="mt-2 flex flex-wrap gap-1" x-show="day.statuses.length"><template x-for="status in day.statuses" x-bind:key="status"><span class="size-2 rounded-full ring-1 ring-white/70" x-bind:class="{'bg-casa-palm': status === 'confirmed', 'bg-casa-cacao': status === 'completed', 'bg-red-500': status === 'cancelled' || status === 'no_show'}" x-bind:title="status.replaceAll('_', ' ')"></span></template></span>
+                                <span class="mt-2 flex flex-wrap gap-1" x-show="day.statuses.length">
+                                    <template x-for="status in day.statuses" x-bind:key="status">
+                                        <span class="inline-flex items-center justify-center size-2.5 rounded-full ring-1 ring-white/70" x-bind:class="{'bg-casa-palm': status === 'confirmed', 'bg-casa-cacao': status === 'completed', 'bg-red-500': status === 'cancelled' || status === 'no_show'}">
+                                            <span class="sr-only" x-text="status.replaceAll('_', ' ')"></span>
+                                        </span>
+                                    </template>
+                                </span>
                                 <span class="mt-2 hidden text-sm font-extrabold uppercase tracking-[0.04em] sm:block" x-show="day.events.length" x-text="`${day.events.length} visit${day.events.length === 1 ? '' : 's'}`"></span>
                             </button>
                         </template>

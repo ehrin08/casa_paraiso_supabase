@@ -33,9 +33,9 @@
                     </a>
 
                     <nav class="hidden items-center gap-7 text-sm font-bold text-casa-muted lg:flex" aria-label="Public navigation">
-                        <a href="#treatments" class="transition hover:text-casa-cacao">Treatments</a>
-                        <a href="#how-it-works" class="transition hover:text-casa-cacao">How it works</a>
-                        <a href="#visit" class="transition hover:text-casa-cacao">Visit hours</a>
+                        <a href="#treatments" class="inline-flex min-h-[44px] items-center transition hover:text-casa-cacao">Treatments</a>
+                        <a href="#how-it-works" class="inline-flex min-h-[44px] items-center transition hover:text-casa-cacao">How it works</a>
+                        <a href="#visit" class="inline-flex min-h-[44px] items-center transition hover:text-casa-cacao">Visit hours</a>
                     </nav>
 
                     @if (Route::has('login'))
@@ -187,7 +187,7 @@
                                     </div>
                                 @endforeach
                             </div>
-                            <p class="mt-6 max-w-2xl text-sm leading-7 text-white/62">Add-ons are shown for reference and can be coordinated with our team before your confirmed appointment.</p>
+                            <p class="mt-6 max-w-2xl text-sm leading-7 text-white/85">Add-ons are shown for reference and can be coordinated with our team before your confirmed appointment.</p>
                         </div>
 
                         <aside class="rounded-[28px] bg-casa-paper p-7 text-casa-text sm:p-9">

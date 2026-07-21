@@ -118,20 +118,20 @@ async function booked(message: string): Promise<void> {
 <style scoped>
 .customer-workspace { width: min(100%, 42rem); margin: 0 auto; padding: max(1.25rem, env(safe-area-inset-top)) 1rem calc(6rem + env(safe-area-inset-bottom)); }
 .customer-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
-.customer-heading h1 { font-family: Georgia, serif; color: #334736; }
+.customer-heading h1 { font-family: var(--font-display); color: var(--casa-deep-palm); }
 .book-button { width: 100%; margin-top: 1rem; }
 .intro { margin: 0; }
-.icon-button { width: 48px; min-width: 48px; height: 48px; border-radius: 999px; border: 1px solid #dcd2c2; background: #fffcf7; color: #334736; font-size: 1.5rem; }
+.icon-button { width: 48px; min-width: 48px; height: 48px; border-radius: 999px; border: 1px solid var(--casa-border); background: var(--casa-paper); color: var(--casa-deep-palm); font-size: 1.5rem; }
 .summary-strip { margin: 1.25rem 0; }
 .filter-label { margin-bottom: 1rem; }.filter-label span { font-size: .85rem; }.filter-label .field { width: 100%; }
-.notice { padding: .75rem; border-radius: .75rem; background: #e9f2e8; color: #334736; }.loading { padding: 2rem; text-align: center; color: #67675f; }
-.appointment-list { display: grid; gap: .75rem; }.appointment-card { overflow: hidden; border: 1px solid #dcd2c2; border-radius: 1rem; background: #fffcf7; box-shadow: 0 6px 18px rgb(35 38 32 / 6%); }
-.appointment-summary { width: 100%; min-height: 76px; display: grid; grid-template-columns: 50px 1fr 24px; align-items: center; gap: .8rem; border: 0; padding: .75rem; background: transparent; color: #232620; text-align: left; }
-.date-tile { display: grid; place-items: center; border-radius: .75rem; padding: .4rem; background: #f3ebdd; color: #7a3e14; }.date-tile b { font-size: 1.2rem; }.date-tile small { text-transform: uppercase; }
-.appointment-main { min-width: 0; display: grid; gap: .25rem; }.appointment-main strong,.appointment-main small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.appointment-main small { color: #67675f; }
-.status-badge { width: fit-content; border-radius: 999px; padding: .18rem .5rem; background: #e9f2e8; color: #334736; font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }.status-badge[data-status="cancelled"],.status-badge[data-status="no_show"] { background: #f3e4df; color: #7a3e14; }.status-badge[data-status="completed"] { background: #eee8da; color: #655021; }
-.appointment-details { border-top: 1px solid #dcd2c2; padding: 1rem; }.appointment-details dl { display: grid; gap: .65rem; margin: 0; }.appointment-details dl div { display: flex; justify-content: space-between; gap: 1rem; }.appointment-details dt { color: #67675f; }.appointment-details dd { margin: 0; text-align: right; font-weight: 700; }.appointment-details p { font-size: .9rem; }
-.danger-button,.feedback-button { min-height: 48px; border-radius: .75rem; font: inherit; font-weight: 700; width: 100%; }.danger-button { border: 1px solid #a04a3c; background: #fff7f5; color: #8c2f26; }.feedback-button { border: 1px solid #4f6a4e; background: #e9f2e8; color: #334736; }.danger-button:disabled { opacity: .5; }
-.empty-state { padding: 2rem 1rem; border: 1px dashed #bfb3a2; border-radius: 1rem; text-align: center; background: #fffcf7; }.empty-state h2 { margin: 0; font-family: Georgia, serif; color: #334736; }
+.notice { padding: .75rem; border-radius: var(--radius-control); background: var(--casa-success-bg); color: var(--casa-success); }.loading { padding: 2rem; text-align: center; color: var(--casa-muted); }
+.appointment-list { display: grid; gap: .75rem; }.appointment-card { overflow: hidden; border: 1px solid var(--casa-border); border-radius: var(--radius-operation); background: var(--casa-paper); box-shadow: var(--shadow-card); }
+.appointment-summary { width: 100%; min-height: 76px; display: grid; grid-template-columns: 50px 1fr 24px; align-items: center; gap: .8rem; border: 0; padding: .75rem; background: transparent; color: var(--casa-ink); text-align: left; }
+.date-tile { display: grid; place-items: center; border-radius: var(--radius-control); padding: .4rem; background: var(--casa-sand); color: var(--casa-cacao); }.date-tile b { font-size: 1.2rem; }.date-tile small { text-transform: uppercase; }
+.appointment-main { min-width: 0; display: grid; gap: .25rem; }.appointment-main strong,.appointment-main small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.appointment-main small { color: var(--casa-muted); }
+.status-badge { width: fit-content; border-radius: 999px; padding: .18rem .5rem; background: var(--casa-success-bg); color: var(--casa-deep-palm); font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }.status-badge[data-status="cancelled"],.status-badge[data-status="no_show"] { background: var(--casa-error-bg); color: var(--casa-error); }.status-badge[data-status="completed"] { background: var(--casa-warning-bg); color: var(--casa-warning); }
+.appointment-details { border-top: 1px solid var(--casa-border); padding: 1rem; }.appointment-details dl { display: grid; gap: .65rem; margin: 0; }.appointment-details dl div { display: flex; justify-content: space-between; gap: 1rem; }.appointment-details dt { color: var(--casa-muted); }.appointment-details dd { margin: 0; text-align: right; font-weight: 700; }.appointment-details p { font-size: .9rem; }
+.danger-button,.feedback-button { min-height: 48px; border-radius: var(--radius-control); font: inherit; font-weight: 700; width: 100%; }.danger-button { border: 1px solid var(--casa-error); background: var(--casa-error-bg); color: var(--casa-error); }.feedback-button { border: 1px solid var(--casa-palm); background: var(--casa-success-bg); color: var(--casa-deep-palm); }.danger-button:disabled { opacity: .5; }
+.empty-state { padding: 2rem 1rem; border: 1px dashed var(--casa-border-strong); border-radius: var(--radius-operation); text-align: center; background: var(--casa-paper); }.empty-state h2 { margin: 0; font-family: var(--font-display); color: var(--casa-deep-palm); }
 @media (min-width: 640px) { .customer-workspace { padding-inline: 1.5rem; } }
 </style>

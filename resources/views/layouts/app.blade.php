@@ -15,6 +15,7 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="font-sans antialiased" data-workspace-role="{{ Auth::user()?->role }}">
+        <a href="#main-content" class="sr-only rounded-lg bg-casa-paper px-4 py-3 font-bold text-casa-cacao focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-[100]">Skip to main content</a>
         @php
             $usesSidebar = Auth::check();
             $isCustomer = Auth::user()?->isCustomer() ?? false;
@@ -45,7 +46,7 @@
                 @endisset
 
                 <!-- Page Content -->
-                <main data-page-content class="mx-auto max-w-[90rem] px-4 py-4 sm:px-5 lg:px-6">
+                <main id="main-content" data-page-content class="mx-auto max-w-[90rem] px-4 py-4 sm:px-5 lg:px-6">
                     {{ $slot }}
                 </main>
             </div>

@@ -108,7 +108,7 @@ textarea { min-height: 6rem; resize: vertical; }
 .landing__logo { display: flex; min-width: 120px; flex: 1; align-items: center; }
 .landing__logo img { width: 120px; height: 40px; object-fit: cover; }
 .landing__nav { display: none; }
-.landing__reserve, .landing__primary-action, .landing__secondary-action, .landing__hours button { min-height: 44px; border-radius: var(--radius-control); font-weight: 800; }
+.landing__reserve, .landing__primary-action, .landing__secondary-action, .landing__hours button { min-height: 48px; border-radius: var(--radius-control); font-weight: 800; }
 .landing__reserve, .landing__primary-action, .landing__hours button { border: 0; color: white; background: var(--casa-palm); }
 .landing__reserve { padding: .7rem 1rem; }
 .landing__hero { display: grid; gap: 2.5rem; max-width: 90rem; margin: 0 auto; padding: 3.5rem 1rem 4.5rem; }

@@ -214,7 +214,7 @@
     </div>
 
     @if ($isCustomer)
-        <div data-mobile-customer-navigation class="casa-mobile-dock lg:hidden" aria-label="Customer navigation">
+        <nav data-mobile-customer-navigation class="casa-mobile-dock lg:hidden" aria-label="Customer navigation">
             <a href="{{ route('customer.appointments.index') }}" @class(['casa-mobile-dock-link', 'casa-mobile-dock-link-active' => request()->routeIs('customer.appointments.*')]) @if(request()->routeIs('customer.appointments.*')) aria-current="page" @endif>
                 <x-nav-icon name="calendar" class="size-4" />
                 <span>Appointments</span>
@@ -227,6 +227,6 @@
                 <x-nav-icon name="profile" class="size-4" />
                 <span>Profile</span>
             </a>
-        </div>
+        </nav>
     @endif
 </nav>

@@ -30,8 +30,8 @@
             <x-password-input id="password" class="mt-1 block w-full" name="password" required autocomplete="current-password" />
             <x-input-error :messages="$errors->get('password')" class="mt-2" />
         </div>
-        <label class="flex items-center gap-3 text-sm text-casa-muted">
-            <input type="checkbox" name="remember" class="rounded border-casa-border text-casa-primary focus:ring-casa-gold">
+        <label class="inline-flex min-h-[44px] cursor-pointer items-center gap-3 py-2 text-sm font-semibold text-casa-muted">
+            <input type="checkbox" name="remember" class="size-5 rounded border-casa-border text-casa-primary focus:ring-casa-gold">
             <span>Remember me</span>
         </label>
         <x-primary-button class="w-full justify-center">Sign in</x-primary-button>

@@ -33,8 +33,8 @@
                 </div>
 
                 <div class="mt-5">
-                    <x-table-shell>
-                        <thead class="bg-casa-bg text-left text-xs font-black uppercase tracking-[0.1em] text-casa-muted">
+                    <x-table-shell :label="__('Upcoming confirmed visits table')">
+                        <thead class="bg-casa-sand/72 text-left text-xs font-black uppercase tracking-[0.1em] text-casa-muted">
                             <tr>
                                 <th class="px-4 py-3">{{ __('No.') }}</th>
                                 <th class="px-4 py-3">{{ __('Customer') }}</th>
