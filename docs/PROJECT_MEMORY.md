@@ -293,6 +293,8 @@ Sentiment reclassification is dry-run by default: `.\scripts\casa-docker.ps1 com
 
 Run dependency installation only when dependencies changed or the environment is new; follow `AGENTS.md` and `DOCKER_WORKFLOW.md`.
 
+Operational reset is available through `php artisan casa:reset-operational-data`. It is dry-run by default; after taking a verified export, use `--apply` and confirm interactively (or `--yes` for an explicitly approved non-interactive run). The command deletes appointment, payment, commission, feedback-analysis, and attendance rows in foreign-key order, restores voucher suggestions linked to deleted appointments, resets PostgreSQL sequences, and preserves users, authentication support, profiles, services, schedules, settings, catalogs, and unrelated promotion suggestions.
+
 Run in-container Artisan commands through `.\scripts\casa-docker.ps1 compose exec -T --user sail laravel.test ...` so the guarded Docker Desktop project is used and CLI-created logs and cache artifacts remain writable by the `sail` web process. The single and daily log channels create files with mode `0664`.
 
 Database migrations, seeders, imports, and targeted data repairs are permitted in the intended environment. Preserve existing accounts: never use `migrate:fresh`, `db:wipe`, table drops, truncation, or bulk delete/reseed work that erases `users`, `customer_profiles`, `staff_profiles`, or authentication-support records. Prefer additive migrations and idempotent seeders; if an account-preserving route is unavailable, stop and ask the user. Tests must remain isolated from non-test databases.
